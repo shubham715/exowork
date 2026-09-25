@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   ArrowUpRight,
   CalendarCheck,
@@ -12,9 +11,9 @@ import {
   Undo2,
   ChevronLeft,
   ChevronRight,
-  X,
 } from "lucide-react";
-import BrandLogo from "../../components/BrandLogo.jsx";
+import PublicHeader from "../../features/public-site/components/PublicHeader.jsx";
+import PublicFooter from "../../features/public-site/components/PublicFooter.jsx";
 import "./landing-reference.css";
 
 const journey = [
@@ -326,8 +325,7 @@ function CareerProgression() {
   );
 }
 export default function Landing() {
-  const [menu, setMenu] = useState(false),
-    [sent, setSent] = useState(false);
+  const [sent, setSent] = useState(false);
   useEffect(() => {
     const io = new IntersectionObserver(
       (es) =>
@@ -346,66 +344,7 @@ export default function Landing() {
   }, []);
   return (
     <div className="ex-home" id="top">
-      <header className="ex-nav">
-        <div className="ex-wrap ex-nav-inner">
-          <a className="ex-brand" href="#top">
-            <BrandLogo />
-          </a>
-          <button
-            className={`ex-menu-backdrop ${menu ? "open" : ""}`}
-            onClick={() => setMenu(false)}
-            aria-label="Close menu"
-            tabIndex={menu ? 0 : -1}
-          />
-          <nav className={`ex-links ${menu ? "open" : ""}`} aria-hidden={!menu}>
-            <div className="ex-drawer-head">
-              <BrandLogo />
-              <button type="button" onClick={() => setMenu(false)} aria-label="Close menu">
-                <X />
-              </button>
-            </div>
-            <p className="ex-drawer-label">Explore EXOWORK</p>
-            {[
-              ["pipeline", "Candidate journey"],
-              ["journey", "How it works"],
-              ["audiences", "Who it's for"],
-              ["automation", "Automation"],
-              ["trust", "Trust & data"],
-              ["contact", "Contact"],
-            ].map(([i, t]) => (
-              <a href={`#${i}`} onClick={() => setMenu(false)} key={i}>
-                {t}
-              </a>
-            ))}
-            <div className="ex-drawer-actions">
-              <Link className="ex-btn ghost" to="/login" onClick={() => setMenu(false)}>
-                Sign in
-              </Link>
-              <Link className="ex-btn grad" to="/register/candidate" onClick={() => setMenu(false)}>
-                Get started
-              </Link>
-            </div>
-          </nav>
-          <div className="ex-nav-actions">
-            <Link className="ex-btn ghost small" to="/login">
-              Sign in
-            </Link>
-            <Link className="ex-btn grad small" to="/register/candidate">
-              Get started
-            </Link>
-          </div>
-          <button
-            className={`ex-menu ${menu ? "active" : ""}`}
-            onClick={() => setMenu(!menu)}
-            aria-label={menu ? "Close menu" : "Open menu"}
-            aria-expanded={menu}
-          >
-            <i />
-            <i />
-            <i />
-          </button>
-        </div>
-      </header>
+      <PublicHeader />
       <main>
         <section className="ex-hero">
           <div className="ex-hero-bg">
@@ -709,59 +648,7 @@ export default function Landing() {
           </div>
         </section>
       </main>
-      <footer className="ex-footer">
-        <div className="ex-wrap">
-          <div className="ex-footer-grid">
-            <div className="ex-foot-brand">
-              <BrandLogo />
-              <p>
-                A simple platform connecting candidates, training
-                partners and employers, from training and job matching to
-                successful joining.
-              </p>
-            </div>
-            {[
-              [
-                "Platform",
-                [
-                  ["How it works", "journey"],
-                  ["Who it's for", "audiences"],
-                  ["Automation", "automation"],
-                  ["Trust & data", "trust"],
-                ],
-              ],
-              [
-                "Roles",
-                [
-                  ["Employers", "contact"],
-                  ["Training partners", "contact"],
-                  ["Candidates", "contact"],
-                  ["Support teams", "contact"],
-                ],
-              ],
-              [
-                "Company",
-                [
-                  ["Contact us", "contact"],
-                  ["hello@exowork.in", "mailto:hello@exowork.in"],
-                ],
-              ],
-            ].map(([h, ls]) => (
-              <div className="ex-foot-col" key={h}>
-                <b>{h}</b>
-                {ls.map(([t, id]) => (
-                  <a href={id.startsWith("mailto:") ? id : "#" + id} key={t}>
-                    {t}
-                  </a>
-                ))}
-              </div>
-            ))}
-          </div>
-          <div className="ex-footer-bottom">
-            <p>© 2026 EXOWORK. Connecting skills to sustainable employment.</p>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

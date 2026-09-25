@@ -2,6 +2,7 @@ import React,{createContext,useContext,useState}from'react';
 import{Routes,Route,Navigate}from'react-router-dom';
 import Landing from'./pages/public/Landing.jsx';
 import Login from'./pages/auth/Login.jsx';
+import AdminLogin from'./pages/auth/AdminLogin.jsx';
 import CandidateRegistration from'./pages/candidate/CandidateRegistration.jsx';
 import CandidateProfile from'./pages/candidate/CandidateProfile.jsx';
 import ResumeBuilder from'./pages/candidate/ResumeBuilder.jsx';
@@ -36,7 +37,7 @@ function Toasts({children}){const[msg,setMsg]=useState('');const show=m=>{setMsg
 const roleRoutes={employer:['onboarding','company','jobs','jobs/new','talent','interviews','joining','history','settings'],center:['jobs','interviews','placements','performance','settings'],candidate:['consent','opportunities','interests','interviews','joining','retention','privacy']};
 
 export default function App(){return <Toasts><Routes>
-  <Route path="/" element={<Landing/>}/><Route path="/login" element={<Login/>}/><Route path="/register/candidate" element={<CandidateRegistration mode="public"/>}/>
+  <Route path="/" element={<Landing/>}/><Route path="/login" element={<Login/>}/><Route path="/admin225" element={<AdminLogin/>}/><Route path="/register/candidate" element={<CandidateRegistration mode="public"/>}/>
   <Route path="/admin" element={<AdminLayout/>}><Route index element={<Navigate to="dashboard" replace/>}/><Route path="dashboard" element={<Dashboard/>}/><Route path="candidates" element={<Candidates/>}/><Route path="candidates/new" element={<CandidateRegistration mode="admin"/>}/><Route path="candidates/:id" element={<CandidateDetail/>}/><Route path="centers" element={<Organizations type="center"/>}/><Route path="batches" element={<Batches/>}/><Route path="batches/:id" element={<Batches/>}/><Route path="employers" element={<Organizations type="employer"/>}/><Route path="jobs" element={<Jobs/>}/><Route path="jobs/new" element={<JobForm/>}/><Route path="jobs/:id/edit" element={<JobForm/>}/><Route path="matching" element={<Operations type="matching"/>}/><Route path="crm" element={<Operations type="crm"/>}/><Route path="interviews" element={<Operations type="interviews"/>}/><Route path="joining" element={<Operations type="joining"/>}/><Route path="retention" element={<Operations type="retention"/>}/><Route path="reports" element={<Reports/>}/><Route path="settings" element={<Settings/>}/></Route>
   <Route path="/employer" element={<RoleLayout role="employer"/>}><Route index element={<Navigate to="dashboard" replace/>}/><Route path="dashboard" element={<EmployerDashboard/>}/>{roleRoutes.employer.map(p=><Route key={p} path={p} element={<RolePage role="employer" page={p}/>}/>)}</Route>
   <Route path="/center" element={<RoleLayout role="center"/>}><Route index element={<Navigate to="dashboard" replace/>}/><Route path="dashboard" element={<CenterDashboard/>}/><Route path="partner" element={<TrainingPartnerProfile/>}/><Route path="profile" element={<CenterProfile/>}/><Route path="pipeline" element={<AvailabilityPipeline/>}/><Route path="batches" element={<TrainingBatches/>}/><Route path="candidates" element={<CenterCandidates/>}/><Route path="candidates/new" element={<CenterCandidateRegistration/>}/>{roleRoutes.center.map(p=><Route key={p} path={p} element={<RolePage role="center" page={p}/>}/>)}</Route>

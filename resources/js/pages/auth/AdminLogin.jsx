@@ -1,13 +1,12 @@
 import React from "react";
 import AuthLayout from "../../features/auth/components/AuthLayout.jsx";
 import LoginForm from "../../features/auth/components/LoginForm.jsx";
-import { PUBLIC_LOGIN_ROLES } from "../../features/auth/authConfig.js";
+import { ADMIN_LOGIN_ROLE } from "../../features/auth/authConfig.js";
 
-export default function Login() {
+export default function AdminLogin() {
   return (
-    <AuthLayout>
-      <LoginForm roles={PUBLIC_LOGIN_ROLES} />
+    <AuthLayout admin>
+      <LoginForm roles={[ADMIN_LOGIN_ROLE]} admin />
     </AuthLayout>
   );
 }
-

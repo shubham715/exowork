@@ -22,6 +22,7 @@ app/
 |-- resources/
 |   |-- js/                 React application source
 |   |   |-- components/     shared UI
+|   |   |-- features/       feature-owned UI, configuration and validation
 |   |   |-- layouts/        portal layouts
 |   |   `-- pages/          route-level screens by role
 |   `-- views/app.blade.php single HTML shell for React
@@ -39,6 +40,8 @@ app/
 ## Route ownership
 
 - React Router owns public and portal page URLs such as `/candidate/dashboard`.
+- `/login` is the public role login for candidates, employers and training partners.
+- `/admin225` is the separate admin login entry point; admin is not shown on the public login.
 - Laravel owns `/api/*`, `/webhooks/*`, `/up`, authentication, authorization,
   validation, persistence and files.
 - `routes/web.php` returns the React shell for direct browser visits and page
