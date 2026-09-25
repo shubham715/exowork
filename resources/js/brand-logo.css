@@ -1,0 +1,10 @@
+.exowork-logo{display:block;width:100%;height:auto;object-fit:contain;object-position:left center}
+.public-brand{width:220px;min-width:180px}
+.public-brand .exowork-logo{max-height:58px}
+.public-brand.light{background:#fff;border-radius:12px;padding:7px 10px;width:235px}
+.brand{min-height:68px}
+.brand .exowork-logo{width:198px;max-height:58px;background:#fff;border-radius:9px;padding:5px 7px}
+.brand .mobile-close{margin-left:auto}
+.reg-brand{width:185px;display:block}
+.reg-brand .exowork-logo{max-height:48px}
+@media(max-width:600px){.public-brand{width:175px;min-width:0}.public-brand.light{width:190px}.brand .exowork-logo{width:180px}.reg-brand{width:145px}}

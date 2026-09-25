@@ -1,0 +1,335 @@
+.role-shell {
+  grid-template-columns: 252px minmax(0, 1fr);
+  transition: grid-template-columns .3s ease;
+}
+
+.role-main,
+.resume-builder,
+.resume-preview-wrap {
+  min-width: 0;
+}
+
+.role-sidebar {
+  width: 252px;
+  transition: transform .3s ease, opacity .2s ease;
+}
+
+.role-shell.sidebar-collapsed {
+  grid-template-columns: 0 minmax(0, 1fr);
+}
+
+.role-shell.sidebar-collapsed .role-sidebar {
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.role-top-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* Keep workspace typography on a compact, predictable scale. */
+.role-shell .role-top-title small { font-size: 8px; }
+.role-shell .role-top-title h2 { font-size: 15px; line-height: 1.25; }
+.role-shell .profile-btn > span { width: 36px; height: 36px; font-size: 12px; }
+.role-shell .profile-btn b { font-size: 11px; line-height: 1.25; }
+.role-shell .profile-btn small { font-size: 9px; line-height: 1.3; }
+.role-shell .profile-menu { width: 208px; }
+.role-shell .profile-menu > div > b { font-size: 12px; line-height: 1.3; }
+.role-shell .profile-menu > div > small { font-size: 10px; }
+.role-shell .profile-menu a,
+.role-shell .profile-menu button { align-items: center; font-size: 11px; line-height: 1.35; }
+.role-shell .profile-menu a svg,
+.role-shell .profile-menu button svg { width: 16px; height: 16px; }
+.role-shell .page-head h1 { font-size: 25px; line-height: 1.25; }
+.role-shell .role-hero h1 { font-size: 26px; line-height: 1.25; }
+.role-shell .candidate-welcome h1 { font-size: 23px; line-height: 1.3; }
+.role-shell .candidate-profile-cover h1 {
+  font-size: 24px;
+  line-height: 1.25;
+  margin: 7px 0 4px;
+}
+.role-shell .candidate-profile-cover p,
+.role-shell .candidate-profile-cover > div:nth-child(2) > span { font-size: 10px; }
+.role-shell .candidate-profile-cover > div:nth-child(2) > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.role-shell .candidate-profile-cover > div:nth-child(2) > span svg { width: 15px; height: 15px; }
+.role-shell .cover-score { min-width: 110px; }
+.role-shell .cover-score b { font-size: 18px; line-height: 1.2; }
+.role-shell .cover-score span { font-size: 11px; margin-top: 2px; }
+
+.sidebar-toggle {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--body);
+  display: grid;
+  place-items: center;
+  transition: background .2s ease, color .2s ease, transform .2s ease;
+}
+
+.sidebar-toggle:hover {
+  background: var(--bluep);
+  color: var(--blue);
+}
+
+.sidebar-toggle:active {
+  transform: scale(.94);
+}
+
+.sidebar-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.role-shell .resume-builder {
+  grid-template-columns: 220px minmax(0, 1fr);
+}
+
+.role-shell .resume-readiness-bar {
+  grid-column: 1 / -1;
+  position: static;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 260px;
+  align-items: center;
+  gap: 20px;
+  padding: 13px 16px;
+}
+
+.resume-readiness-bar .readiness-score-block {
+  padding-right: 18px;
+  border-right: 1px solid var(--line);
+}
+
+.resume-readiness-bar .resume-score {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.resume-readiness-bar .resume-score b {
+  font-size: 20px;
+}
+
+.resume-readiness-bar .resume-score i {
+  flex: 1;
+  min-width: 54px;
+}
+
+.resume-readiness-bar ul {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 0;
+  margin: 0;
+}
+
+.resume-readiness-bar li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.resume-readiness-bar li svg {
+  width: 14px;
+  color: var(--green);
+}
+
+.resume-readiness-bar .resume-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.resume-readiness-bar .resume-tip > svg {
+  width: 18px;
+  flex: 0 0 auto;
+}
+
+.role-shell .resume-preview-wrap {
+  overflow: hidden;
+}
+
+@media (max-width: 1050px) {
+  .role-shell .resume-builder {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+
+  .role-shell .resume-readiness-bar {
+    grid-template-columns: 130px minmax(0, 1fr);
+  }
+
+  .resume-readiness-bar .resume-tip {
+    display: none;
+  }
+
+  .resume-readiness-bar ul {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+}
+
+@media (max-width: 900px) {
+  .role-shell.sidebar-collapsed {
+    display: block;
+  }
+
+  .role-shell.sidebar-collapsed .role-sidebar {
+    transform: none;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .role-sidebar {
+    transition: left .3s ease;
+  }
+}
+
+@media (max-width: 800px) {
+  .role-shell .resume-builder {
+    grid-template-columns: 1fr;
+  }
+
+  .role-shell .resume-readiness-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .resume-readiness-bar .readiness-score-block {
+    border-right: 0;
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .role-shell .page-head h1 { font-size: 23px; }
+  .role-shell .role-hero h1,
+  .role-shell .candidate-welcome h1,
+  .role-shell .candidate-profile-cover h1 { font-size: 22px; }
+  .role-shell .profile-btn > div { display: none; }
+  .role-shell .cover-score { min-width: 0; text-align: left; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .role-shell,
+  .role-sidebar,
+  .sidebar-toggle {
+    transition: none;
+  }
+}
+
+/* Candidate dashboard: one consistent, professional type hierarchy. */
+.candidate-dashboard {
+  --dashboard-text: 11px;
+  --dashboard-meta: 10px;
+  --dashboard-label: 9px;
+  font-size: var(--dashboard-text);
+}
+
+.candidate-dashboard .candidate-mode-card { padding: 16px 20px; }
+.candidate-dashboard .candidate-mode-card span,
+.candidate-dashboard .candidate-welcome > div:nth-child(2) > span,
+.candidate-dashboard .partner-relationship > div:nth-child(2) > span,
+.candidate-dashboard .candidate-alert > div > span {
+  font-size: var(--dashboard-label);
+  line-height: 1.35;
+  letter-spacing: 1.2px;
+}
+.candidate-dashboard .candidate-mode-card h3 {
+  font-size: 16px;
+  line-height: 1.35;
+  margin: 4px 0;
+}
+.candidate-dashboard .candidate-mode-card p,
+.candidate-dashboard .candidate-welcome p,
+.candidate-dashboard .partner-relationship p,
+.candidate-dashboard .independent-note p,
+.candidate-dashboard .candidate-alert p {
+  font-size: var(--dashboard-meta);
+  line-height: 1.5;
+}
+.candidate-dashboard .candidate-mode-toggle button {
+  padding: 9px 12px;
+  font-size: 10px;
+}
+.candidate-dashboard .candidate-mode-toggle button svg { width: 14px; height: 14px; }
+
+.candidate-dashboard .candidate-welcome { padding: 20px 24px; gap: 16px; }
+.candidate-dashboard .candidate-welcome h1 {
+  font-size: 16px;
+  line-height: 1.35;
+  margin: 6px 0 4px;
+}
+.candidate-dashboard .profile-completion b { font-size: 22px; line-height: 1.2; }
+.candidate-dashboard .profile-completion span { font-size: var(--dashboard-label); }
+
+.candidate-dashboard .partner-relationship,
+.candidate-dashboard .independent-note { padding: 14px 16px; }
+.candidate-dashboard .partner-relationship h2 {
+  font-size: 15px;
+  line-height: 1.35;
+  margin: 3px 0;
+}
+.candidate-dashboard .partner-support span { font-size: var(--dashboard-label); }
+.candidate-dashboard .partner-support svg { width: 14px; height: 14px; }
+.candidate-dashboard .partner-relationship button,
+.candidate-dashboard .independent-note button {
+  padding: 8px 10px;
+  font-size: 9px;
+}
+
+.candidate-dashboard .journey-track { padding: 14px 16px; }
+.candidate-dashboard .journey-track b { font-size: 11px; line-height: 1.35; }
+.candidate-dashboard .journey-track small { font-size: 10px; line-height: 1.35; }
+
+.candidate-dashboard .candidate-alert { padding: 17px 20px; }
+.candidate-dashboard .candidate-alert h2 {
+  font-size: 17px;
+  line-height: 1.35;
+  margin: 3px 0;
+}
+.candidate-dashboard .candidate-alert button {
+  padding: 9px 12px;
+  font-size: 9px;
+}
+
+.candidate-dashboard .panel > header h3 { font-size: 14px; line-height: 1.35; }
+.candidate-dashboard .panel > header p { font-size: var(--dashboard-meta); line-height: 1.45; }
+.candidate-dashboard .text-link { font-size: 10px; }
+.candidate-dashboard .candidate-jobs h3 { font-size: 14px; line-height: 1.35; }
+.candidate-dashboard .candidate-jobs p {
+  font-size: var(--dashboard-meta);
+  line-height: 1.45;
+  margin: 4px 0 10px;
+}
+.candidate-dashboard .candidate-jobs > article > span { font-size: 10px; }
+.candidate-dashboard .candidate-jobs article > button { font-size: 10px; }
+.candidate-dashboard .candidate-checklist b,
+.candidate-dashboard .video-card b,
+.candidate-dashboard .partner-contact b { font-size: 11px; line-height: 1.35; }
+.candidate-dashboard .candidate-checklist small,
+.candidate-dashboard .video-card small,
+.candidate-dashboard .partner-contact small { font-size: 10px; line-height: 1.35; }
+.candidate-dashboard .partner-contact a,
+.candidate-dashboard .video-card button,
+.candidate-dashboard .support-list span { font-size: 10px; }
+.candidate-dashboard .privacy-mini p { font-size: 10px; line-height: 1.5; }
+
+@media (max-width: 600px) {
+  .candidate-dashboard .candidate-mode-card { padding: 17px; }
+  .candidate-dashboard .candidate-welcome { padding: 20px; }
+  .candidate-dashboard .candidate-welcome h1 { font-size: 16px; }
+  .candidate-dashboard .candidate-alert h2 { font-size: 16px; }
+}

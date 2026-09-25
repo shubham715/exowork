@@ -1,0 +1,10 @@
+import React,{useState}from'react';import{X,ChevronRight,Search,SlidersHorizontal,Download}from'lucide-react';
+export const Status=({children,tone})=><span className={'status '+(tone||String(children).toLowerCase().replaceAll(' ','-'))}><i/>{children}</span>;
+export const Stat=({icon:Icon,label,value,meta,tone='blue'})=><article className="stat-card"><span className={'stat-icon '+tone}><Icon/></span><div><label>{label}</label><strong>{value}</strong><small>{meta}</small></div></article>;
+export const PageHead=({kicker='OPERATIONS WORKSPACE',title,sub,children})=><div className="page-head"><div><span>{kicker}</span><h1>{title}</h1><p>{sub}</p></div><div className="page-actions">{children}</div></div>;
+export const Panel=({title,sub,action,children,className=''})=><section className={'panel '+className}><header><div><h3>{title}</h3>{sub&&<p>{sub}</p>}</div>{action}</header><div className="panel-body">{children}</div></section>;
+export function Modal({open,onClose,title,sub,children,footer}){if(!open)return null;return <div className="modal-back" onMouseDown={e=>e.target===e.currentTarget&&onClose()}><div className="modal"><header><div><h2>{title}</h2>{sub&&<p>{sub}</p>}</div><button onClick={onClose}><X/></button></header><div className="modal-body">{children}</div>{footer&&<footer>{footer}</footer>}</div></div>}
+export const Filters=({search,setSearch,children,onExport})=><div className="filterbar"><div className="search-box"><Search/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by name, ID, mobile or role…"/></div>{children}<button className="btn ghost"><SlidersHorizontal/>More filters</button>{onExport&&<button className="btn ghost" onClick={onExport}><Download/>Export</button>}</div>;
+export const Empty=({title,sub,action})=><div className="empty"><div>◎</div><h3>{title}</h3><p>{sub}</p>{action}</div>;
+export function Tabs({tabs,active,setActive}){return <div className="tabs">{tabs.map(x=><button key={x} className={active===x?'active':''} onClick={()=>setActive(x)}>{x}</button>)}</div>}
+export const Next=({children})=><button className="text-btn">{children}<ChevronRight/></button>;
