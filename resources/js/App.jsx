@@ -3,7 +3,7 @@ import{Routes,Route,Navigate}from'react-router-dom';
 import Landing from'./pages/public/Landing.jsx';
 import Login from'./pages/auth/Login.jsx';
 import AdminLogin from'./pages/auth/AdminLogin.jsx';
-import CandidateRegistration from'./pages/candidate/CandidateRegistration.jsx';
+import CandidateRegistration from'./pages/candidate/CandidateRegistrationV2.jsx';
 import CandidateProfile from'./pages/candidate/CandidateProfile.jsx';
 import ResumeBuilder from'./pages/candidate/ResumeBuilder.jsx';
 import AdminLayout from'./layouts/AdminLayout.jsx';

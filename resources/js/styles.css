@@ -81,3 +81,49 @@
 .admin-page{min-width:0;overflow:hidden}.dashboard-intro>div:first-child{min-width:0}.dashboard-intro h1,.dashboard-intro p{overflow-wrap:anywhere}.intro-actions{flex:0 0 auto}.intro-actions .btn{padding:7px 11px;border-radius:8px;font-size:10px;min-height:32px}.intro-actions .btn svg{width:13px;height:13px}.command-stats{grid-template-columns:repeat(5,minmax(0,1fr));width:100%}.command-stat{width:100%;max-width:100%;min-width:0;overflow:hidden;padding:12px;grid-template-columns:36px minmax(0,1fr) 12px;gap:8px}.command-stat>.stat-icon{width:36px;height:36px}.command-stat div{min-width:0}.command-stat label,.command-stat small{white-space:normal;overflow-wrap:anywhere;line-height:1.25}.command-stat strong{font-size:20px}.primary-grid{grid-template-columns:minmax(0,1.55fr) minmax(280px,.8fr)}.analytics-grid,.bottom-grid{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr) minmax(0,.9fr)}.panel,.panel-body{min-width:0}.batch-list{min-width:0;overflow:hidden}.batch-list>button{grid-template-columns:44px minmax(120px,1fr) 46px 50px minmax(82px,auto) 12px;gap:7px;overflow:hidden}.batch-main{min-width:0}.batch-main b,.batch-main small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.batch-list .status{min-width:0;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:8px;padding-left:6px;padding-right:6px}
 @media(max-width:1250px){.command-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.analytics-grid,.bottom-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.analytics-grid .panel:last-child,.bottom-grid .panel:last-child{grid-column:1/-1}.primary-grid{grid-template-columns:minmax(0,1fr)}.batch-list>button{grid-template-columns:44px minmax(120px,1fr) 46px 50px minmax(82px,auto) 12px}}
 @media(max-width:750px){.dashboard-intro{align-items:flex-start;gap:12px;flex-direction:column}.command-stats,.analytics-grid,.bottom-grid{grid-template-columns:minmax(0,1fr)}.analytics-grid .panel:last-child,.bottom-grid .panel:last-child{grid-column:auto}.ops-alert-strip{align-items:flex-start;gap:8px}.ops-alert-strip>div{align-items:flex-start;flex-wrap:wrap}.ops-alert-strip small{width:100%;margin-left:15px}.batch-list>button{grid-template-columns:42px minmax(0,1fr) 14px}.batch-count,.batch-ready,.batch-list .status{display:none}.intro-actions{width:100%;overflow:auto}.dashboard-intro h1,.page-head h1{font-size:21px}.batch-detail-grid{grid-template-columns:1fr}}
+
+/* Mobile authentication keeps the brand story visible while giving the form a clear, app-like surface. */
+@media(max-width:850px){
+  html:has(.login-page),body:has(.login-page),#root:has(.login-page){height:auto;min-height:100%;overflow:auto}
+  .login-page{display:block;height:auto;min-height:100svh;overflow:visible;background:#f3f7f6}
+  .login-page aside{display:flex;position:relative;min-height:238px;padding:24px 22px 58px;overflow:hidden;background:radial-gradient(circle at 82% 18%,#2c766a 0,transparent 34%),radial-gradient(circle at 3% 105%,#315f58 0,transparent 40%),linear-gradient(145deg,#102d2a,#17483f);isolation:isolate}
+  .login-page aside:before,.login-page aside:after{content:'';position:absolute;border:1px solid #cdf06f30;border-radius:50%;z-index:-1}
+  .login-page aside:before{width:210px;height:210px;right:-64px;top:-72px}
+  .login-page aside:after{width:125px;height:125px;right:-20px;top:-26px}
+  .login-page aside .public-brand{width:max-content;padding:7px 10px;border:1px solid #ffffff20;border-radius:12px;background:#ffffff0d;backdrop-filter:blur(8px)}
+  .login-page aside .exowork-logo{display:block;width:132px;height:auto}
+  .login-page aside>div{margin-top:auto}
+  .login-page aside h1{max-width:330px;margin:10px 0 0;font-size:27px;line-height:1.16;letter-spacing:-.7px}
+  .login-page aside p,.login-page aside>small{display:none}
+  .login-kicker{font-size:9px;letter-spacing:1.15px}
+  .login-kicker svg{width:14px;height:14px;flex-basis:14px}
+  .login-page main{display:block;position:relative;z-index:2;width:100%;min-height:calc(100svh - 210px);margin-top:-30px;padding:30px 22px 38px;border-radius:28px 28px 0 0;background:#fff;box-shadow:0 -14px 40px #071b1714}
+  .login-page form{width:min(500px,100%);margin:0 auto;font-size:14px}
+  .login-back{margin-bottom:22px;font-size:12px}
+  .login-page form h2{font-size:29px;line-height:1.18;letter-spacing:-.55px;margin:8px 0 7px}
+  .login-page form>p{font-size:14px;line-height:1.5;margin-bottom:20px}
+  .login-form .role-grid{gap:8px;margin-bottom:18px}
+  .role-grid button{min-height:58px;padding:9px 6px;border-radius:12px;font-size:13px;line-height:1.2;transition:border-color .18s,background .18s,transform .18s}
+  .role-grid button:active{transform:scale(.98)}
+  .role-grid button.active{box-shadow:inset 0 0 0 1px var(--blue),0 7px 18px #315be813}
+  .login-page form>label{font-size:12px;margin:12px 0}
+  .login-page input,.password{min-height:48px;margin-top:6px;border-radius:12px;font-size:14px}
+  .password{min-height:48px;padding:0}
+  .password input{min-height:46px;margin:0}
+  .password button{width:48px;flex:0 0 48px}
+  .login-help{align-items:center;margin:15px 0 18px;font-size:12px}
+  .login-help label{min-height:32px}
+  .login-help input{width:18px;height:18px;accent-color:var(--blue)}
+  .login-help button{padding:8px 0 8px 8px}
+  .login-page .btn.block{min-height:48px;border-radius:12px;font-size:14px;box-shadow:0 10px 24px #315be82b}
+  .demo-note{max-width:330px;margin:13px auto 0;font-size:10px;line-height:1.5}
+}
+
+@media(max-width:390px){
+  .login-page aside{min-height:220px;padding:20px 18px 52px}
+  .login-page aside h1{font-size:24px}
+  .login-page main{min-height:calc(100svh - 192px);padding:27px 18px 32px}
+  .login-page form h2{font-size:26px}
+  .role-grid button{min-height:54px;font-size:12px}
+  .login-help{font-size:11px}
+}

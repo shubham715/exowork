@@ -3,7 +3,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "concurrently --kill-others -n laravel,vite -c blue,green \"php artisan serve --host=127.0.0.1 --port=8000\" \"npm run dev:assets\"",
+        "dev:assets": "vite"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

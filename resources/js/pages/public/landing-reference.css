@@ -2502,3 +2502,74 @@
     transform: translateY(-5px) rotate(-45deg);
   }
 }
+
+/* Spacious desktop presentation without returning to the oversized prototype. */
+@media (min-width: 1200px) {
+  .ex-wrap {
+    max-width: 1360px;
+    padding-inline: 36px;
+  }
+
+  .ex-nav-inner {
+    min-height: 80px;
+  }
+
+  .ex-links,
+  .ex-links.open {
+    gap: 32px;
+  }
+
+  .ex-links > a {
+    font-size: 14px;
+  }
+
+  .ex-nav-actions .ex-btn.small {
+    padding: 11px 19px;
+    font-size: 14px;
+  }
+
+  .ex-hero {
+    min-height: 520px;
+    padding: 72px 0 76px !important;
+  }
+
+  .ex-hero-grid {
+    grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.18fr);
+    gap: 58px;
+  }
+
+  .ex-hero h1 {
+    font-size: clamp(2.85rem, 3.35vw, 3.25rem);
+    max-width: 14ch;
+  }
+
+  .ex-hero-sub {
+    max-width: 58ch;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .ex-actions {
+    margin-top: 42px;
+  }
+
+  .ex-actions .ex-btn {
+    min-height: 46px;
+    padding-inline: 22px;
+    font-size: 14px;
+  }
+
+  .ex-hero-image {
+    min-height: 450px;
+    margin-bottom: -76px;
+  }
+
+  .ex-hero-image img {
+    height: 430px;
+  }
+
+  .ex-discovery {
+    padding-top: 88px;
+    padding-bottom: 88px;
+  }
+}

@@ -17,4 +17,153 @@
 .training-status-select{margin-top:10px;border:1px solid #dbe0e9;border-radius:8px;background:#fff;padding:7px 28px 7px 9px;font-size:9px;color:var(--ink);outline:0}
 .training-toggle-icon{width:40px;height:40px;border-radius:10px;background:var(--bluep);color:var(--blue);display:grid;place-items:center}.training-toggle-icon svg{width:20px}
 .reg-fields:not(:has(.training-toggle input:checked)) .training-certificate{display:none}
+.candidate-register{background:var(--color-page)}
+.reg-top{height:var(--header-height);background:var(--color-surface);padding-inline:var(--space-6)}
+.candidate-register .form-label{display:block;color:#344054;font-size:14px;font-weight:500;line-height:1.45;letter-spacing:0}
+.candidate-register .form-label>span{display:block;margin-bottom:7px;color:inherit;font-size:14px;font-weight:500;line-height:1.45}
+.form-label em{color:var(--color-danger);font-style:normal;margin-left:2px}
+.reg-field input,.reg-field select,.reg-field textarea{min-height:46px;margin-top:0;padding:11px 13px;border-color:#d0d5dd;border-radius:8px;color:var(--color-heading);background:var(--color-surface);font-size:14px;font-weight:400;line-height:1.4;transition:border-color .18s,box-shadow .18s}
+.reg-field textarea{min-height:104px;resize:vertical}
+.reg-field input::placeholder,.reg-field textarea::placeholder{color:#98a2b3}
+.reg-field small,.file-box small{font-size:12px;line-height:1.45;margin-top:6px;color:#667085}
+.language-box.form-label>span{margin-bottom:12px}
+.language-box.form-label label{font-size:13px;font-weight:400;color:#475467}
+.file-box.form-label{min-height:74px;padding:14px 16px;color:#344054;font-size:14px;font-weight:500}
+.file-box.form-label>div{min-width:0}
+.file-box.form-label>div>span{display:block;margin:0;color:#344054;font:inherit}
+.file-box.form-label>b{color:var(--color-primary-600);font-size:13px;font-weight:600}
+.draft-status{display:flex;align-items:center;gap:10px}
+.draft-status>small{font-size:11px;color:var(--color-text-muted);white-space:nowrap}
+.reg-form-head{min-height:126px;display:flex;flex-direction:column;justify-content:center}
+.reg-form-head h2{font-size:var(--heading-md);line-height:var(--heading-line-height)}
+.reg-form-head p{font-size:var(--text-xs);line-height:1.5}
+.reg-field.has-error input,.reg-field.has-error select,.reg-field.has-error textarea{border-color:var(--color-danger);box-shadow:0 0 0 3px var(--color-danger-soft)}
+.reg-error{display:block;margin-top:6px;color:var(--color-danger)!important;font-size:12px!important;font-weight:500!important}
+.reg-submit-error{margin:0 var(--space-5) var(--space-4);padding:var(--space-3);border:1px solid #f2c6ca;border-radius:var(--radius-sm);background:var(--color-danger-soft);color:var(--color-danger);font-size:var(--text-xs);font-weight:600}
+.reg-footer .btn:disabled{cursor:wait;opacity:.65}
+@media(max-width:800px){
+  .candidate-register>main{min-width:0}
+  .reg-aside,.reg-form{min-width:0}
+  .reg-aside{overflow:hidden}
+  .reg-aside nav{max-width:100%}
+}
 @media(max-width:560px){.location-combobox>input{min-width:130px}.training-toggle{align-items:flex-start}.training-toggle .switch{margin-top:8px}}
+@media(max-width:600px){
+  .reg-top{padding-inline:var(--space-3);gap:var(--space-2)}
+  .reg-top>a{font-size:0;flex:0 0 36px}
+  .reg-top>a svg{width:18px;height:18px}
+  .reg-top .reg-brand{width:132px;margin:auto}
+  .reg-draft-top{font-size:0;width:38px;height:38px;padding:0}
+  .draft-status{gap:4px}
+  .draft-status>small{display:none}
+  .candidate-register>main{padding-inline:12px;margin-top:14px;min-width:0}
+  .reg-aside{padding:20px;min-width:0;overflow:hidden}
+  .reg-aside h1{font-size:20px}
+  .reg-aside nav{max-width:100%;padding-bottom:5px}
+  .reg-aside nav button{min-width:112px}
+  .reg-form{min-width:0}
+  .reg-footer{gap:8px;align-items:center}
+  .reg-footer>div{min-width:0}
+  .reg-footer .btn{padding:9px 10px;font-size:10px}
+}
+
+/* Candidate registration visual system — TailAdmin-inspired clarity and density. */
+.candidate-register .reg-top{height:72px;padding-inline:32px}
+.candidate-register .reg-top>a{gap:9px;color:#475467;font-size:13px;font-weight:500}
+.candidate-register .reg-top>a:hover{color:var(--color-primary-600)}
+.candidate-register .reg-top .reg-brand{width:170px}
+.candidate-register .reg-top .btn{min-height:40px;padding:9px 14px;border-color:#d0d5dd;font-size:13px;font-weight:600}
+.candidate-register>main{grid-template-columns:340px minmax(0,850px);gap:28px;max-width:1260px;margin-top:32px;padding-inline:24px}
+.candidate-register .reg-aside{top:104px;padding:32px;border-radius:20px;box-shadow:0 16px 38px rgba(15,35,75,.12)}
+.candidate-register .reg-kicker{display:block;color:#b7c7ea;font-size:10px;font-weight:600;line-height:1.4;letter-spacing:1.1px}
+.candidate-register .reg-aside h1{margin:9px 0 7px;font-size:23px;font-weight:700;line-height:1.3;letter-spacing:-.3px}
+.candidate-register .reg-aside>p{color:#c0cce2;font-size:12px;line-height:1.5}
+.candidate-register .reg-progress{margin:26px 0 20px}
+.candidate-register .reg-progress>div{align-items:center}
+.candidate-register .reg-progress b,.candidate-register .reg-progress span{font-size:12px;font-weight:600;line-height:1.4}
+.candidate-register .reg-progress>i{height:7px;margin-top:10px;background:rgba(255,255,255,.13)}
+.candidate-register .reg-aside nav{display:grid;gap:4px}
+.candidate-register .reg-aside nav button{min-height:62px;gap:13px;padding:9px 10px;border-radius:12px;color:#aab8d3;transition:background .18s,color .18s,transform .18s}
+.candidate-register .reg-aside nav button:hover{background:rgba(255,255,255,.06);color:#fff;transform:translateX(2px)}
+.candidate-register .reg-aside nav button.active{background:rgba(255,255,255,.08);color:#fff}
+.candidate-register .reg-aside nav button>span{width:40px;height:40px;flex:0 0 40px;border-radius:10px;background:rgba(255,255,255,.06)}
+.candidate-register .reg-aside nav button.active>span{background:var(--color-primary-600);box-shadow:0 8px 18px rgba(49,91,232,.3)}
+.candidate-register .reg-aside nav button svg{width:18px;height:18px}
+.candidate-register .reg-aside nav b{font-size:14px;font-weight:600;line-height:1.35}
+.candidate-register .reg-aside nav small{margin-top:2px;color:inherit;font-size:12px;font-weight:400;line-height:1.35;opacity:.78}
+.candidate-register .privacy-note{align-items:flex-start;gap:11px;margin-top:22px;padding:14px;border-radius:12px}
+.candidate-register .privacy-note svg{width:20px;height:20px;flex:0 0 20px}
+.candidate-register .privacy-note p{color:#bdc9df;font-size:12px;line-height:1.5}
+.candidate-register .reg-form{border-color:#e4e7ec;border-radius:20px;box-shadow:0 4px 14px rgba(16,24,40,.04)}
+.candidate-register .reg-form-head{min-height:132px;padding:28px 32px}
+.candidate-register .reg-form-head>span{font-size:11px;font-weight:700;line-height:1.4;letter-spacing:1.15px}
+.candidate-register .reg-form-head h2{margin:5px 0 4px;font-size:28px;font-weight:700;line-height:1.25;letter-spacing:-.35px}
+.candidate-register .reg-form-head p{max-width:650px;color:#667085;font-size:14px;line-height:1.55}
+.candidate-register .reg-fields,.candidate-register .consent-review{min-height:430px;padding:30px 32px;gap:20px 16px}
+.candidate-register .form-label{font-size:14px;font-weight:500;line-height:1.45}
+.candidate-register .reg-field input,.candidate-register .reg-field select,.candidate-register .reg-field textarea{border-color:#d0d5dd;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.candidate-register .reg-field input:hover,.candidate-register .reg-field select:hover,.candidate-register .reg-field textarea:hover{border-color:#98a2b3}
+.candidate-register .reg-field input:focus,.candidate-register .reg-field select:focus,.candidate-register .reg-field textarea:focus{border-color:var(--color-primary-600);box-shadow:0 0 0 4px rgba(49,91,232,.12)}
+.candidate-register .language-box{padding:16px;border:1px solid #e4e7ec;border-radius:10px;background:#f9fafb}
+.candidate-register .language-box label{display:inline-flex;align-items:center;gap:7px;margin-right:24px;font-size:13px}
+.candidate-register .language-box input,.candidate-register .consent-channels input,.candidate-register .legal-check input{width:17px;height:17px;accent-color:var(--color-primary-600)}
+.candidate-register .location-permission,.candidate-register .aadhaar-control{gap:14px;padding:16px;border-color:#e4e7ec;border-radius:12px;background:#f9fafb}
+.candidate-register .location-permission>svg{width:22px;height:22px;color:var(--color-primary-600)}
+.candidate-register .location-permission b,.candidate-register .aadhaar-control b{font-size:14px;font-weight:600;line-height:1.4}
+.candidate-register .location-permission p,.candidate-register .aadhaar-control p{margin-top:3px;font-size:12px;line-height:1.45}
+.candidate-register .file-box{border-color:#d0d5dd;border-radius:10px;background:#fff;transition:border-color .18s,background .18s}
+.candidate-register .file-box:hover{border-color:var(--color-primary-600);background:#f8faff}
+.candidate-register .file-box>svg{width:23px;height:23px}
+.candidate-register .review-summary{padding:20px;border-color:#e4e7ec;border-radius:12px;background:#fcfcfd}
+.candidate-register .review-summary h3,.candidate-register .consent-review>h3{font-size:18px;font-weight:600;line-height:1.4}
+.candidate-register .consent-review>p{margin:4px 0 14px;color:#667085;font-size:13px;line-height:1.5}
+.candidate-register .review-summary>div{gap:10px;margin-top:12px}
+.candidate-register .review-summary span{padding:10px;color:#667085;font-size:12px;line-height:1.45}
+.candidate-register .review-summary b{margin-top:4px;font-size:14px;font-weight:600;line-height:1.4}
+.candidate-register .consent-channels{gap:10px;margin-bottom:18px}
+.candidate-register .consent-channels>label{gap:11px;min-height:68px;padding:12px 14px;border-color:#e4e7ec;border-radius:10px}
+.candidate-register .consent-channels>label>span{width:36px;height:36px;border-radius:9px}
+.candidate-register .consent-channels>label>span svg{width:18px;height:18px}
+.candidate-register .consent-channels b{font-size:13px;font-weight:600;line-height:1.4}
+.candidate-register .consent-channels small{margin-top:2px;color:#667085;font-size:11px;line-height:1.4}
+.candidate-register .legal-check{gap:10px;padding:15px 2px;color:#475467;font-size:13px;line-height:1.55}
+.candidate-register .legal-check input{flex:0 0 17px;margin-top:2px}
+.candidate-register .consent-proof{align-items:flex-start;gap:10px;margin-top:4px;padding:14px;border-radius:10px}
+.candidate-register .consent-proof svg{width:20px;height:20px;flex:0 0 20px}
+.candidate-register .consent-proof p{font-size:12px;line-height:1.5}
+.candidate-register .reg-footer{min-height:76px;padding:16px 26px;background:#fff}
+.candidate-register .reg-footer .btn{min-height:44px;padding:10px 16px;border-radius:9px;font-size:14px;font-weight:600}
+.candidate-register .reg-footer .btn.primary{box-shadow:0 5px 12px rgba(49,91,232,.2)}
+.candidate-register .reg-success>div{padding:44px;border:1px solid #e4e7ec;box-shadow:0 18px 55px rgba(10,25,55,.22)}
+.candidate-register .reg-success h1{font-size:28px;line-height:1.3}
+.candidate-register .reg-success p{font-size:14px;line-height:1.55}
+
+@media(max-width:1050px){
+  .candidate-register>main{grid-template-columns:290px minmax(0,1fr);gap:20px}
+  .candidate-register .reg-aside{padding:24px}
+  .candidate-register .reg-aside h1{font-size:22px}
+}
+@media(max-width:800px){
+  .candidate-register>main{grid-template-columns:minmax(0,1fr);margin-top:18px;padding-inline:16px}
+  .candidate-register .reg-aside{padding:24px}
+  .candidate-register .reg-aside nav{display:flex;gap:8px;overflow:auto;padding-bottom:8px}
+  .candidate-register .reg-aside nav button{min-width:150px;min-height:60px;padding:8px}
+  .candidate-register .privacy-note{margin-top:12px}
+}
+@media(max-width:600px){
+  .candidate-register .reg-top{height:64px;padding-inline:14px}
+  .candidate-register .reg-top .reg-brand{width:132px}
+  .candidate-register .reg-aside{padding:20px;border-radius:16px}
+  .candidate-register .reg-kicker{font-size:10px}
+  .candidate-register .reg-aside h1{font-size:20px}
+  .candidate-register .reg-aside>p{font-size:12px}
+  .candidate-register .reg-aside nav button{min-width:142px}
+  .candidate-register .reg-form{border-radius:16px}
+  .candidate-register .reg-form-head{min-height:auto;padding:22px 20px}
+  .candidate-register .reg-form-head h2{font-size:24px}
+  .candidate-register .reg-form-head p{font-size:13px}
+  .candidate-register .reg-fields,.candidate-register .consent-review{min-height:0;padding:22px 20px;gap:18px}
+  .candidate-register .review-summary>div,.candidate-register .consent-channels{grid-template-columns:1fr}
+  .candidate-register .reg-footer{padding:12px 14px}
+  .candidate-register .reg-footer .btn{min-height:42px;padding:9px 11px;font-size:12px}
+}

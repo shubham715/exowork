@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Eye, EyeOff, LockKeyhole } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { validateLogin } from "../validation.js";
+import axios from "axios";
 
 const INITIAL_VALUES = { identifier: "", password: "", remember: true };
 
@@ -24,7 +25,7 @@ export default function LoginForm({ roles, admin = false }) {
     setErrors((current) => ({ ...current, [field]: undefined }));
   };
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault();
     const nextErrors = validateLogin(values);
 
@@ -35,8 +36,16 @@ export default function LoginForm({ roles, admin = false }) {
 
     setSubmitting(true);
 
-    // Static milestone: this boundary will call Laravel Sanctum in the auth phase.
-    window.setTimeout(() => navigate(role.destination), 350);
+    try {
+      const response = await axios.post('/auth/login', { ...values, role: role.id }, {
+        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
+      });
+      navigate(response.data.destination);
+    } catch (error) {
+      setErrors({ identifier: error.response?.data?.message || 'Sign in failed. Please try again.' });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -136,7 +145,7 @@ export default function LoginForm({ roles, admin = false }) {
         {!submitting && <ArrowRight />}
       </button>
       <small className="demo-note">
-        Authentication UI is ready. Secure Laravel login will be connected in the backend milestone.
+        New to EXOWORK? Your organization can help activate your account.
       </small>
     </form>
   );

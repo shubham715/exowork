@@ -52,12 +52,14 @@ app/
 ```bash
 composer install
 npm install
-php artisan serve
 npm run dev
 ```
 
-The default Laravel URL is `http://127.0.0.1:8000`. Vite supplies frontend
-assets during development.
+`npm run dev` starts Laravel and Vite together. Open the application at
+`http://127.0.0.1:8000`; do not open Vite's asset-server port directly.
+
+To run the processes separately, use `php artisan serve` in one terminal and
+`npm run dev:assets` in another terminal, then still open the Laravel URL.
 
 ## Production build
 
