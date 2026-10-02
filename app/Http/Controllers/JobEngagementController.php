@@ -33,10 +33,17 @@ class JobEngagementController extends Controller
     public function candidates(Request $request, int $id, JobEligibility $eligibility) {
         $job = $this->owned($request, $id);
         abort_unless(app(EmployerWorkspaceController::class)->employer($request)->status === 'verified', 403, 'Company verification is required to view eligible candidates.');
+        $filters = $request->validate(['search' => ['nullable', 'string', 'max:150'], 'sort' => ['nullable', Rule::in(['newest', 'salary', 'name'])], 'page' => ['nullable', 'integer', 'min:1']]);
         $matches = Candidate::whereNull('deleted_at')->where('profile_status', 'active')
             ->whereNotNull('terms_accepted_at')->whereNotNull('privacy_accepted_at')
             ->whereNotIn('id', DB::table('job_candidate_skips')->where('job_post_id', $id)->select('candidate_id'))
             ->orderByDesc('id')->get()->filter(fn ($candidate) => $eligibility->matches($job, $candidate))->values();
+        if (!empty($filters['search'])) {
+            $needle = mb_strtolower(trim($filters['search']));
+            $matches = $matches->filter(fn ($c) => str_contains(mb_strtolower($c->first_name.' '.$c->last_name.' '.$c->skills), $needle))->values();
+        }
+        if (($filters['sort'] ?? '') === 'salary') $matches = $matches->sortBy('expected_monthly_salary')->values();
+        if (($filters['sort'] ?? '') === 'name') $matches = $matches->sortBy(fn ($c) => mb_strtolower($c->first_name.' '.$c->last_name))->values();
         $page = max(1, (int) $request->input('page', 1));
         return response()->json(['job' => $job, 'total' => $matches->count(), 'page' => $page, 'per_page' => 20,
             'candidates' => $matches->slice(($page - 1) * 20, 20)->map(fn ($c) => $c->only(['id', 'candidate_code', 'first_name', 'last_name', 'qualification', 'district', 'state', 'skills', 'experience_type', 'experience_details', 'expected_monthly_salary', 'availability', 'whatsapp_consent']))->values()]);

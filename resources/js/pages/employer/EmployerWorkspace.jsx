@@ -16,7 +16,7 @@ import {
     csrf,
 } from "./EmployerRegistration.jsx";
 import "./employer.css";
-import JobStats from './JobStats.jsx';
+import PostedJobs from './PostedJobs.jsx';
 import { HiringOverview, HiringTable } from "./HiringWorkbench.jsx";
 
 const jobEmpty = {
@@ -193,7 +193,7 @@ export default function EmployerWorkspace({ page = "dashboard" }) {
                               history: "Hiring history",
                           }[page] || "Employer workspace"
                 }
-                sub={`${data.employer.name} · ${data.employer.code}`}
+                sub={page === "jobs" ? "Manage your vacancies, review hiring progress and invite eligible candidates." : `${data.employer.name} · ${data.employer.code}`}
             >
                 <details className="employer-post-menu"><summary className="btn primary"><Plus />Post a job <span aria-hidden="true">⌄</span></summary><div><Link to="/employer/jobs/new"><b>Start a new requirement</b><span>Enter your role and hiring needs</span></Link><Link to="/employer/jobs/new" state={{openTemplates:true}}><b>Use a role template</b><span>Start with role details or reuse a saved job</span></Link></div></details>
             </PageHead>
@@ -205,7 +205,7 @@ export default function EmployerWorkspace({ page = "dashboard" }) {
             <Verification employer={data.employer} />
             {page === "dashboard" && <div className="employer-hiring-strip"><Link to="/employer/jobs">{data.summary.active_jobs} active jobs</Link><Link to="/employer/jobs?status=draft">{data.summary.draft_jobs} drafts</Link><Link to="/employer/talent">{data.summary.candidates} released candidates</Link><Link to="/employer/interviews">{data.summary.interviews} scheduled interviews</Link><Link to="/employer/joining">{data.summary.joined} joined</Link></div>}
             {["dashboard", "jobs"].includes(page) ? (
-                <JobList {...state} />
+                <PostedJobs {...state} />
             ) : (
                 <HiringTable key={page} page={page} data={data} />
             )}
@@ -237,93 +237,6 @@ function Verification({ employer }) {
             </div>
             <Status tone={employer.status}>{employer.status}</Status>
         </div>
-    );
-}
-function JobList({ data, setData, setError }) {
-    const location = useLocation();
-    const navigate = useNavigate();
-    const [stats, setStats] = useState(null), [current, setCurrent] = useState(1), [sort, setSort] = useState("newest"), [department, setDepartment] = useState(""), [workplace, setWorkplace] = useState(""), [jobType, setJobType] = useState(""), [city, setCity] = useState(""), [postedAfter, setPostedAfter] = useState(""), [minSalary, setMinSalary] = useState(""),
-        [busy, setBusy] = useState(false),
-        [query, setQuery] = useState(""),
-        [filter, setFilter] = useState(new URLSearchParams(location.search).get("status") || "all");
-    useEffect(() => setFilter(new URLSearchParams(location.search).get("status") || "all"), [location.search]);
-    const rows = data.jobs.filter(
-        (j) =>
-            (filter === "all" || j.status === filter || (filter === "active" && j.status === "published")) &&
-            (!department || j.department === department) && (!workplace || j.workplace_type === workplace) && (!jobType || j.job_type === jobType) && (!city || j.district === city) && (!postedAfter || (j.created_at || "").slice(0,10) >= postedAfter) && (!minSalary || Number(j.salary_max) >= Number(minSalary)) &&
-            `${j.title} ${j.district || ""} ${j.department || ""}`.toLowerCase().includes(query.toLowerCase()),
-    );
-    rows.sort((a,b) => sort === 'oldest' ? a.id-b.id : sort === 'title' ? a.title.localeCompare(b.title) : sort === 'applications' ? (b.applications_count||0)-(a.applications_count||0) : sort === 'deadline' ? (a.application_deadline || '9999').localeCompare(b.application_deadline || '9999') : b.id-a.id);
-    const pages = Math.max(1, Math.ceil(rows.length/20)), activePage = Math.min(current,pages), visible = rows.slice((activePage-1)*20, activePage*20);
-    useEffect(() => setCurrent(1), [query, filter, department, workplace, jobType, city, postedAfter, minSalary, sort]);
-    const clear = () => { setQuery(''); setFilter('all'); setDepartment(''); setWorkplace(''); setJobType(''); setCity(''); setPostedAfter(''); setMinSalary(''); };
-    const advanced = (label, value, setter, key) => <label>{label}<select value={value} onChange={e=>setter(e.target.value)}><option value="">All</option>{[...new Set(data.jobs.map(j=>j[key]).filter(Boolean))].sort().map(v=><option key={v} value={v}>{v}</option>)}</select></label>;
-    const changeStatus = async (j, status) => {
-        setBusy(true);
-        setError("");
-        try {
-            setData(
-                (
-                    await axios.put(
-                        `/employer-api/jobs/${j.id}`,
-                        { ...j, status },
-                        { headers: csrf() },
-                    )
-                ).data,
-            );
-        } catch (e) {
-            setError(fail(e));
-        } finally {
-            setBusy(false);
-        }
-    };
-    return (
-        <Panel
-            title={`Posted jobs (${data.jobs.length})`}
-            sub="Saved and published hiring demand"
-            className="employer-jobs-panel"
-        >
-            <div className="employer-jobs-layout"><aside className="employer-job-filters"><h3><SlidersHorizontal size={17}/> Filters</h3><label>Search jobs<input placeholder="Title, location or department" value={query} onChange={e=>setQuery(e.target.value)}/></label><label>Job status<select value={filter} onChange={e=>setFilter(e.target.value)}>{['all','active','paused','draft','filled','closed'].map(x=><option key={x} value={x}>{x==='all'?'All statuses':x.charAt(0).toUpperCase()+x.slice(1)}</option>)}</select></label><details open><summary>Advanced filters</summary>{advanced('Department',department,setDepartment,'department')}{advanced('Workplace',workplace,setWorkplace,'workplace_type')}{advanced('Job type',jobType,setJobType,'job_type')}{advanced('City / district',city,setCity,'district')}<label>Posted from<input type="date" value={postedAfter} onChange={e=>setPostedAfter(e.target.value)}/></label><label>Minimum offered salary (₹)<input type="number" min="0" value={minSalary} onChange={e=>setMinSalary(e.target.value)}/></label></details><button className="btn ghost" onClick={clear}>Clear filters</button></aside><main className="employer-job-results"><div className="employer-job-toolbar"><span>{rows.length} jobs · 20 per page</span><label>Sort by <select value={sort} onChange={e=>setSort(e.target.value)}><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="title">Job title A–Z</option><option value="applications">Most applications</option><option value="deadline">Deadline soonest</option></select></label></div>
-            {!rows.length ? (
-                <div className="employer-empty">
-                    <BriefcaseBusiness />
-                    <h3>
-                        No job requirements{" "}
-                        {data.jobs.length ? "match your filters" : "yet"}
-                    </h3>
-                    <p>
-                        Create a requirement and save it as a draft to get
-                        started.
-                    </p>
-                    {data.jobs.length ? <button className="btn ghost" onClick={clear}>Clear filters</button> : <Link className="btn primary" to="/employer/jobs/new">Post your first job</Link>}
-                </div>
-            ) : (
-                <div className="employer-job-list">
-                    {visible.map(j => {
-                        const interviews=data.interviews.filter(r=>r.job_post_id===j.id), outcomes=data.placements.filter(r=>r.job_post_id===j.id);
-                        const active = ['active','published'].includes(j.status);
-                        const remaining = j.days_remaining;
-                        const deadline = j.application_deadline ? new Date(j.application_deadline+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : null;
-                        return <article className={`employer-demand-card job-state-${j.status}`} key={j.id}>
-                            <header>
-                                <span className="employer-demand-icon"><BriefcaseBusiness size={21}/></span>
-                                <div className="employer-demand-heading"><div className="employer-demand-title"><button onClick={()=>navigate("/employer/jobs/new",{state:{job:j}})}>{j.title}</button><Status tone={j.status}>{j.status}</Status></div><p><span><MapPin size={13}/>{[j.district,j.state].filter(Boolean).join(', ') || 'Add location'}</span><span><Clock3 size={13}/>{j.job_type || 'Job type pending'}</span><span><UsersRound size={13}/>{j.openings} {Number(j.openings)===1?'opening':'openings'}</span></p></div>
-                                <button className="btn ghost" disabled={busy} onClick={()=>navigate("/employer/jobs/new",{state:{job:j}})}><Pencil size={14}/>{j.status==='draft'?'Continue draft':'View / edit'}</button>
-                            </header>
-                            <div className="employer-job-insights">
-                                <div className="job-insight views" title="Candidate card impressions"><span className="job-insight-icon"><Eye size={18}/></span><div><b>{j.views_count ?? '—'}</b><span>Impressions</span><small>{j.views_count==null?'Not tracked yet':`${j.clicks_count ?? 0} clicks`}</small></div></div>
-                                <div className="job-insight applications"><span className="job-insight-icon"><Send size={18}/></span><div><b>{j.applications_count ?? 0}</b><span>Applications</span><small>Total candidate applications</small></div></div>
-                                <div className={'job-insight deadline'+(active&&remaining!==null&&remaining<=3?' urgent':'')}><span className="job-insight-icon"><CalendarDays size={18}/></span><div><b>{active ? remaining==null?'—':remaining===0?'Ended':`${remaining} ${remaining===1?'day':'days'}` : j.status==='draft'?'Draft':j.status==='paused'?'Paused':'Ended'}</b><span>{active?'Application window':'Job status'}</span><small>{deadline?`Deadline: ${deadline}`:'No deadline set'}</small></div></div>
-                            </div>
-                            <div className="employer-job-pipeline"><Link to={`/employer/talent?job=${j.id}`}><UsersRound size={14}/><b>{new Set(interviews.map(r=>r.candidate_id)).size}</b> released</Link><Link to={`/employer/interviews?job=${j.id}`}><CalendarDays size={14}/><b>{interviews.filter(r=>['scheduled','confirmed'].includes(r.status)).length}</b> interviews</Link><Link to={`/employer/joining?job=${j.id}`}><CircleCheck size={14}/><b>{outcomes.filter(r=>['selected','joining_pending'].includes(r.status)).length}</b> selected</Link><Link to={`/employer/joining?job=${j.id}`}><Check size={14}/><b>{outcomes.filter(r=>r.joined_on).length}/{j.openings}</b> joined</Link></div>
-                            <footer><span className="employer-job-note">{j.status==='draft'?'Finish your draft to start receiving applications':active?(remaining===0?'Application deadline has passed':'Live · Accepting applications'):'Hiring requirement '+j.status}</span><div><button className="btn ghost" onClick={()=>setStats(j)}><Eye size={14}/>View stats</button><Link className="btn ghost" to={`/employer/jobs/${j.id}/candidates`}><UsersRound size={14}/>View eligible candidates</Link><Link className="btn ghost" to="/employer/jobs/new" state={{template:j}}><Copy size={14}/>Duplicate job</Link>{j.status==='paused'&&<button className="btn ghost" disabled={busy || data.employer.status!=='verified'} onClick={()=>changeStatus(j,'active')}>Resume job</button>}{active&&<><button className="btn ghost" disabled={busy} onClick={()=>changeStatus(j,'paused')}>Pause job</button><button className="btn ghost" disabled={busy} onClick={()=>changeStatus(j,'filled')}><CircleCheck size={14}/>Mark filled</button><button className="btn ghost" disabled={busy} onClick={()=>changeStatus(j,'closed')}><X size={14}/>Close job</button></>}</div></footer>
-                        </article>;
-                    })}
-                </div>
-            )}
-            <div className="employer-pagination"><span>Page {activePage} of {pages}</span><button className="btn ghost" disabled={activePage===1} onClick={()=>setCurrent(activePage-1)}>Previous</button><button className="btn ghost" disabled={activePage===pages} onClick={()=>setCurrent(activePage+1)}>Next</button></div></main></div>
-            {stats && <JobStats job={stats} onClose={()=>setStats(null)}/>}
-        </Panel>
     );
 }
 function CompanyProfile({ data, setData, error, setError, page }) {
