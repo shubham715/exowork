@@ -24,6 +24,12 @@ Route::post('/auth/login', [AuthSessionController::class, 'store'])->middleware(
 Route::post('/auth/register/training-center', [TrainingCenterRegistrationController::class, 'store'])->middleware('throttle:5,1');
 Route::post('/auth/logout', [AuthSessionController::class, 'destroy']);
 Route::middleware('auth:web')->group(function () {
+    Route::get('/admin-api/candidates', [\App\Http\Controllers\WhatsAppController::class, 'index']);
+    Route::get('/admin-api/candidates/{code}', [\App\Http\Controllers\WhatsAppController::class, 'show']);
+    foreach (['admin-api', 'employer-api'] as $prefix) {
+        Route::get("/$prefix/candidates/{code}/whatsapp", [\App\Http\Controllers\WhatsAppController::class, 'context'])->middleware('throttle:30,1');
+        Route::post("/$prefix/candidates/{code}/whatsapp", [\App\Http\Controllers\WhatsAppController::class, 'send'])->middleware('throttle:10,1');
+    }
     Route::get('/admin-api/review-notifications', [\App\Http\Controllers\AdminReviewQueueController::class, 'index']);
     Route::post('/admin-api/review-notifications/read', [\App\Http\Controllers\AdminReviewQueueController::class, 'read']);
     Route::get('/employer-api/identity', [\App\Http\Controllers\EmployerWorkspaceController::class, 'identity']);
@@ -86,4 +92,3 @@ Route::middleware('auth:candidate')->group(function () {
 */
 Route::view('/{path?}', 'app')
     ->where('path', '^(?!api(?:/|$)|webhooks(?:/|$)).*');
-

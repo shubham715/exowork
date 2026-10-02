@@ -5,6 +5,9 @@ use App\Http\Controllers\Api\CandidateDraftController;
 use App\Http\Controllers\Api\MasterDataController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'verify']);
+Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'receive']);
+
 Route::get('/health', function () {
     return response()->json([
         'status' => 'ok',
