@@ -14,6 +14,7 @@ import "./brand-logo.css";
 import "./workspace-headers.css";
 import "./modal-forms.css";
 import "./data-tables.css";
+import "./scrollbars.css";
 
 createRoot(document.getElementById("root")).render(
   <BrowserRouter

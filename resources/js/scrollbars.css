@@ -1,0 +1,77 @@
+/* Shared native scrollbars: no scroll listeners, wrappers, or animation loop. */
+:root {
+  --scrollbar-thumb: #b6c0cf;
+  --scrollbar-thumb-hover: #8b9bb2;
+  --scrollbar-thumb-active: #657892;
+}
+
+/* Include nested scroll areas such as tables, dialogs, and textareas. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+.sidebar {
+  --scrollbar-thumb: #52627e;
+  --scrollbar-thumb-hover: #7184a2;
+  --scrollbar-thumb-active: #93a5bf;
+}
+
+/* Chromium and Safari support a rounded thumb with space around it.
+   Reset standard properties here so they do not override these styles. */
+@supports selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    min-height: 32px;
+    min-width: 32px;
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-color: var(--scrollbar-thumb);
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
+
+  *::-webkit-scrollbar-thumb:active {
+    background-color: var(--scrollbar-thumb-active);
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-button {
+    display: none;
+  }
+}
+
+/* Let the OS provide high-contrast scrollbars when requested. */
+@media (forced-colors: active) {
+  * {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+
+  *::-webkit-scrollbar,
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-thumb,
+  *::-webkit-scrollbar-corner,
+  *::-webkit-scrollbar-button {
+    all: revert;
+  }
+}
