@@ -171,6 +171,24 @@ class WhatsAppIntegrationTest extends TestCase
         $this->actingAs($this->user('training_partner'))->getJson('/admin-api/candidates')->assertForbidden();
     }
 
+
+    public function test_verified_employer_can_invite_eligible_candidates_for_own_live_job(): void
+    {
+        $employer = $this->user('employer');
+        $id = DB::table('employers')->insertGetId(['name'=>'Acme','code'=>'INVITE','status'=>'verified']);
+        DB::table('organization_memberships')->insert(['user_id'=>$employer->id,'employer_id'=>$id,'status'=>'active']);
+        $job = DB::table('job_posts')->insertGetId(['employer_id'=>$id,'title'=>'Operator','openings'=>1,'status'=>'active','education'=>'ITI','experience'=>'Fresher','skills'=>'Machines','district'=>'Jaipur','workplace_type'=>'On-site','salary_max'=>20000]);
+        $this->candidate->forceFill(['terms_accepted_at'=>now(),'privacy_accepted_at'=>now()])->save();
+        $url = $this->url('employer')."?job=$job";
+        $this->actingAs($employer)->getJson($url)->assertOk();
+        $this->postJson($url,$this->payload())->assertOk();
+        $this->assertDatabaseHas('whatsapp_messages',['employer_id'=>$id,'candidate_id'=>$this->candidate->id,'status'=>'accepted']);
+        DB::table('job_candidate_skips')->insert(['job_post_id'=>$job,'candidate_id'=>$this->candidate->id,'created_at'=>now()]);
+        $this->getJson($url)->assertNotFound();
+        DB::table('job_posts')->where('id',$job)->update(['status'=>'paused']);
+        $this->postJson($url,$this->payload())->assertNotFound();
+    }
+
     private function webhook(array $value, string $waba = '456')
     {
         $body = json_encode(['object' => 'whatsapp_business_account', 'entry' => [['id' => $waba, 'changes' => [['field' => 'messages', 'value' => ['metadata' => ['phone_number_id' => '123'], ...$value]]]]]]);

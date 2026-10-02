@@ -41,6 +41,9 @@ Route::middleware('auth:web')->group(function () {
     Route::get('/employer-api/document', [\App\Http\Controllers\EmployerWorkspaceController::class, 'document']);
     Route::post('/employer-api/jobs', [\App\Http\Controllers\EmployerWorkspaceController::class, 'saveJob']);
     Route::put('/employer-api/jobs/{id}', [\App\Http\Controllers\EmployerWorkspaceController::class, 'saveJob']);
+    Route::get('/employer-api/jobs/{id}/stats', [\App\Http\Controllers\JobEngagementController::class, 'stats'])->whereNumber('id');
+    Route::get('/employer-api/jobs/{id}/candidates', [\App\Http\Controllers\JobEngagementController::class, 'candidates'])->whereNumber('id');
+    Route::post('/employer-api/jobs/{id}/candidates/{candidate}/skip', [\App\Http\Controllers\JobEngagementController::class, 'skip'])->whereNumber(['id', 'candidate']);
     Route::get('/admin-api/employers', [\App\Http\Controllers\EmployerWorkspaceController::class, 'adminIndex']);
     Route::get('/admin-api/employers/stats', [\App\Http\Controllers\AdminEmployerAnalyticsController::class, 'stats']);
     Route::get('/admin-api/employers/export', [\App\Http\Controllers\AdminEmployerAnalyticsController::class, 'export']);
@@ -79,6 +82,8 @@ Route::middleware('auth:web')->group(function () {
     Route::patch('/admin-api/training-centers/{id}/review', [AdminTrainingCenterController::class, 'review']);
 });
 Route::middleware('auth:candidate')->group(function () {
+    Route::get('/candidate-api/opportunities', [\App\Http\Controllers\JobEngagementController::class, 'opportunities']);
+    Route::post('/candidate-api/jobs/{id}/events', [\App\Http\Controllers\JobEngagementController::class, 'record'])->whereNumber('id')->middleware('throttle:120,1');
     Route::get('/candidate-api/profile', [CandidateSessionController::class, 'show']);
     Route::get('/candidate-api/profile/details', [CandidateProfileController::class, 'show']);
     Route::patch('/candidate-api/profile', [CandidateProfileController::class, 'update']);

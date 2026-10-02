@@ -5,10 +5,10 @@ import { Modal, Status } from './UI.jsx';
 import './whatsapp-message.css';
 
 const failure = e => Object.values(e.response?.data?.errors || {}).flat().join(' ') || e.response?.data?.message || 'Request failed. Check your connection and try again.';
-export default function WhatsAppMessage({ code, audience = 'admin', onConsentChange, disabled = false }) {
+export default function WhatsAppMessage({ code, audience = 'admin', onConsentChange, disabled = false, jobId, label = 'Send WhatsApp' }) {
     const [open, setOpen] = useState(false), [context, setContext] = useState(null), [loading, setLoading] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState(''), [choice, setChoice] = useState(''), [values, setValues] = useState([]), [submitted, setSubmitted] = useState(false);
     const requestId = useRef(null), requestVersion = useRef(0), submitting = useRef(false), ambiguous = useRef(false);
-    const endpoint = `/${audience}-api/candidates/${encodeURIComponent(code)}/whatsapp`;
+    const endpoint = `/${audience}-api/candidates/${encodeURIComponent(code)}/whatsapp${jobId ? `?job=${jobId}` : ''}`;
     const template = context?.templates.find(t => `${t.name}:${t.language}` === choice);
     const load = async () => {
         const version = ++requestVersion.current;
@@ -48,7 +48,7 @@ export default function WhatsAppMessage({ code, audience = 'admin', onConsentCha
     };
     const preview = template?.body.replace(/\{\{(\d+)\}\}/g, (match, n) => values[Number(n) - 1] || match);
     return <>
-        <button type="button" className="btn whatsapp-button" onClick={start} disabled={disabled} title={disabled ? 'Activate the candidate profile before sending' : 'Send an approved WhatsApp template'}><MessageCircle size={16} />Send WhatsApp</button>
+        <button type="button" className="btn whatsapp-button" onClick={start} disabled={disabled} title={disabled ? 'Candidate WhatsApp consent is required' : 'Send an approved WhatsApp template'}><MessageCircle size={16} />{label}</button>
         <Modal open={open} onClose={close} title="Send WhatsApp message" sub="Send an approved template from EXOWORK’s business number." className="whatsapp-dialog">
             {loading && <p role="status">Loading WhatsApp configuration and templates…</p>}
             {error && <p className="whatsapp-error" role="alert">{error}</p>}

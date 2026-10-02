@@ -30,6 +30,13 @@ class WhatsAppController extends Controller
         }
         $candidate = Candidate::whereNull('deleted_at')->where('candidate_code', $code)->firstOrFail();
         if ($employer) {
+            if ($request->filled('job')) {
+                $job = DB::table('job_posts')->where('employer_id', $employer->id)->whereNull('deleted_at')->find((int) $request->input('job'));
+                abort_unless($job && in_array($job->status, ['active', 'published']) && (!$job->application_deadline || $job->application_deadline >= now('Asia/Kolkata')->toDateString()), 404);
+                abort_unless($candidate->profile_status === 'active' && $candidate->terms_accepted_at && $candidate->privacy_accepted_at && app(\App\Services\JobEligibility::class)->matches($job, $candidate), 404);
+                abort_if(DB::table('job_candidate_skips')->where('job_post_id', $job->id)->where('candidate_id', $candidate->id)->exists(), 404);
+                return [$candidate, $employer];
+            }
             abort_unless(DB::table('applications as a')->join('job_posts as j', 'j.id', '=', 'a.job_post_id')->where('a.candidate_id', $candidate->id)->where('j.employer_id', $employer->id)->whereNull('j.deleted_at')->whereExists(fn ($q) => $q->selectRaw('1')->from('interviews as i')->whereColumn('i.application_id', 'a.id'))->exists(), 404);
         }
 

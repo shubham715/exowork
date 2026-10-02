@@ -74,8 +74,12 @@ class EmployerWorkspaceController extends Controller
             ->select('job_posts.*')
             ->selectSub(DB::table('applications')->selectRaw('COUNT(*)')->whereColumn('applications.job_post_id','job_posts.id'), 'applications_count')
             ->orderByDesc('id')->get();
+        $engagement = DB::table('job_engagement_events')->whereIn('job_post_id', $jobs->pluck('id'))
+            ->selectRaw("job_post_id, SUM(CASE WHEN type = 'impression' THEN 1 ELSE 0 END) as impressions, SUM(CASE WHEN type = 'click' THEN 1 ELSE 0 END) as clicks")
+            ->groupBy('job_post_id')->get()->keyBy('job_post_id');
         foreach ($jobs as $job) {
-            $job->views_count = null; // Candidate opportunity views are not collected yet.
+            $job->views_count = (int) ($engagement->get($job->id)->impressions ?? 0);
+            $job->clicks_count = (int) ($engagement->get($job->id)->clicks ?? 0);
             $job->days_remaining = $job->application_deadline
                 ? max(0, (int) now()->startOfDay()->diffInDays(\Illuminate\Support\Carbon::parse($job->application_deadline)->startOfDay(), false))
                 : null;
@@ -111,7 +115,7 @@ class EmployerWorkspaceController extends Controller
         $old=$id?DB::table('job_posts')->where('employer_id',$e->id)->whereNull('deleted_at')->find($id):null; if($id)abort_unless($old,404);
         $publish=$request->input('status')==='active'; $required=$publish?'required':'nullable';
         $data=$request->validate([
-            'title'=>['required','string','max:255'],'status'=>['required',Rule::in(['draft','active','filled','closed'])],
+            'title'=>['required','string','max:255'],'status'=>['required',Rule::in(['draft','active','paused','filled','closed'])],
             'description'=>[$required,'string','max:10000'],'industry'=>[$required,'string','max:80'],
             'state'=>[$required,'string','max:80'],'district'=>[$required,'string','max:80'],'location'=>[$required,'string','max:255'],
             'openings'=>['required','integer','min:1','max:100000'],
@@ -125,7 +129,7 @@ class EmployerWorkspaceController extends Controller
             'application_deadline'=>[$required,'date',...($publish?['after_or_equal:today']:[])],
         ]);
         if($publish && $e->status!=='verified') throw ValidationException::withMessages(['status'=>'Your company must be verified before publishing jobs.']);
-        if(!$id && in_array($data['status'],['closed','filled'])) throw ValidationException::withMessages(['status'=>'Create a draft or publish a job first.']);
+        if(!$id && in_array($data['status'],['paused','closed','filled'])) throw ValidationException::withMessages(['status'=>'Create a draft or publish a job first.']);
         DB::transaction(function() use($request,$e,$data,$old,$id){
             $row=[...$data,'updated_at'=>now()];
             if($data['status']==='active')$row['published_at']=$old?->published_at??now();
@@ -156,4 +160,3 @@ class EmployerWorkspaceController extends Controller
     }
     private function audit(Request $request,string $action,string $type,int $id,array $changes,?int $actor=null): void { DB::table('audit_logs')->insert(['actor_user_id'=>$actor??$request->user()?->id,'action'=>$action,'subject_type'=>$type,'subject_id'=>$id,'changes'=>json_encode($changes),'ip_address'=>$request->ip(),'created_at'=>now()]); }
 }
-

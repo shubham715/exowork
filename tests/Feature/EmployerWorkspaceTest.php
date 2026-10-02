@@ -41,9 +41,9 @@ class EmployerWorkspaceTest extends TestCase {
   $this->actingAs($owner)->getJson('/employer-api/workspace')->assertJsonCount(1,'jobs');
   $center=User::factory()->create();$this->actingAs($center)->getJson('/employer-api/identity')->assertForbidden();
  }
- public function test_job_metrics_report_untracked_views_and_deadline_days(): void {
+ public function test_job_metrics_report_recorded_views_and_deadline_days(): void {
   $this->register();$this->postJson('/employer-api/jobs',$this->job())->assertOk();
-  $this->getJson('/employer-api/workspace')->assertOk()->assertJsonPath('jobs.0.applications_count',0)->assertJsonPath('jobs.0.views_count',null)->assertJsonPath('jobs.0.days_remaining',30);
+  $this->getJson('/employer-api/workspace')->assertOk()->assertJsonPath('jobs.0.applications_count',0)->assertJsonPath('jobs.0.views_count',0)->assertJsonPath('jobs.0.clicks_count',0)->assertJsonPath('jobs.0.days_remaining',30);
   DB::table('job_posts')->update(['application_deadline'=>now()->subDays(2)->toDateString()]);
   $this->getJson('/employer-api/workspace')->assertOk()->assertJsonPath('jobs.0.days_remaining',0);
   DB::table('job_posts')->update(['application_deadline'=>null]);
@@ -92,4 +92,29 @@ class EmployerWorkspaceTest extends TestCase {
   $this->postJson('/auth/logout');$this->postJson('/auth/login',['role'=>'employer','identifier'=>'asha@example.com','password'=>'SecurePass123'])->assertOk();
  }
 
+
+ private function eligibleCandidate(): \App\Models\Candidate {
+  return \App\Models\Candidate::forceCreate(['candidate_code'=>'EXO-CAN-TEST','first_name'=>'Asha','last_name'=>'Rao','whatsapp'=>'9876543222','gender'=>'Female','age'=>24,'qualification'=>'ITI','state'=>'Maharashtra','district'=>'Pune','current_location'=>'Pune','permanent_location'=>'Pune','preferred_locations'=>['Pune'],'relocation_preference'=>'No','skills'=>'Machine operation','experience_type'=>'Fresher','expected_monthly_salary'=>15000,'availability'=>'Yes','preferred_industry'=>'Manufacturing','languages'=>['Hindi'],'training_status'=>'Not enrolled','whatsapp_consent'=>true,'terms_accepted_at'=>now(),'privacy_accepted_at'=>now()]);
+ }
+ public function test_daily_engagement_is_idempotent_and_private_to_owner(): void {
+  $this->register();$owner=User::firstOrFail();DB::table('employers')->update(['status'=>'verified']);$job=$this->job();$job['status']='active';$this->postJson('/employer-api/jobs',$job)->assertOk();$id=DB::table('job_posts')->value('id');$candidate=$this->eligibleCandidate();
+  $this->actingAs($candidate,'candidate')->getJson('/candidate-api/opportunities')->assertOk()->assertJsonPath('jobs.0.id',$id);
+  $event=['event_id'=>(string)\Illuminate\Support\Str::uuid(),'type'=>'impression'];
+  $this->postJson("/candidate-api/jobs/$id/events",$event)->assertOk();$this->postJson("/candidate-api/jobs/$id/events",$event)->assertOk();
+  $this->postJson("/candidate-api/jobs/$id/events",['event_id'=>(string)\Illuminate\Support\Str::uuid(),'type'=>'click'])->assertOk();$this->assertDatabaseCount('job_engagement_events',2);
+  $this->actingAs($owner,'web')->getJson("/employer-api/jobs/$id/stats?days=7")->assertOk()->assertJsonCount(7,'days')->assertJsonPath('days.6.impressions',1)->assertJsonPath('days.6.clicks',1);
+  $this->getJson('/employer-api/workspace')->assertJsonPath('jobs.0.views_count',1)->assertJsonPath('jobs.0.clicks_count',1);
+  $this->getJson("/employer-api/jobs/$id/stats?days=999")->assertUnprocessable();
+  $other=User::factory()->create();$this->actingAs($other)->getJson("/employer-api/jobs/$id/stats")->assertForbidden();
+ }
+ public function test_pausing_removes_opportunity_and_skips_are_specific_to_job(): void {
+  $this->register();$owner=User::firstOrFail();DB::table('employers')->update(['status'=>'verified']);$job=$this->job();$job['status']='active';$this->postJson('/employer-api/jobs',$job)->assertOk();$this->postJson('/employer-api/jobs',$job)->assertOk();$ids=DB::table('job_posts')->pluck('id');$candidate=$this->eligibleCandidate();
+  $this->getJson("/employer-api/jobs/{$ids[0]}/candidates")->assertOk()->assertJsonCount(1,'candidates')->assertJsonMissingPath('candidates.0.whatsapp')->assertJsonMissingPath('candidates.0.aadhaar_number');
+  $this->postJson("/employer-api/jobs/{$ids[0]}/candidates/{$candidate->id}/skip")->assertOk();$this->postJson("/employer-api/jobs/{$ids[0]}/candidates/{$candidate->id}/skip")->assertOk();$this->assertDatabaseCount('job_candidate_skips',1);
+  $this->getJson("/employer-api/jobs/{$ids[0]}/candidates")->assertJsonCount(0,'candidates');$this->getJson("/employer-api/jobs/{$ids[1]}/candidates")->assertJsonCount(1,'candidates');
+  $candidate->forceFill(['skills'=>'Unrelated'])->save();$this->getJson("/employer-api/jobs/{$ids[1]}/candidates")->assertJsonCount(0,'candidates');
+  $job['status']='paused';$this->putJson("/employer-api/jobs/{$ids[0]}",$job)->assertOk();$this->actingAs($candidate,'candidate')->getJson('/candidate-api/opportunities')->assertJsonCount(1,'jobs');
+  $this->postJson("/candidate-api/jobs/{$ids[0]}/events",['event_id'=>(string)\Illuminate\Support\Str::uuid(),'type'=>'click'])->assertNotFound();
+  $this->actingAs($owner,'web');$job['status']='active';$this->putJson("/employer-api/jobs/{$ids[0]}",$job)->assertOk();
+ }
 }

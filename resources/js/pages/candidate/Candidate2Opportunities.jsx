@@ -1,11 +1,1 @@
-import React,{useState} from 'react';
-import {Link,useNavigate} from 'react-router-dom';
-import {ArrowRight,BriefcaseBusiness,Heart,MapPin,Users,Wallet} from 'lucide-react';
-import {initialInterests} from './Candidate2Interests.jsx';
-
-export default function Candidate2Opportunities(){
-  const navigate=useNavigate();
-  const [items,setItems]=useState(()=>{try{return JSON.parse(localStorage.getItem('candidate2-interests'))||initialInterests}catch{return initialInterests}});
-  function save(job){if(!items.some(x=>x.id===job.id)){const next=[...items,{...job,stage:'Saved',availability:'Not selected',date:'Today',employer:'Shared after confirmation',note:'This opportunity is saved for you to review.'}];localStorage.setItem('candidate2-interests',JSON.stringify(next));setItems(next)}navigate('/candidate2/interests')}
-  return <div className="candidate2-opportunities"><div className="candidate2-breadcrumb"><Link to="/candidate2/interests">My career</Link><span>›</span><span>Find jobs</span></div><section className="candidate2-hero"><div><span className="candidate2-eyebrow"><BriefcaseBusiness size={15}/> MATCHED FOR YOU</span><h1>Explore job opportunities</h1><p>Verified roles selected for your skills, location and training. Save a role to manage it with your interests.</p><Link className="candidate2-hero-link" to="/candidate2/interests">View my interests <ArrowRight size={17}/></Link></div></section><div className="candidate2-section-heading"><div><span>RECOMMENDED ROLES</span><h2>Jobs you may like</h2><p>Employer names are shared after an interview is confirmed.</p></div></div><div className="candidate2-cards candidate2-opportunity-cards">{initialInterests.map(job=><article className="candidate2-job" key={job.id}><div className="candidate2-job-top"><span className="candidate2-job-icon"><BriefcaseBusiness size={23}/></span><div className="candidate2-job-title"><h3>{job.title}</h3><p><MapPin size={15}/>{job.location}</p></div><span className="candidate2-stage scheduled">{job.match}% match</span></div><div className="candidate2-job-facts"><span><Wallet size={16}/>{job.salary}</span><span><Users size={16}/>{job.openings}</span></div><div className="candidate2-job-bottom"><div className="candidate2-match"><b>Verified opportunity</b><span>{job.type}</span></div><button className="candidate2-solid-action" onClick={()=>save(job)}><Heart size={15}/>{items.some(x=>x.id===job.id)?'View interest':'Save interest'}</button></div></article>)}</div></div>
-}
+export { default } from './LiveJobOpportunities.jsx';
