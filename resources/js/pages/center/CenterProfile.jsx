@@ -114,7 +114,7 @@ export default function CenterProfile({ onboarding = false }) {
   };
   const field = (name, label, placeholder, options = {}) =>
     <TextField key={name} name={name} label={label} placeholder={placeholder} value={profile[name]} onChange={change} error={errors[name]?.[0]} {...options} />;
-  const verificationLabel = center?.status === 'active' ? 'Active center' : 'Review pending';
+  const verificationLabel = center?.status === 'verified' ? 'Verified center' : center?.status === 'rejected' ? 'Changes required' : 'Review pending';
 
   return <div className="center-profile-page">
     <div className="center-profile-heading">
@@ -164,7 +164,7 @@ export default function CenterProfile({ onboarding = false }) {
           <span>CENTER RECORD</span>
           <h2>{center.name}</h2>
           <p>{center.code}</p>
-          <div className={`center-profile-status${center.status === 'active' ? ' is-active' : ''}`}><ShieldCheck /><div><strong>{verificationLabel}</strong><small>{center.status === 'active' ? 'Your center record is active.' : 'Your center details are awaiting review.'}</small></div></div>
+          <div className={`center-profile-status${center.status === 'verified' ? ' is-active' : ''}`}><ShieldCheck /><div><strong>{verificationLabel}</strong><small>{center.status === 'verified' ? 'Your center profile has been approved.' : 'Your center details are awaiting review.'}</small></div></div>
           <div className="center-profile-aside-note"><MapPin /><p>Register your students as candidates after they complete their courses.</p></div>
         </aside>
       </div>}

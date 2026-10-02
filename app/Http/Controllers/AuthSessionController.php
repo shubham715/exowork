@@ -37,6 +37,9 @@ class AuthSessionController extends Controller
             if (! $user || $user->status !== 'active' || ! $hasRole || ! Hash::check($data['password'], $user->password)) {
                 return response()->json(['message' => 'Invalid credentials.'], 422);
             }
+            if ($data['role'] === 'employer' && ! DB::table('organization_memberships as m')->join('employers as e', 'e.id', '=', 'm.employer_id')->where('m.user_id', $user->id)->where('m.status', 'active')->whereNull('e.deleted_at')->where('e.status', '!=', 'inactive')->exists()) {
+                return response()->json(['message' => 'No active employer workspace is linked to this account.'], 422);
+            }
             Auth::guard('candidate')->logout();
             Auth::guard('web')->login($user, $data['remember'] ?? false);
             $user->forceFill(['last_login_at' => now()])->save();

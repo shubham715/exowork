@@ -15,8 +15,9 @@ class CenterDashboardController extends Controller
             ->leftJoin('training_partners as p', 'p.id', '=', 'c.training_partner_id')
             ->where('m.user_id', $request->user()->id)->where('m.status', 'active')
             ->whereNull('c.deleted_at')
-            ->select('c.name', 'c.code', 'c.status', DB::raw('coalesce(p.name, c.name) as org_name'))->first();
+            ->select('c.name', 'c.code', 'c.status', 'c.verified_at', DB::raw('coalesce(p.name, c.name) as org_name'))->first();
         abort_unless($center, 403, 'No active training center membership.');
+        if ($center->status === 'active' && !$center->verified_at) $center->status = 'pending';
         $words = preg_split('/\s+/', trim($center->name));
         $center->initials = strtoupper(implode('', array_map(fn ($word) => mb_substr($word, 0, 1), array_slice($words, 0, 2))));
         return response()->json(['center' => $center]);

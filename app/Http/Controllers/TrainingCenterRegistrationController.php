@@ -32,7 +32,7 @@ class TrainingCenterRegistrationController extends Controller
             $centerId = DB::table('training_centers')->insertGetId([
                 'training_partner_id' => null,
                 'code' => 'EXO-CTR-'.str_pad((string) (DB::table('training_centers')->max('id') + 1), 4, '0', STR_PAD_LEFT),
-                'name' => $data['center_name'], 'spoc_phone' => $data['phone'], 'spoc_email' => strtolower($data['email']), 'state' => $data['state'], 'district' => $data['district'], 'status' => 'active',
+                'name' => $data['center_name'], 'spoc_phone' => $data['phone'], 'spoc_email' => strtolower($data['email']), 'state' => $data['state'], 'district' => $data['district'], 'status' => 'pending',
                 'onboarding_step' => 0, 'created_at' => now(), 'updated_at' => now(),
             ]);
             $roleId = DB::table('roles')->where('key', 'training_partner')->value('id');
@@ -87,6 +87,10 @@ class TrainingCenterRegistrationController extends Controller
             $partnerLocation = ['state' => $data['state'] ?? $center->state, 'district' => $data['district'] ?? $center->district];
             $data['onboarding_step'] = max($center->onboarding_step, $step);
             if ($data['onboarding_step'] >= 3) $data['onboarding_step'] = 3;
+            $changed = collect($data)->except('onboarding_step')->contains(fn ($value, $key) => (string) $value !== (string) ($center->$key ?? ''));
+            if ($changed && in_array($center->status, ['verified', 'rejected', 'active'])) {
+                $data = [...$data, 'status' => 'pending', 'verified_at' => null, 'verified_by_user_id' => null, 'review_remarks' => null];
+            }
             DB::table('training_centers')->where('id', $center->id)->update([...$data, ...$partnerLocation, 'updated_at' => now()]);
         });
         return response()->json(['step' => max($center->onboarding_step, $step), 'saved' => true]);

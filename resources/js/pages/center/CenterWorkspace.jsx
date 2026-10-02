@@ -371,7 +371,7 @@ function Records({ page }) {
         [saving, setSaving] = useState(false),
         [saveError, setSaveError] = useState("");
     const [title, sub] = titles[page],
-        rows = state.data?.[page] || [],
+        rows = Array.isArray(state.data?.[page]) ? state.data[page] : [],
         filtered = rows.filter(
             (r) =>
                 (!status || r.status === status) &&

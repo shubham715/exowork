@@ -15,10 +15,32 @@ Route::get('/auth/csrf-token', function () {
         ->header('Cache-Control', 'no-store, private');
 });
 
+Route::view('/reset-password/{token}', 'app')->name('password.reset');
+Route::post('/auth/employer/password/email', [\App\Http\Controllers\EmployerPasswordController::class, 'email'])->middleware('throttle:5,1');
+Route::post('/auth/employer/password/reset', [\App\Http\Controllers\EmployerPasswordController::class, 'reset'])->middleware('throttle:5,1');
+Route::post('/auth/register/employer', [\App\Http\Controllers\EmployerWorkspaceController::class, 'register'])->middleware('throttle:5,1');
+
 Route::post('/auth/login', [AuthSessionController::class, 'store'])->middleware('throttle:10,1');
 Route::post('/auth/register/training-center', [TrainingCenterRegistrationController::class, 'store'])->middleware('throttle:5,1');
 Route::post('/auth/logout', [AuthSessionController::class, 'destroy']);
 Route::middleware('auth:web')->group(function () {
+    Route::get('/admin-api/review-notifications', [\App\Http\Controllers\AdminReviewQueueController::class, 'index']);
+    Route::post('/admin-api/review-notifications/read', [\App\Http\Controllers\AdminReviewQueueController::class, 'read']);
+    Route::get('/employer-api/identity', [\App\Http\Controllers\EmployerWorkspaceController::class, 'identity']);
+    Route::get('/employer-api/workspace', [\App\Http\Controllers\EmployerWorkspaceController::class, 'workspace']);
+    Route::post('/employer-api/profile', [\App\Http\Controllers\EmployerWorkspaceController::class, 'updateProfile']);
+    Route::get('/employer-api/document', [\App\Http\Controllers\EmployerWorkspaceController::class, 'document']);
+    Route::post('/employer-api/jobs', [\App\Http\Controllers\EmployerWorkspaceController::class, 'saveJob']);
+    Route::put('/employer-api/jobs/{id}', [\App\Http\Controllers\EmployerWorkspaceController::class, 'saveJob']);
+    Route::get('/admin-api/employers', [\App\Http\Controllers\EmployerWorkspaceController::class, 'adminIndex']);
+    Route::get('/admin-api/employers/stats', [\App\Http\Controllers\AdminEmployerAnalyticsController::class, 'stats']);
+    Route::get('/admin-api/employers/export', [\App\Http\Controllers\AdminEmployerAnalyticsController::class, 'export']);
+    Route::get('/admin-api/employers/{id}', [\App\Http\Controllers\AdminEmployerAnalyticsController::class, 'show'])->whereNumber('id');
+    Route::post('/admin-api/employers/actions', [\App\Http\Controllers\AdminEmployerAnalyticsController::class, 'bulk']);
+    Route::patch('/admin-api/employers/{id}', [\App\Http\Controllers\AdminEmployerAnalyticsController::class, 'update']);
+    Route::get('/admin-api/employers/{id}/document', [\App\Http\Controllers\EmployerWorkspaceController::class, 'adminDocument']);
+    Route::patch('/admin-api/employers/{id}/review', [\App\Http\Controllers\EmployerWorkspaceController::class, 'review']);
+
     Route::get('/center-api/workspace', [\App\Http\Controllers\CenterWorkspaceController::class, 'show']);
     Route::patch('/center-api/placements/{id}/joining', [\App\Http\Controllers\CenterWorkspaceController::class, 'joining']);
     Route::get('/center-api/identity', [CenterDashboardController::class, 'identity']);
@@ -64,3 +86,4 @@ Route::middleware('auth:candidate')->group(function () {
 */
 Route::view('/{path?}', 'app')
     ->where('path', '^(?!api(?:/|$)|webhooks(?:/|$)).*');
+

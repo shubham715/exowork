@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, LockKeyhole } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, LockKeyhole, UserRound, Building2, GraduationCap } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { validateLogin } from "../validation.js";
 import axios from "axios";
 
 const INITIAL_VALUES = { identifier: "", password: "", remember: true };
 
-export default function LoginForm({ roles, admin = false }) {
+export default function LoginForm({ roles, admin = false, onChangeRole }) {
   const navigate = useNavigate();
   const identifierRef = useRef(null);
   const [roleId, setRoleId] = useState(roles[0].id);
@@ -56,29 +56,17 @@ export default function LoginForm({ roles, admin = false }) {
         <ArrowLeft /> Back to home
       </Link>
       <span className="section-kicker">{admin ? "ADMIN PORTAL" : "WELCOME BACK"}</span>
-      <h2>{admin ? "Admin sign in" : "Sign in to your workspace"}</h2>
+      <h2>{admin ? "Admin sign in" : `${role.label} login`}</h2>
       <p>
         {admin
           ? "Use your authorized EXOWORK operations account."
-          : "Choose your account type and enter your registered details."}
+          : "Enter your registered details to continue."}
       </p>
 
-      {!admin && (
-        <fieldset className="role-grid">
-          <legend className="sr-only">Choose account type</legend>
-          {roles.map((item) => (
-            <button
-              type="button"
-              onClick={() => setRoleId(item.id)}
-              className={roleId === item.id ? "active" : ""}
-              aria-pressed={roleId === item.id}
-              key={item.id}
-            >
-              {item.label}
-            </button>
-          ))}
-        </fieldset>
-      )}
+      {!admin && <div className="selected-login-role">
+        <span>{role.id === "candidate" ? <UserRound /> : role.id === "employer" ? <Building2 /> : <GraduationCap />}{role.label}</span>
+        <button type="button" onClick={onChangeRole}>Change account type</button>
+      </div>}
 
       {admin && (
         <div className="admin-access-note">
@@ -139,18 +127,20 @@ export default function LoginForm({ roles, admin = false }) {
           />
           Remember me
         </label>
-        <button type="button">Forgot password?</button>
+        {role.id === "employer" ? <Link className="text-link" to="/forgot-password/employer">Forgot password?</Link> : <button type="button">Forgot password?</button>}
       </div>
 
       <button className="btn primary block" type="submit" disabled={submitting}>
         {submitting ? "Signing in…" : `Sign in to ${role.label}`}
         {!submitting && <ArrowRight />}
       </button>
-      {!admin && <div className="login-register-links">
-        <span>New to EXOWORK?</span>
-        <Link to="/register/candidate">Register as a candidate</Link>
-        <Link to="/register/training-center">Register as a training center</Link>
-      </div>}
+      {!admin && <>
+        <div className="login-divider"><span>OR</span></div>
+        <div className="login-signup">
+          <p>New to EXOWORK?</p>
+          <Link className="btn ghost block" to={role.id === "employer" ? "/register/employer" : role.id === "candidate" ? "/register/candidate" : "/register/training-center"}>Sign up as {role.id === "employer" ? "an employer" : role.id === "candidate" ? "a candidate" : "a training center"} <ArrowRight /></Link>
+        </div>
+      </>}
     </form>
   );
 }

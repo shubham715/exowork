@@ -41,7 +41,7 @@ class CenterOnboardingTest extends TestCase
             'state' => 'Rajasthan', 'district' => 'Jaipur',
         ])->assertCreated();
         $this->assertDatabaseCount('training_partners', 0);
-        $this->assertDatabaseHas('training_centers', ['name' => 'Asha Coaching', 'training_partner_id' => null, 'status' => 'active']);
+        $this->assertDatabaseHas('training_centers', ['name' => 'Asha Coaching', 'training_partner_id' => null, 'status' => 'pending']);
         $this->getJson('/center-api/candidates')->assertOk();
         $this->getJson('/center-api/dashboard')->assertOk();
         $this->getJson('/center-api/identity')->assertOk()->assertJsonPath('center.org_name', 'Asha Coaching');

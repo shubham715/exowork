@@ -129,3 +129,31 @@
   .role-grid button{min-height:54px;font-size:12px}
   .login-help{font-size:11px}
 }
+
+/* Role-first public login */
+.login-role-picker{width:min(500px,100%)}
+.login-role-picker h2{font-size:34px;letter-spacing:-.8px;margin:10px 0}
+.login-role-picker>p{font-size:15px;line-height:1.6;margin-bottom:26px;color:var(--muted)}
+.login-role-cards{display:grid;gap:13px}
+.login-role-cards button{display:flex;align-items:center;gap:16px;width:100%;padding:20px;border:1px solid var(--line);border-radius:16px;background:white;text-align:left;transition:background .18s,border-color .18s,transform .18s}
+.login-role-cards button:hover{background:#f7f9ff;border-color:var(--blue);transform:translateY(-2px)}
+.login-role-cards button:focus-visible,.selected-login-role button:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.login-role-icon{width:52px;height:52px;border-radius:14px;background:var(--bluep);color:var(--blue);display:grid;place-items:center;flex-shrink:0}
+.login-role-icon.employer{background:var(--greenp);color:var(--green)}
+.login-role-icon.center{background:var(--purplep);color:var(--purple)}
+.login-role-cards button>span:nth-child(2){flex:1}
+.login-role-cards strong{display:block;font-size:17px;margin-bottom:5px}
+.login-role-cards small{display:block;font-size:12px;line-height:1.5;color:var(--muted)}
+.login-role-cards button>svg{width:19px;color:var(--muted);flex-shrink:0}
+.login-picker-note{display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--muted);margin-top:26px}
+.login-picker-note svg{width:16px;color:var(--green)}
+.selected-login-role{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:#f4f7fb;border-radius:12px;margin:20px 0}
+.selected-login-role>span{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:var(--ink)}
+.selected-login-role svg{width:18px;color:var(--blue)}
+.selected-login-role button{border:0;background:none;color:var(--blue);font-size:12px;padding:5px}
+.login-divider{display:flex;align-items:center;gap:14px;margin:23px 0 17px;color:var(--muted);font-size:11px;letter-spacing:1px}
+.login-divider:before,.login-divider:after{content:'';height:1px;background:var(--line);flex:1}
+.login-signup{text-align:center}
+.login-signup p{font-size:13px;margin-bottom:11px}
+.login-signup small{display:block;font-size:11px;line-height:1.5;margin-top:10px;color:var(--muted)}
+@media(max-width:850px){.login-role-picker{margin:0 auto}.login-role-picker h2{font-size:29px}.login-role-cards button{padding:16px;gap:12px}.login-role-cards strong{font-size:16px}.login-role-icon{width:46px;height:46px}.login-picker-note{font-size:11px}.login-signup .btn.block{box-shadow:none}}

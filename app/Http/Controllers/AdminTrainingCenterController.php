@@ -35,6 +35,7 @@ class AdminTrainingCenterController extends Controller
             ->select('c.*', 'p.name as partner_name', 'p.code as partner_code', 'p.status as partner_status', DB::raw('coalesce(b.batches, 0) as batches'), DB::raw('coalesce(ca.candidates, 0) as candidates'), DB::raw('coalesce(ca.active_candidates, 0) as active_candidates'), DB::raw('coalesce(pl.joined, 0) as joined'))
             ->orderByDesc('c.updated_at')->get()
             ->map(function ($center) {
+                if ($center->status === 'active' && !$center->verified_at) $center->status = 'pending';
                 $center->accreditations = json_decode($center->accreditations ?: '[]', true);
                 $center->infrastructure_evidence = json_decode($center->infrastructure_evidence ?: '[]', true);
                 return $center;
@@ -45,6 +46,7 @@ class AdminTrainingCenterController extends Controller
         return response()->json([
             'centers' => $centers,
             'partners' => $partners,
+            'can_manage' => $request->user()->hasPermission('partners.manage'),
             'summary' => [
                 'total' => $centers->count(),
                 'verified' => $centers->where('status', 'verified')->count(),
@@ -92,11 +94,19 @@ class AdminTrainingCenterController extends Controller
     public function review(Request $request, int $id): JsonResponse
     {
         $this->authorizeManage($request);
-        $data = $request->validate(['status' => ['required', Rule::in(self::STATUSES)], 'review_remarks' => ['nullable', 'string', 'max:2000']]);
-        abort_unless(DB::table('training_centers')->whereNull('deleted_at')->where('id', $id)->exists(), 404);
+        $data = $request->validate(['status' => ['required', Rule::in(self::STATUSES)], 'review_remarks' => [$request->input('status') === 'rejected' ? 'required' : 'nullable', 'string', 'max:2000']]);
+        $center = DB::table('training_centers')->whereNull('deleted_at')->find($id);
+        abort_unless($center, 404);
+        if ($data['status'] === 'verified') {
+            foreach (['name', 'center_type', 'spoc_name', 'spoc_phone', 'spoc_email', 'state', 'district', 'city_block', 'address', 'pincode'] as $key) {
+                abort_unless(trim((string) ($center->$key ?? '')), 422, 'Complete the center contact and location profile before approval.');
+            }
+        }
         $review = [...$data, 'verified_by_user_id' => $data['status'] === 'verified' ? $request->user()->id : null, 'verified_at' => $data['status'] === 'verified' ? now() : null, 'updated_at' => now()];
-        DB::table('training_centers')->where('id', $id)->update($review);
-        $this->audit($request, 'training_center.'.$data['status'], 'training_center', $id, $data);
+        DB::transaction(function () use ($request, $id, $data, $review) {
+            DB::table('training_centers')->where('id', $id)->update($review);
+            $this->audit($request, 'training_center.'.$data['status'], 'training_center', $id, $data);
+        });
         return response()->json(['center' => DB::table('training_centers')->find($id)]);
     }
 
