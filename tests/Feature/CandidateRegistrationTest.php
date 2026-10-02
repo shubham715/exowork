@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Candidate;
 use App\Models\CandidateDraft;
+use Database\Seeders\CandidateMasterDataSeeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -11,6 +13,12 @@ use Tests\TestCase;
 class CandidateRegistrationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(CandidateMasterDataSeeder::class);
+    }
 
     public function test_candidate_registration_is_validated_and_persisted_securely(): void
     {
@@ -38,6 +46,29 @@ class CandidateRegistrationTest extends TestCase
         $this->postJson('/api/candidates', $payload)
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['whatsapp', 'privacy_accepted']);
+    }
+
+    public function test_other_district_is_saved_under_selected_state(): void
+    {
+        $payload = $this->validPayload();
+        $payload['district'] = 'New District';
+        $payload['district_id'] = null;
+        $payload['district_is_custom'] = true;
+
+        $this->postJson('/api/candidates', $payload)->assertCreated();
+        $candidate = Candidate::firstOrFail();
+        $this->assertSame('New District', $candidate->district);
+        $this->assertNull($candidate->district_id);
+        $this->assertTrue((bool) $candidate->district_is_custom);
+        $this->assertNotNull($candidate->state_id);
+    }
+
+    public function test_district_from_another_state_is_rejected(): void
+    {
+        $payload = $this->validPayload();
+        $payload['district_id'] = DB::table('districts')->where('slug', 'lucknow')->value('id');
+
+        $this->postJson('/api/candidates', $payload)->assertUnprocessable()->assertJsonValidationErrors('district_id');
     }
 
     public function test_safe_draft_can_be_saved_restored_and_removed_after_registration(): void
@@ -80,6 +111,13 @@ class CandidateRegistrationTest extends TestCase
             'email' => 'asha@example.com', 'password' => 'SecurePass123',
             'password_confirmation' => 'SecurePass123', 'gender' => 'Female', 'age' => 24,
             'qualification' => 'ITI', 'state' => 'Rajasthan', 'district' => 'Jaipur',
+            'qualification_option_id' => DB::table('master_options')->where('type', 'qualification')->where('slug', 'iti')->value('id'),
+            'state_id' => DB::table('states')->where('slug', 'rajasthan')->value('id'),
+            'district_id' => DB::table('districts')->where('slug', 'jaipur')->value('id'),
+            'district_is_custom' => false,
+            'experience_level_option_id' => DB::table('master_options')->where('type', 'experience_level')->where('slug', 'fresher')->value('id'),
+            'industry_option_id' => DB::table('master_options')->where('type', 'industry')->where('slug', 'manufacturing')->value('id'),
+            'language_option_ids' => [DB::table('master_options')->where('type', 'language')->where('slug', 'hindi')->value('id')],
             'current_location' => 'Sanganer', 'permanent_location' => 'Jaipur',
             'preferred_locations' => ['Jaipur, Rajasthan'], 'relocation_preference' => 'No',
             'skills' => 'Machine operation, 5S', 'experience_type' => 'Fresher',

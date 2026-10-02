@@ -1,0 +1,519 @@
+.center-dashboard {
+  --dashboard-grid-gap: var(--space-4);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+.center-dashboard .center-dashboard-state {
+  min-height: 320px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-4);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+}
+
+.center-dashboard .center-dashboard-error p {
+  max-width: 520px;
+  color: var(--color-danger);
+}
+
+.center-dashboard .role-hero.center-hero {
+  min-height: 218px;
+  padding: 32px 36px;
+  border: 1px solid color-mix(in srgb, var(--color-brand-900) 10%, transparent);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(118deg, var(--color-brand-900), var(--color-brand-800));
+  box-shadow: var(--shadow-surface);
+}
+
+.center-dashboard .role-hero>div:first-child>span {
+  color: color-mix(in srgb, var(--color-surface) 86%, var(--color-primary-050));
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+}
+
+.center-dashboard .role-hero h1 {
+  margin: 9px 0;
+  font: 700 clamp(28px, 2.5vw, 34px)/1.25 var(--font-heading);
+  letter-spacing: -.35px;
+}
+
+.center-dashboard .role-hero p {
+  max-width: 690px;
+  color: color-mix(in srgb, var(--color-surface) 88%, var(--color-primary-050));
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.center-dashboard .role-hero>div:first-child>div {
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.center-dashboard .role-hero .btn {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  font: 600 14px/1.3 var(--font-body);
+}
+
+.center-dashboard .center-badge {
+  width: 208px;
+  min-height: 142px;
+  height: auto;
+  padding: 18px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-surface) 18%, transparent);
+}
+
+.center-dashboard .center-badge svg {
+  width: 25px;
+  height: 25px;
+  color: var(--color-success);
+}
+
+.center-dashboard .center-badge b {
+  margin: 8px 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .45px;
+}
+
+.center-dashboard .center-badge small {
+  color: color-mix(in srgb, var(--color-surface) 88%, var(--color-primary-050));
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.center-dashboard .is-pending .center-badge svg {
+  color: var(--color-warning);
+}
+
+.center-dashboard .stat-grid {
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.center-dashboard .stat-card {
+  min-width: 0;
+  min-height: 112px;
+  padding: 18px;
+  gap: 14px;
+  border-color: var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-brand-900) 5%, transparent);
+}
+
+.center-dashboard .stat-icon {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  border-radius: 12px;
+}
+
+.center-dashboard .stat-card label {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.center-dashboard .stat-card strong {
+  margin: 4px 0;
+  color: var(--color-heading);
+  font: 700 30px/1.2 var(--font-heading);
+}
+
+.center-dashboard .stat-card small {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.center-dashboard .center-priority {
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.center-dashboard .center-priority>div {
+  min-width: 0;
+  min-height: 78px;
+  padding: 14px;
+  gap: 11px;
+  border-color: var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.center-dashboard .center-priority>div>svg {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  padding: 9px;
+  border-radius: 10px;
+}
+
+.center-dashboard .center-priority b {
+  color: var(--color-heading);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.center-dashboard .center-priority small {
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.center-dashboard .center-priority button {
+  flex: 0 0 auto;
+  color: var(--color-primary-600);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.center-dashboard .center-priority .center-priority-clear {
+  grid-column: 1 / -1;
+  background: var(--color-success-soft);
+  border-color: color-mix(in srgb, var(--color-success) 22%, var(--color-border));
+}
+
+.center-dashboard .center-priority .center-priority-clear>svg {
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
+}
+
+.center-dashboard .role-dashboard-grid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, .8fr);
+  gap: var(--dashboard-grid-gap);
+  margin: 16px 0;
+}
+
+.center-dashboard .panel {
+  min-width: 0;
+  border-color: var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-brand-900) 4%, transparent);
+}
+
+.center-dashboard .panel>header {
+  align-items: flex-start;
+  padding: 20px 22px;
+  border-bottom-color: var(--color-border);
+}
+
+.center-dashboard .panel>header h3 {
+  color: var(--color-heading);
+  font: 700 20px/1.35 var(--font-heading);
+}
+
+.center-dashboard .panel>header p {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.center-dashboard .panel-body {
+  padding: 20px 22px 22px;
+}
+
+.center-dashboard .batch-list>button {
+  grid-template-columns: minmax(94px, .72fr) minmax(150px, 1.2fr) minmax(75px, .85fr) 42px 16px;
+  gap: 12px;
+  min-height: 70px;
+  border-bottom-color: var(--color-border);
+}
+
+.center-dashboard .batch-list>button>span b,
+.center-dashboard .batch-list>button>div>b {
+  color: var(--color-heading);
+  font: 600 15px/1.4 var(--font-body);
+}
+
+.center-dashboard .batch-list>button small {
+  margin-top: 3px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.center-dashboard .batch-list>button>i {
+  height: 7px;
+  background: var(--color-page);
+}
+
+.center-dashboard .batch-list>button>i em {
+  background: var(--color-success);
+}
+
+.center-dashboard .batch-list>button>strong {
+  color: var(--color-heading);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.center-dashboard .workspace-empty,
+.center-dashboard .center-dashboard-empty {
+  padding: 22px 14px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.center-dashboard .supply-donut {
+  width: 144px;
+  height: 144px;
+  margin: 8px auto 16px;
+}
+
+.center-dashboard .supply-donut:before {
+  inset: 18px;
+  background: var(--color-surface);
+}
+
+.center-dashboard .supply-donut b {
+  color: var(--color-heading);
+  font: 700 24px/1.2 var(--font-heading);
+}
+
+.center-dashboard .supply-donut span {
+  margin-top: 3px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.center-dashboard .legend-list li {
+  gap: 2px;
+  margin: 11px 4px;
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.center-dashboard .legend-list i {
+  width: 9px;
+  height: 9px;
+}
+
+.center-dashboard .legend-list b {
+  color: var(--color-heading);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.center-dashboard .panel .btn.block {
+  min-height: 42px;
+  font-size: 13px;
+}
+
+.center-dashboard .recommended-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.center-dashboard .recommended-strip article {
+  min-width: 0;
+  padding: 16px;
+  border-color: var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.center-dashboard .recommended-strip .status {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.center-dashboard .recommended-strip h3 {
+  margin-top: 12px;
+  color: var(--color-heading);
+  font: 700 18px/1.35 var(--font-heading);
+}
+
+.center-dashboard .recommended-strip p {
+  min-height: 48px;
+  margin-top: 6px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.center-dashboard .recommended-strip article>div {
+  margin: 12px 0;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-page);
+}
+
+.center-dashboard .recommended-strip article>div b {
+  color: var(--color-success);
+  font: 700 24px/1.2 var(--font-heading);
+}
+
+.center-dashboard .recommended-strip article>div span {
+  margin-top: 3px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.center-dashboard .recommended-strip article>button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  color: var(--color-primary-600);
+  font: 600 14px/1.4 var(--font-body);
+}
+
+.center-dashboard .recommended-strip article>button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.center-dashboard button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-primary-600) 35%, transparent);
+  outline-offset: 3px;
+}
+
+/* Match the candidate registration type scale and weight balance. */
+.center-dashboard .role-hero h1 {
+  font-weight: 700;
+}
+
+.center-dashboard .role-hero>div:first-child>span {
+  color: #b7c7ea;
+}
+
+.center-dashboard .stat-card label,
+.center-dashboard .center-priority b,
+.center-dashboard .panel>header p,
+.center-dashboard .batch-list>button small,
+.center-dashboard .recommended-strip p {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.center-dashboard .stat-card small,
+.center-dashboard .center-priority small,
+.center-dashboard .recommended-strip article>div span,
+.center-dashboard .center-badge small {
+  font-size: 13px;
+}
+
+.center-dashboard .center-priority b,
+.center-dashboard .batch-list>button>span b,
+.center-dashboard .batch-list>button>div>b,
+.center-dashboard .batch-list>button>strong,
+.center-dashboard .legend-list b,
+.center-dashboard .recommended-strip h3 {
+  font-weight: 600;
+}
+
+.center-dashboard .panel>header h3 {
+  font-weight: 700;
+}
+
+.center-dashboard .panel .btn.block {
+  font-size: 14px;
+}
+
+@media (max-width: 1050px) {
+  .center-dashboard .role-dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .center-dashboard .recommended-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 800px) {
+  .center-dashboard .role-hero.center-hero {
+    align-items: flex-start;
+    padding: 26px;
+  }
+
+  .center-dashboard .center-badge {
+    display: flex;
+  }
+
+  .center-dashboard .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .center-dashboard .center-priority {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .center-dashboard .role-hero.center-hero {
+    flex-direction: column;
+    gap: 20px;
+    padding: 22px;
+  }
+
+  .center-dashboard .role-hero h1 {
+    font-size: 28px;
+  }
+
+  .center-dashboard .role-hero p {
+    font-size: 15px;
+  }
+
+  .center-dashboard .role-hero>div:first-child>div {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+
+  .center-dashboard .center-badge {
+    width: 100%;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    justify-items: start;
+    column-gap: 10px;
+  }
+
+  .center-dashboard .center-badge svg {
+    grid-row: span 2;
+  }
+
+  .center-dashboard .center-badge b {
+    margin: 0;
+  }
+
+  .center-dashboard .center-badge small {
+    text-align: left;
+  }
+
+  .center-dashboard .stat-grid,
+  .center-dashboard .recommended-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .center-dashboard .stat-card {
+    min-height: 100px;
+  }
+
+  .center-dashboard .batch-list>button {
+    grid-template-columns: minmax(82px, .8fr) minmax(120px, 1.2fr) 42px 16px;
+  }
+
+  .center-dashboard .batch-list>button>i {
+    display: none;
+  }
+
+  .center-dashboard .recommended-strip p {
+    min-height: 0;
+  }
+}

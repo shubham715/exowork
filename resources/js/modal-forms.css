@@ -1,0 +1,69 @@
+/* Shared styling for every Modal component. Form dialogs follow documents/EXOWORK-UI-Style-Guide.md. */
+.modal-back:has(.ui-modal){padding:24px;background:rgba(16,24,40,.48)}
+.modal.ui-modal{width:min(800px,100%);max-height:calc(100dvh - 48px);overflow:auto;border-radius:20px;background:#fff;border:1px solid #e4e7ec;box-shadow:0 24px 48px rgba(16,24,40,.18)}
+.modal.ui-modal>header{padding:24px 32px;border-bottom:1px solid #e4e7ec;align-items:flex-start;gap:16px}
+.modal.ui-modal>header h2{font:700 24px/1.3 var(--font-heading);color:#19243b}
+.modal.ui-modal>header p{font:400 14px/1.55 var(--font-body);color:#667085;margin-top:6px}
+.modal.ui-modal>header>button{flex-shrink:0;width:44px;height:44px;display:grid;place-items:center;border:0;border-radius:8px;background:#fff;color:#475467}
+.modal.ui-modal .modal-body{padding:28px 32px}
+.modal.ui-modal :is(.form-grid,.cc-edit-grid){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 16px}
+.modal.ui-modal .field-label,.modal.ui-modal .cc-edit-grid label{display:flex;flex-direction:column;gap:7px;margin:0;font:500 14px/1.45 var(--font-body);color:#344054;min-width:0}
+.modal.ui-modal .required-mark{color:var(--color-danger)}
+.modal.ui-modal .modal-body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),select,textarea){width:100%;min-width:0;min-height:46px;margin:0;padding:11px 13px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04);font:400 14px/1.4 var(--font-body);color:#19243b}
+.modal.ui-modal :is(input,textarea)::placeholder{font:400 14px/1.4 var(--font-body);color:#98a2b3;opacity:1}
+.modal.ui-modal .modal-body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),select,textarea):hover{border-color:#98a2b3}
+.modal.ui-modal .modal-body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),select,textarea):focus{outline:0;border-color:#315be8;box-shadow:0 0 0 4px rgba(49,91,232,.12)}
+.modal.ui-modal .fixed-scope{margin-top:20px;padding:14px 16px;border-radius:8px}
+.modal.ui-modal .fixed-scope b{font:600 14px/1.45 var(--font-body)}
+.modal.ui-modal .fixed-scope small{font:400 12px/1.45 var(--font-body);color:#667085;margin-top:4px}
+.modal.ui-modal .modal-actions{display:flex;justify-content:flex-end;gap:12px;margin:24px -32px -28px;padding:16px 32px;border-top:1px solid #e4e7ec;min-height:76px}
+.modal.ui-modal .btn{min-height:44px;padding:11px 16px;border-radius:8px;font:600 14px/1.4 var(--font-body)}
+.modal.ui-modal .btn.ghost{border:1px solid #d0d5dd;color:#344054}
+.modal.ui-modal button:focus-visible{outline:3px solid rgba(49,91,232,.5);outline-offset:3px}
+.modal.ui-modal [role=alert]{margin-top:16px;color:var(--color-danger);font:500 12px/1.45 var(--font-body)}
+@media(max-width:600px){
+  .modal-back:has(.ui-modal){padding:12px}
+  .modal.ui-modal{max-height:calc(100dvh - 24px)}
+  .modal.ui-modal>header,.modal.ui-modal .modal-body{padding:20px}
+  .modal.ui-modal>header h2{font-size:22px}
+  .modal.ui-modal :is(.form-grid,.cc-edit-grid){grid-template-columns:1fr}
+  .modal.ui-modal .modal-actions{margin:20px -20px -20px;padding:16px 20px;flex-wrap:wrap}
+}
+
+.modal.ui-modal{font:400 14px/1.5 var(--font-body)}
+.modal.ui-modal .modal-body label{font:500 14px/1.45 var(--font-body);color:#344054}
+.modal.ui-modal .modal-body :is(select option,select optgroup){font:400 14px/1.4 var(--font-body);color:#19243b}
+.modal.ui-modal .modal-body textarea{min-height:104px;resize:vertical}
+.modal.ui-modal .modal-body input:is([type="checkbox"],[type="radio"]){width:17px;height:17px;min-height:0;accent-color:#315be8}
+.modal.ui-modal .modal-body :is(input,textarea)[readonly]{background:#f9fafb;color:#667085}
+.modal.ui-modal .modal-body :is(input,select,textarea):disabled{background:#f9fafb;color:#667085;cursor:not-allowed}
+.modal.ui-modal .modal-body :is(input,select,textarea)[aria-invalid="true"]{border-color:var(--color-danger)}
+.modal.ui-modal>footer{padding:16px 32px;border-top:1px solid #e4e7ec;display:flex;justify-content:flex-end;gap:12px}
+@media(max-width:600px){.modal.ui-modal>footer{padding:16px 20px;flex-wrap:wrap}}
+
+/* Read-only details and record pickers use the same popup text scale. */
+.modal.ui-modal .section-title{font:600 18px/1.4 var(--font-heading);color:#19243b}
+.modal.ui-modal .batch-detail-grid{gap:16px}
+.modal.ui-modal .batch-detail-grid>span{padding:16px;font:400 12px/1.45 var(--font-body);color:#667085;overflow-wrap:anywhere}
+.modal.ui-modal .batch-detail-grid b{margin-top:6px;font:600 14px/1.45 var(--font-body);color:#19243b}
+.modal.ui-modal .batch-members>div{gap:12px;padding:14px 0}
+.modal.ui-modal .batch-members>div>span:not(.status){min-width:0}
+.modal.ui-modal .batch-members b,.modal.ui-modal .candidate-picker b{font:600 14px/1.45 var(--font-body);color:#19243b}
+.modal.ui-modal .batch-members small,.modal.ui-modal .candidate-picker small{margin-top:4px;font:400 12px/1.45 var(--font-body);color:#667085;white-space:normal;overflow-wrap:anywhere}
+.modal.ui-modal .batch-members p,.modal.ui-modal .assignment-summary p{font:400 14px/1.55 var(--font-body);color:#667085}
+.modal.ui-modal .status{padding:4px 8px;font:500 12px/1.4 var(--font-body);white-space:nowrap}
+.modal.ui-modal .assignment-summary{padding:16px;gap:16px}
+.modal.ui-modal .assignment-summary span{font:400 12px/1.45 var(--font-body)}
+.modal.ui-modal .assignment-summary b{font:700 20px/1.3 var(--font-heading)}
+.modal.ui-modal .candidate-picker>label{grid-template-columns:20px 34px minmax(0,1fr) 125px;padding:14px 12px;gap:12px}
+.modal.ui-modal .candidate-picker .picker-select-all{grid-template-columns:20px minmax(0,1fr) 125px}
+.modal.ui-modal .candidate-picker em{font:400 12px/1.45 var(--font-body);color:#667085;overflow-wrap:anywhere}
+.modal.ui-modal .candidate-picker em b{font:500 12px/1.45 var(--font-body);color:#667085}
+@media(max-width:600px){
+ .modal.ui-modal .batch-detail-grid{grid-template-columns:1fr}
+ .modal.ui-modal .section-heading{align-items:flex-start;flex-wrap:wrap;gap:12px}
+ .modal.ui-modal .candidate-picker>label{grid-template-columns:20px 34px minmax(0,1fr)}
+ .modal.ui-modal .candidate-picker .picker-select-all{grid-template-columns:20px minmax(0,1fr)}
+ .modal.ui-modal .picker-select-all small{grid-column:2;text-align:left}
+ .modal.ui-modal .batch-members>div{flex-wrap:wrap}
+}

@@ -22,7 +22,7 @@ class PlatformRolesSeeder extends Seeder
             'partners.view', 'partners.manage', 'batches.manage',
             'employers.view', 'employers.manage', 'jobs.view', 'jobs.manage',
             'applications.manage', 'interviews.manage', 'followups.manage',
-            'placements.manage', 'reports.view', 'users.manage', 'permissions.manage',
+            'placements.manage', 'reports.view', 'users.manage', 'permissions.manage', 'masters.manage',
         ];
         foreach ($roles as $key => $name) {
             DB::table('roles')->updateOrInsert(['key' => $key], ['name' => $name, 'updated_at' => now(), 'created_at' => now()]);

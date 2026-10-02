@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCandidateRequest;
 use App\Models\Candidate;
 use App\Models\CandidateDraft;
+use App\Services\CandidateMasterData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -15,11 +16,17 @@ class CandidateRegistrationController extends Controller
 {
     public function store(StoreCandidateRequest $request): JsonResponse
     {
-        $validated = $request->validated();
+        [$validated, $languageIds] = CandidateMasterData::resolve($request->validated());
+        $inviteFields = [];
+        if ($request->filled('invite_token')) {
+            $center = \App\Services\CenterInvite::resolve($request->invite_token);
+            $batch = DB::table('training_batches')->where('training_center_id', $center->id)->where('code', $validated['batch_code'])->first();
+            $inviteFields = ['training_center_id' => $center->id, 'training_partner_id' => $center->training_partner_id, 'training_batch_id' => $batch->id, 'training_status' => 'Ongoing', 'training_center' => $center->name, 'training_partner' => $center->partner_name, 'batch_end_date' => $batch->ends_on];
+        }
         $storedFiles = [];
 
         try {
-            $candidate = DB::transaction(function () use ($request, $validated, &$storedFiles) {
+            $candidate = DB::transaction(function () use ($request, $validated, $languageIds, $inviteFields, &$storedFiles) {
                 foreach (['photo', 'resume', 'certificate'] as $file) {
                     if ($request->hasFile($file)) {
                         $storedFiles[$file] = $request->file($file)->store("candidate-documents/{$file}");
@@ -27,7 +34,8 @@ class CandidateRegistrationController extends Controller
                 }
 
                 $candidate = Candidate::create([
-                    ...Arr::except($validated, ['password_confirmation', 'terms_accepted', 'privacy_accepted', 'photo', 'resume', 'certificate', 'draft_token']),
+                    ...Arr::except($validated, ['password_confirmation', 'terms_accepted', 'privacy_accepted', 'photo', 'resume', 'certificate', 'draft_token', 'invite_token']),
+                    ...$inviteFields,
                     'registration_source' => 'public',
                     'photo_path' => $storedFiles['photo'] ?? null,
                     'resume_path' => $storedFiles['resume'] ?? null,
@@ -41,6 +49,7 @@ class CandidateRegistrationController extends Controller
                 $candidate->forceFill([
                     'candidate_code' => 'EXO-CAN-'.str_pad((string) $candidate->id, 6, '0', STR_PAD_LEFT),
                 ])->save();
+                CandidateMasterData::saveLanguages($candidate->id, $languageIds);
 
                 foreach (['location', 'photo', 'call', 'sms', 'whatsapp', 'email'] as $purpose) {
                     DB::table('candidate_consents')->insert([

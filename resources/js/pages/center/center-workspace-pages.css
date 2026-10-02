@@ -1,0 +1,358 @@
+.center-workspace-page {
+    max-width: 1260px;
+    margin: auto;
+    color: #19243b;
+    font: 14px/1.55 var(--font-body);
+}
+.center-workspace-page .panel {
+    margin: 20px 0;
+    border: 1px solid #e4e7ec;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(16, 24, 40, 0.04);
+}
+.center-workspace-page .panel > header {
+    padding: 24px 28px;
+    border-bottom: 1px solid #e4e7ec;
+}
+.center-workspace-page .panel > header h3 {
+    font: 600 18px/1.4 var(--font-heading);
+    margin: 0;
+}
+.center-workspace-page .panel p {
+    font-size: 14px;
+    line-height: 1.55;
+    color: #667085;
+}
+.center-workspace-page .panel-body {
+    padding: 24px 28px;
+}
+.center-workspace-page .btn {
+    min-height: 44px;
+    font: 600 14px/1.4 var(--font-body);
+    border-radius: 8px;
+    text-decoration: none;
+}
+.center-workspace-page .stat-card {
+    padding: 20px;
+    border-radius: 16px;
+}
+.center-workspace-page .stat-card label {
+    font-size: 14px;
+    font-weight: 500;
+}
+.center-workspace-page .stat-card small {
+    font-size: 12px;
+    line-height: 1.45;
+}
+.center-workspace-page .stat-card strong {
+    font-size: 28px;
+}
+.center-workspace-filters {
+    display: flex;
+    gap: 16px;
+    margin: 20px 0;
+    align-items: end;
+}
+.center-workspace-filters label {
+    display: grid;
+    gap: 7px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #344054;
+}
+.center-workspace-filters label:first-child {
+    flex: 1;
+}
+.center-workspace-filters input,
+.center-workspace-filters select {
+    height: 46px;
+    padding: 11px 13px;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    background: white;
+    font: 400 14px/1.4 var(--font-body);
+    color: #19243b;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+.center-workspace-filters input::placeholder {
+    color: #98a2b3;
+    opacity: 1;
+}
+.center-workspace-filters :is(input, select):focus {
+    outline: none;
+    border-color: #315be8;
+    box-shadow: 0 0 0 4px rgba(49, 91, 232, 0.12);
+}
+.center-workspace-state,
+.center-workspace-empty {
+    padding: 32px;
+    text-align: center;
+    font-size: 14px;
+    color: #667085;
+}
+.center-record-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+}
+.center-record-details > div {
+    padding: 16px;
+    background: #f9fafb;
+    border: 1px solid #e4e7ec;
+    border-radius: 8px;
+    min-width: 0;
+}
+.center-record-details dt {
+    font-size: 12px;
+    color: #667085;
+}
+.center-record-details dd {
+    margin: 6px 0 0;
+    font-size: 14px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+    white-space: pre-line;
+}
+.center-save-error {
+    color: #d64d58;
+    font-size: 12px;
+}
+.pipeline-legend {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+.pipeline-legend span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+}
+.pipeline-legend i {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+}
+.completion {
+    background: #315be8;
+}
+.interview {
+    background: #d88824;
+}
+.joining {
+    background: #169b68;
+}
+.pipeline-chart-columns {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 16px;
+}
+.pipeline-week {
+    text-align: center;
+    font-size: 12px;
+    color: #667085;
+}
+.pipeline-bars {
+    height: 180px;
+    display: flex;
+    align-items: end;
+    justify-content: center;
+    gap: 8px;
+    border-bottom: 1px solid #e4e7ec;
+    margin-bottom: 12px;
+}
+.pipeline-bar-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    max-width: 36px;
+}
+.pipeline-bar-slot b {
+    font-size: 12px;
+    color: #344054;
+}
+.pipeline-bar-slot i {
+    display: block;
+    width: 100%;
+    min-height: 2px;
+    border-radius: 5px 5px 0 0;
+}
+.pipeline-roadmap article {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    padding: 24px 0;
+    border-bottom: 1px solid #e4e7ec;
+}
+.pipeline-roadmap article:last-child {
+    border: 0;
+}
+.pipeline-roadmap article > div {
+    flex: 1;
+}
+.pipeline-roadmap h3 {
+    font: 600 18px/1.4 var(--font-heading);
+    margin: 8px 0;
+}
+.pipeline-roadmap p {
+    margin: 4px 0;
+}
+.pipeline-step {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #edf1ff;
+    color: #315be8;
+    font-size: 18px;
+    font-weight: 600;
+}
+.pipeline-note {
+    padding: 16px 20px;
+    border: 1px solid #e4e7ec;
+    border-radius: 12px;
+    color: #667085;
+    font-size: 12px;
+}
+.pipeline-note a {
+    color: #315be8;
+}
+.center-funnel > div {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+.center-funnel i {
+    grid-column: 1/-1;
+    height: 8px;
+    background: #edf1ff;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.center-funnel em {
+    display: block;
+    height: 100%;
+    background: #315be8;
+}
+.role-shell.center .center-profile-heading {
+    margin-bottom: 16px;
+}
+.role-shell.center .center-profile-heading > span {
+    display: none;
+}
+.role-shell.center .center-profile-heading h1 {
+    font-size: 22px;
+    line-height: 1.3;
+}
+.role-shell.center .center-profile-heading p {
+    font-size: 13px;
+    line-height: 1.45;
+    margin-top: 4px;
+}
+.role-shell.center .center-dashboard .panel h3 {
+    font: 600 18px/1.4 var(--font-heading);
+}
+.role-shell.center .center-dashboard .panel header p,
+.role-shell.center .center-dashboard .batch-list b,
+.role-shell.center .center-dashboard .recommended-strip p {
+    font-size: 14px;
+    line-height: 1.55;
+}
+.role-shell.center .center-dashboard .batch-list small,
+.role-shell.center .center-dashboard .stat-card small,
+.role-shell.center .center-dashboard .legend-list,
+.role-shell.center .center-dashboard .center-priority small {
+    font-size: 12px;
+    line-height: 1.45;
+}
+.role-shell.center .center-dashboard .stat-card label,
+.role-shell.center .center-dashboard .center-priority b {
+    font-size: 14px;
+}
+.role-shell.center .center-dashboard .btn {
+    font-size: 14px;
+    min-height: 44px;
+}
+@media (max-width: 800px) {
+    .center-workspace-page .stat-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .pipeline-roadmap article {
+        flex-wrap: wrap;
+    }
+    .pipeline-roadmap article > .btn {
+        margin-left: 64px;
+    }
+    .pipeline-chart-columns {
+        gap: 8px;
+    }
+    .pipeline-bars {
+        gap: 4px;
+    }
+}
+@media (max-width: 600px) {
+    .center-workspace-page .panel > header,
+    .center-workspace-page .panel-body {
+        padding: 20px;
+    }
+    .center-workspace-page .stat-grid,
+    .center-record-details {
+        grid-template-columns: 1fr;
+    }
+    .center-workspace-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .pipeline-chart-columns {
+        min-width: 480px;
+    }
+    .center-workspace-page .panel-body:has(.pipeline-chart-columns) {
+        overflow: auto;
+    }
+    .pipeline-roadmap h3 {
+        font-size: 16px;
+    }
+}
+.role-shell.center .profile-menu {
+    min-width: 240px;
+    padding: 12px;
+    border: 1px solid #e4e7ec;
+    border-radius: 12px;
+}
+.role-shell.center .profile-menu b {
+    font-size: 14px;
+}
+.role-shell.center .profile-menu small {
+    font-size: 12px;
+}
+.role-shell.center .profile-menu a,
+.role-shell.center .profile-menu button {
+    min-height: 44px;
+    font: 500 14px/1.4 var(--font-body);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.role-shell.center .profile-btn {
+    min-height: 44px;
+}
+.role-shell.center .profile-btn b {
+    font-size: 14px;
+}
+.role-shell.center .profile-btn small {
+    font-size: 12px;
+}
+.role-shell.center .btn:focus-visible,
+.role-shell.center a:focus-visible {
+    outline: 3px solid rgba(49, 91, 232, 0.4);
+    outline-offset: 3px;
+}

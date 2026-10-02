@@ -8,7 +8,7 @@ export const PUBLIC_LOGIN_ROLES = [
   },
   {
     id: "center",
-    label: "Training Partner",
+    label: "Training Center",
     identifierLabel: "Email or mobile",
     identifierPlaceholder: "Email or registered mobile",
     destination: "/center/dashboard",

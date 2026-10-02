@@ -1,0 +1,31 @@
+/* Opt-in data table standard; see documents/EXOWORK-UI-Style-Guide.md. */
+.data-table{overflow-x:auto;background:#fff}
+.data-table table{width:100%;min-width:760px;border-collapse:collapse;font:400 14px/1.45 var(--font-body);color:#475467}
+.data-table table th{padding:12px 16px;text-align:left;background:#f9fafb;border-bottom:1px solid #e4e7ec;font:600 12px/1.45 var(--font-body);color:#667085;text-transform:none;letter-spacing:0;white-space:nowrap}
+.data-table table td{padding:16px;vertical-align:middle;border-bottom:1px solid #e4e7ec;font:400 14px/1.45 var(--font-body)}
+.data-table table tbody tr:last-child td{border-bottom:0}
+.data-table table tbody tr:hover,.data-table table tbody tr:focus-within{background:#f9fafb}
+.data-table table td b{display:block;font:600 14px/1.45 var(--font-body);color:#19243b}
+.data-table table td small{display:block;margin-top:4px;font:400 12px/1.45 var(--font-body);color:#667085;white-space:normal}
+.data-table .table-record-link{display:inline;padding:0;border:0;background:transparent;text-align:left;font:600 14px/1.45 var(--font-body);color:#19243b;cursor:pointer}
+.data-table .table-record-link:hover{color:#315be8;text-decoration:underline}
+.data-table .table-row-action{display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:8px;background:transparent;color:#475467;cursor:pointer}
+.data-table .table-row-action:hover{background:#edf1ff;color:#315be8}
+.data-table .table-row-action svg{width:18px;height:18px}
+.data-table button:focus-visible{outline:3px solid rgba(49,91,232,.5);outline-offset:3px}
+.data-table .status{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font:500 12px/1.4 var(--font-body);white-space:nowrap}
+.data-table .status.ongoing{background:#edf1ff;color:#315be8}
+.data-table .status.upcoming{background:#fff5e5;color:#94621d}
+.data-table .status.completed{background:#e9f8f1;color:#16734f}
+.data-table .mini-progress{width:112px;max-width:100%;height:6px;margin-top:6px;background:#e4e7ec;border-radius:999px;overflow:hidden}
+.data-table .mini-progress i{display:block;height:100%;background:#315be8;border-radius:inherit}
+.data-table .workspace-empty{padding:32px 20px;font:400 14px/1.5 var(--font-body);color:#667085}
+@media(max-width:600px){.data-table table th{padding:12px}.data-table table td{padding:14px 12px}}
+
+.data-table table td{border-top:0}
+.data-table .btn{min-height:44px;padding:10px 14px;border-radius:8px;font:600 14px/1.4 var(--font-body)}
+.data-table .status.in-training{background:#edf1ff;color:#315be8}
+.data-table .status.eligible-soon{background:#fff5e5;color:#94621d}
+.data-table .status.job-ready{background:#e9f8f1;color:#16734f}
+.data-table .status.not-available{background:#f2f4f7;color:#475467}
+.data-table .status i{background:currentColor}

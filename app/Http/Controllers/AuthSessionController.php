@@ -40,11 +40,11 @@ class AuthSessionController extends Controller
             Auth::guard('candidate')->logout();
             Auth::guard('web')->login($user, $data['remember'] ?? false);
             $user->forceFill(['last_login_at' => now()])->save();
-            $destination = $data['role'] === 'center' ? '/center/dashboard' : ($data['role'] === 'employer' ? '/employer/dashboard' : '/admin/dashboard');
+            $destination = $data['role'] === 'center' ? (DB::table('organization_memberships')->join('training_centers', 'training_centers.id', '=', 'organization_memberships.training_center_id')->where('organization_memberships.user_id', $user->id)->where('organization_memberships.status', 'active')->where('training_centers.onboarding_step', '<', 3)->exists() ? '/center/onboarding' : '/center/dashboard') : ($data['role'] === 'employer' ? '/employer/dashboard' : '/admin/dashboard');
         }
         $request->session()->regenerate();
 
-        return response()->json(['destination' => $destination]);
+        return response()->json(['destination' => $destination, 'csrf_token' => csrf_token()]);
     }
 
     public function destroy(Request $request): JsonResponse
@@ -54,6 +54,6 @@ class AuthSessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return response()->json(['message' => 'Signed out.']);
+        return response()->json(['message' => 'Signed out.', 'csrf_token' => csrf_token()]);
     }
 }

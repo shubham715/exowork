@@ -1,5 +1,5 @@
 import React,{useState}from'react';
-import{useNavigate}from'react-router-dom';
+import{useNavigate,useOutletContext}from'react-router-dom';
 import{BriefcaseBusiness,Building2,CalendarDays,FileText,ShieldCheck,ArrowRight,MapPin,IndianRupee,PlayCircle,Clock3,CheckCircle2,Sparkles,UserRound,UsersRound,Phone,GraduationCap}from'lucide-react';
 import{Panel,Status}from'../../components/UI';
 
@@ -7,12 +7,15 @@ const jobs=[['Machine Operator','Jaipur, Rajasthan','₹14,000 – ₹18,000','8
 
 export default function CandidateDashboard(){
   const nav=useNavigate();
+  const {candidateProfile}=useOutletContext()||{};
+  const candidateName=candidateProfile?.first_name||'Candidate';
+  const candidateCode=candidateProfile?.candidate_code;
   const[mode,setMode]=useState('partner');
   const partnered=mode==='partner';
   const journey=partnered?[['Profile ready','Verified by partner',CheckCircle2,'done'],['Jobs matched','6 opportunities',Sparkles,'done'],['Interview','Tomorrow · 11:30',CalendarDays,'current'],['Joining','Partner will assist',UsersRound,'']]:[['Profile ready','Completed by you',CheckCircle2,'done'],['Jobs matched','6 opportunities',Sparkles,'done'],['Interview','Tomorrow · 11:30',CalendarDays,'current'],['Joining','Track it here',BriefcaseBusiness,'']];
   return <div className="candidate-dashboard">
     <section className="candidate-mode-card" aria-label="Dashboard preview mode"><div><span>VIEWING AS</span><h3>{partnered?'Training partner enrolled':'Independent candidate'}</h3><p>{partnered?'Your training partner supports your profile, interview and joining journey.':'You manage your profile, applications and employment journey directly.'}</p></div><div className="candidate-mode-toggle" role="group" aria-label="Choose candidate type"><button className={partnered?'active':''} onClick={()=>setMode('partner')}><Building2/>Training partner enrolled</button><button className={!partnered?'active':''} onClick={()=>setMode('independent')}><UserRound/>Independent</button></div></section>
-    <section className="candidate-welcome"><div className="candidate-avatar">NK</div><div><span>WELCOME BACK, NEHA</span><h1>{partnered?'Your placement journey is moving forward.':'Your next opportunity is taking shape.'}</h1><p>Profile EXO-CAN-102548 {partnered?'· Enrolled through ABC Skill Development Center':'· Self-managed profile'}</p></div><div className="profile-completion"><b>92%</b><span>Profile ready</span><i><em/></i></div></section>
+    <section className="candidate-welcome"><div className="candidate-avatar">{candidateProfile?.initials||candidateName.slice(0,2).toLocaleUpperCase()}</div><div><span>WELCOME BACK, {candidateName.toLocaleUpperCase()}</span><h1>{partnered?'Your placement journey is moving forward.':'Your next opportunity is taking shape.'}</h1><p>{candidateCode&&<>Profile {candidateCode} </>}{partnered?'Enrolled through ABC Skill Development Center':'Self-managed profile'}</p></div><div className="profile-completion"><b>92%</b><span>Profile ready</span><i><em/></i></div></section>
     {partnered&&<section className="partner-relationship"><div className="partner-mark"><Building2/></div><div><span>YOUR TRAINING & PLACEMENT PARTNER</span><h2>ABC Skill Development Center</h2><p>Batch MAN-26-08 · Machine Operator · Training ends 30 Sep 2026</p></div><div className="partner-support"><span><CheckCircle2/> Profile verified</span><span><UsersRound/> Placement support active</span></div><button onClick={()=>nav('/candidate/profile')}>View training details <ArrowRight/></button></section>}
     {!partnered&&<section className="independent-note"><UserRound/><div><b>You are managing this journey independently</b><p>Keep your profile and availability current so EXOWORK can improve your matches. You can connect a training partner later if one invites you.</p></div><button onClick={()=>nav('/candidate/profile')}>Update profile <ArrowRight/></button></section>}
     <div className="journey-track">{journey.map(([t,s,I,c],i)=><div className={c} key={t}><span><I/></span><div><b>{t}</b><small>{s}</small></div>{i<3&&<i/>}</div>)}</div>

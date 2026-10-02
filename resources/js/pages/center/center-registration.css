@@ -1,1 +1,41 @@
 .center-registration{max-width:1180px;margin:auto;padding:24px 28px 55px}.center-registration-head{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:18px;margin-bottom:14px}.center-registration-head span{font-size:8px;color:var(--blue);letter-spacing:1.2px}.center-registration-head h1{font-size:25px}.center-registration-head p{font-size:10px}.registration-scope{display:flex;align-items:center;gap:10px;background:var(--greenp);border:1px solid #cbe9dc;padding:13px 16px;border-radius:12px;margin-bottom:13px}.registration-scope svg{color:var(--green)}.registration-scope b,.registration-scope small{display:block}.registration-scope small{font-size:8px}.registration-section{background:white;border:1px solid var(--line);border-radius:14px;margin:13px 0;overflow:hidden}.registration-section>header{display:flex;align-items:center;gap:11px;padding:16px 19px;border-bottom:1px solid var(--line)}.registration-section>header>span{width:32px;height:32px;display:grid;place-items:center;background:var(--bluep);color:var(--blue);border-radius:9px;font-weight:bold}.registration-section h2{font-size:15px}.registration-section header p{font-size:9px}.registration-section>.form-grid,.registration-section>.consent-grid,.registration-section>.legal-check,.registration-section>.consent-proof{margin:16px 19px}.check-row{display:flex;gap:18px;border:1px solid var(--line);padding:10px;border-radius:8px;margin-top:6px}.check-row label{font-weight:normal;display:flex;gap:5px}.consent-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.consent-grid>label{display:flex;gap:8px;padding:11px;border:1px solid var(--line);border-radius:9px}.consent-grid b,.consent-grid small{display:block;font-size:9px}.consent-grid small{font-size:8px;color:var(--muted)}.registration-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}@media(max-width:600px){.center-registration{padding:18px 14px}.center-registration-head{grid-template-columns:1fr}.center-registration-head>.btn:first-child{justify-self:start}.consent-grid{grid-template-columns:1fr 1fr}}
+/* Assisted registration uses the shared compact header and readable form scale. */
+.role-shell .center-registration{max-width:1260px;margin:0 auto;padding:4px 0 32px;font-family:var(--font-body);color:var(--color-heading)}
+.center-registration .registration-scope{padding:12px 16px;margin-bottom:16px;gap:12px}
+.center-registration .registration-scope b{font-size:14px;font-weight:600}
+.center-registration .registration-scope small{font-size:12px;line-height:1.45;margin-top:3px;color:#475467}
+.center-registration .registration-section{margin:16px 0;border:1px solid #e4e7ec;border-radius:16px;box-shadow:0 4px 14px #1018280a}
+.center-registration .registration-section>header{padding:18px 24px;gap:12px}
+.center-registration .registration-section h2{font:600 18px/1.4 var(--font-heading)}
+.center-registration .registration-section header p{font:400 13px/1.45 var(--font-body);color:#667085;margin-top:3px}
+.center-registration .registration-section>.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 16px;margin:24px}
+.center-registration .field-label{display:flex;flex-direction:column;gap:7px;font:500 14px/1.45 var(--font-body);color:#344054;min-width:0}
+.center-registration .field-label.wide{grid-column:1/-1}
+.center-registration .field-label input,.center-registration .field-label select,.center-registration .field-label textarea{width:100%;min-height:46px;margin:0;padding:11px 13px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:var(--color-heading);font:400 14px/1.4 var(--font-body);box-shadow:0 1px 2px #1018280a}
+.center-registration .field-label textarea{min-height:104px;resize:vertical}
+.center-registration .field-label input:read-only{background:#f9fafb;color:#667085}
+.center-registration .field-label input:hover,.center-registration .field-label select:hover,.center-registration .field-label textarea:hover{border-color:#98a2b3}
+.center-registration .field-label input:focus,.center-registration .field-label select:focus,.center-registration .field-label textarea:focus{outline:none;border-color:#315be8;box-shadow:0 0 0 4px #315be81f}
+.center-registration .field-label small{font:400 12px/1.45 var(--font-body);color:#667085}
+.center-registration .check-row{flex-wrap:wrap;gap:12px 20px;margin:0;padding:14px;background:#f9fafb}
+.center-registration .check-row label{align-items:center;font:400 14px/1.45 var(--font-body)}
+.center-registration .check-row input,.center-registration .consent-grid input,.center-registration .legal-check input{width:17px;height:17px;min-height:17px;margin:2px 0 0;padding:0;flex-shrink:0;accent-color:#315be8}
+.center-registration .file-box{min-width:0;padding:16px;border:1px dashed #d0d5dd;border-radius:10px;background:#f9fafb;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden}
+.center-registration .file-box>svg{color:#315be8;flex-shrink:0}
+.center-registration .file-box b{font:600 14px/1.45 var(--font-body)}
+.center-registration .file-box small{display:block;font:400 12px/1.45 var(--font-body);color:#667085;margin-top:4px}
+.center-registration .file-box>span{margin-left:auto;font-size:12px;color:#315be8;max-width:140px;overflow-wrap:anywhere}
+.center-registration .file-box input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.center-registration .file-box:focus-within{outline:3px solid #315be81f;border-color:#315be8}
+.center-registration .registration-section>.consent-grid{margin:20px 24px;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.center-registration .consent-grid>label{padding:14px;gap:10px;align-items:flex-start}
+.center-registration .consent-grid b{font:600 14px/1.45 var(--font-body)}
+.center-registration .consent-grid small{font:400 12px/1.45 var(--font-body);margin-top:3px}
+.center-registration .registration-section>.legal-check{display:flex;gap:10px;align-items:flex-start;margin:16px 24px;font:400 14px/1.5 var(--font-body);color:#475467}
+.center-registration .registration-section>.consent-proof{display:flex;align-items:flex-start;gap:10px;margin:20px 24px;padding:14px;background:#edf1ff;border-radius:10px}
+.center-registration .consent-proof svg{flex-shrink:0;color:#315be8}
+.center-registration .consent-proof p{font:400 12px/1.5 var(--font-body);color:#475467}
+.center-registration .registration-actions{padding:16px 0;margin:0;gap:10px}
+.center-registration .registration-actions .btn{min-height:44px;font:600 14px/1.4 var(--font-body)}
+.center-registration .reg-submit-error{padding:14px 16px;border:1px solid #fecdca;border-radius:10px;background:#fff1f0;font:400 14px/1.5 var(--font-body);color:#b42318}
+@media(max-width:600px){.center-registration .registration-section>header{padding:16px 18px}.center-registration .registration-section>.form-grid{grid-template-columns:1fr;margin:18px;gap:18px}.center-registration .registration-section>.consent-grid{grid-template-columns:1fr;margin:18px}.center-registration .registration-section>.legal-check,.center-registration .registration-section>.consent-proof{margin:18px}.center-registration .file-box{flex-wrap:wrap}.center-registration .registration-actions{flex-wrap:wrap}}

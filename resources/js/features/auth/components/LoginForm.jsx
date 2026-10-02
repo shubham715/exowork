@@ -40,6 +40,8 @@ export default function LoginForm({ roles, admin = false }) {
       const response = await axios.post('/auth/login', { ...values, role: role.id }, {
         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
       });
+      const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+      if (csrfMeta && response.data.csrf_token) csrfMeta.content = response.data.csrf_token;
       navigate(response.data.destination);
     } catch (error) {
       setErrors({ identifier: error.response?.data?.message || 'Sign in failed. Please try again.' });
@@ -144,9 +146,11 @@ export default function LoginForm({ roles, admin = false }) {
         {submitting ? "Signing in…" : `Sign in to ${role.label}`}
         {!submitting && <ArrowRight />}
       </button>
-      <small className="demo-note">
-        New to EXOWORK? Your organization can help activate your account.
-      </small>
+      {!admin && <div className="login-register-links">
+        <span>New to EXOWORK?</span>
+        <Link to="/register/candidate">Register as a candidate</Link>
+        <Link to="/register/training-center">Register as a training center</Link>
+      </div>}
     </form>
   );
 }

@@ -7,7 +7,13 @@ import "./styles.css";
 import "./roles.css";
 import "./candidate-module.css";
 import "./pages/candidate/candidate-registration-enhancements.css";
+import "./pages/center/center-onboarding.css";
+import "./pages/center/center-dashboard.css";
+import "./pages/center/center-profile.css";
 import "./brand-logo.css";
+import "./workspace-headers.css";
+import "./modal-forms.css";
+import "./data-tables.css";
 
 createRoot(document.getElementById("root")).render(
   <BrowserRouter
@@ -19,3 +25,4 @@ createRoot(document.getElementById("root")).render(
     <App />
   </BrowserRouter>,
 );
+import "./pages/center/center-workspace-pages.css";
