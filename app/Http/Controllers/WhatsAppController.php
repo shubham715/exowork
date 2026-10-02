@@ -38,10 +38,7 @@ class WhatsAppController extends Controller
 
     public function index(Request $request)
     {
-        $this->admin($request);
-        $search = trim((string) $request->query('search', ''));
-
-        return response()->json(Candidate::whereNull('deleted_at')->when($search !== '', fn ($q) => $q->where(fn ($q) => $q->where('first_name', 'like', '%'.$search.'%')->orWhere('last_name', 'like', '%'.$search.'%')->orWhere('candidate_code', 'like', '%'.$search.'%')->orWhere('whatsapp', 'like', '%'.$search.'%')))->orderByDesc('id')->paginate(20, ['candidate_code', 'first_name', 'last_name', 'whatsapp', 'whatsapp_consent', 'qualification', 'district', 'preferred_industry', 'availability', 'training_center', 'updated_at']));
+        return app(AdminCandidateController::class)->index($request);
     }
 
     public function show(Request $request, string $code)
@@ -72,6 +69,7 @@ class WhatsAppController extends Controller
     public function send(Request $request, string $code, WhatsAppCloud $cloud)
     {
         [$candidate, $employer] = $this->candidate($request, $code, true);
+        abort_unless($candidate->profile_status === 'active', 422, 'Activate this candidate profile before sending WhatsApp messages.');
         $data = $request->validate(['request_id' => ['required', 'uuid'], 'template_name' => ['required', 'string', 'max:512'], 'language' => ['required', 'string', 'max:20'], 'parameters' => ['present', 'array', 'list', 'max:20'], 'parameters.*' => ['required', 'string', 'max:1024', 'not_regex:/[\r\n\t]/']]);
         $existing = DB::table('whatsapp_messages')->where('request_id', $data['request_id'])->first();
         if ($existing) {
@@ -89,7 +87,7 @@ class WhatsAppController extends Controller
         }
         $inserted = DB::transaction(function () use ($candidate, $request, $employer, $data, $recipient, $template) {
             $fresh = DB::table('candidates')->where('id', $candidate->id)->lockForUpdate()->first();
-            abort_unless($fresh && ! $fresh->deleted_at && $fresh->whatsapp_consent, 422, 'Candidate WhatsApp consent is no longer active.');
+            abort_unless($fresh && ! $fresh->deleted_at && $fresh->profile_status === 'active' && $fresh->whatsapp_consent, 422, 'Candidate profile or WhatsApp consent is no longer active.');
             if (DB::table('whatsapp_messages')->where('request_id', $data['request_id'])->exists()) {
                 return false;
             }

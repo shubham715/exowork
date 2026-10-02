@@ -75,6 +75,49 @@ class WhatsAppIntegrationTest extends TestCase
         $this->assertSame('4412345678', $cloud->recipient('+44 1234 5678'));
     }
 
+    public function test_candidate_directory_filters_sorting_and_global_counts_use_saved_records(): void
+    {
+        $other = $this->candidate->replicate();
+        $other->forceFill(['candidate_code' => 'EXO-CAN-000002', 'first_name' => 'Ravi', 'whatsapp' => '9876543212', 'availability' => 'No', 'whatsapp_consent' => false, 'profile_status' => 'inactive', 'state' => 'Maharashtra', 'qualification' => '12th', 'training_status' => 'Ongoing', 'training_center' => 'Pune Skill Center'])->save();
+        $this->getJson('/admin-api/candidates?consent=yes&availability[]=Yes')->assertOk()->assertJsonPath('total', 1)->assertJsonPath('counts.all', 2)->assertJsonPath('counts.training', 1)->assertJsonPath('counts.inactive', 1)->assertJsonPath('filters.centers.0', 'Pune Skill Center');
+        $this->getJson('/admin-api/candidates?states[]=Maharashtra&qualifications[]=12th&statuses[]=inactive')->assertOk()->assertJsonPath('data.0.first_name', 'Ravi')->assertJsonPath('total', 1);
+        $this->getJson('/admin-api/candidates?search=Asha%20Sharma')->assertOk()->assertJsonPath('total', 1);
+        $this->getJson('/admin-api/candidates?search=%25')->assertOk()->assertJsonPath('total', 0);
+        $this->getJson('/admin-api/candidates?sort=first_name&direction=desc&per_page=50')->assertOk()->assertJsonPath('data.0.first_name', 'Ravi')->assertJsonPath('per_page', 50);
+        $this->getJson('/admin-api/candidates?sort=password')->assertUnprocessable();
+        $this->getJson('/admin-api/candidates?from=2026-10-02&to=2026-09-01')->assertUnprocessable();
+    }
+
+    public function test_candidate_management_is_audited_and_deactivation_blocks_whatsapp(): void
+    {
+        $this->patchJson('/admin-api/candidates/EXO-CAN-000001', ['availability' => 'Available after training', 'skills' => 'Machine operation', 'expected_monthly_salary' => 20000])->assertOk();
+        $this->assertDatabaseHas('candidates', ['id' => $this->candidate->id, 'expected_monthly_salary' => 20000]);
+        $this->postJson('/admin-api/candidates/actions', ['ids' => [$this->candidate->id], 'action' => 'disable'])->assertOk();
+        $this->postJson($this->url(), $this->payload())->assertUnprocessable();
+        $this->assertDatabaseHas('audit_logs', ['action' => 'admin.candidate_disable', 'subject_id' => $this->candidate->id]);
+        $this->postJson('/admin-api/candidates/actions', ['ids' => [$this->candidate->id, 999], 'action' => 'activate'])->assertUnprocessable();
+        $this->assertSame('inactive', $this->candidate->fresh()->profile_status);
+        $this->postJson('/admin-api/candidates/actions', ['ids' => [$this->candidate->id], 'action' => 'activate'])->assertOk();
+        DB::table('user_permissions')->insert(['user_id' => $this->admin->id, 'permission_id' => DB::table('permissions')->where('key', 'candidates.update')->value('id'), 'allowed' => false]);
+        $this->getJson('/admin-api/candidates')->assertOk()->assertJsonPath('can_manage', false);
+        $this->patchJson('/admin-api/candidates/EXO-CAN-000001', ['availability' => 'Yes', 'skills' => 'X', 'expected_monthly_salary' => 100])->assertForbidden();
+        $this->postJson('/admin-api/candidates/actions', ['ids' => [$this->candidate->id], 'action' => 'disable'])->assertForbidden();
+    }
+
+    public function test_candidate_csv_matches_filters_and_protects_sensitive_data_and_formulas(): void
+    {
+        $this->candidate->update(['first_name' => '=HYPERLINK', 'skills' => 'private skills']);
+        $response = $this->get('/admin-api/candidates/export?consent=yes')->assertOk();
+        $csv = $response->streamedContent();
+        $this->assertStringContainsString("'=HYPERLINK", $csv);
+        $this->assertStringContainsString('EXO-CAN-000001', $csv);
+        $this->assertStringNotContainsString('private skills', $csv);
+        $this->assertStringNotContainsString('password', $csv);
+        $this->assertStringNotContainsString('aadhaar', $csv);
+        $this->get('/admin-api/candidates/export?consent=no')->assertOk();
+        $this->actingAs($this->user('employer'))->get('/admin-api/candidates/export')->assertForbidden();
+    }
+
     public function test_admin_reads_real_candidates_and_only_approved_supported_templates(): void
     {
         $this->getJson('/admin-api/candidates')->assertOk()->assertJsonPath('data.0.candidate_code', 'EXO-CAN-000001')->assertJsonMissingPath('data.0.password');
