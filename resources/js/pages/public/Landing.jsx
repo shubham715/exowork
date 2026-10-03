@@ -169,7 +169,7 @@ function DiscoverySections() {
           <div className="ex-discovery-head">
             <div className="ex-compact-title">
               <span>Explore opportunities</span>
-              <h2>Find the kind of job you want</h2>
+              <h2>Find the kind of job you want.</h2>
               <p>
                 Start with one of the job searches candidates use most often.
               </p>
