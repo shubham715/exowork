@@ -1,0 +1,99 @@
+name: Deploy EXOWORK to Hostinger
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hostinger-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Build production frontend
+        run: |
+          npm ci
+          npm run build
+          test -f public/build/manifest.json
+
+      - name: Deploy application and assets
+        env:
+          SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.HOSTINGER_KNOWN_HOSTS }}
+          SSH_HOST: ${{ secrets.HOSTINGER_HOST }}
+          SSH_USER: ${{ secrets.HOSTINGER_USER }}
+          SSH_PORT: ${{ secrets.HOSTINGER_PORT }}
+          APP_PATH: ${{ secrets.HOSTINGER_APP_PATH }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${SSH_KEY:?Missing SSH key}" "${KNOWN_HOSTS:?Missing known hosts}"
+          : "${SSH_HOST:?Missing host}" "${SSH_USER:?Missing user}"
+          : "${SSH_PORT:?Missing port}" "${APP_PATH:?Missing application path}"
+          [[ "$APP_PATH" == /home/*/domains/*/exowork ]]
+          [[ "$APP_PATH" != *'..'* && "$APP_PATH" != *' '* ]]
+          KEY_FILE="$RUNNER_TEMP/exowork_deploy_key"
+          HOSTS_FILE="$RUNNER_TEMP/exowork_known_hosts"
+          trap 'rm -f "$KEY_FILE" "$HOSTS_FILE"' EXIT
+          umask 077
+          printf '%s\n' "$SSH_KEY" > "$KEY_FILE"
+          printf '%s\n' "$KNOWN_HOSTS" > "$HOSTS_FILE"
+          SSH_ARGS=(-i "$KEY_FILE" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$HOSTS_FILE")
+          SERVER="$SSH_USER@$SSH_HOST"
+          PUBLIC_PATH="${APP_PATH%/*}/public_html"
+          printf -v REMOTE_COMMAND 'bash -s -- %q' "$APP_PATH"
+          printf -v RSYNC_SSH '%q ' ssh "${SSH_ARGS[@]}"
+
+          ssh "${SSH_ARGS[@]}" "$SERVER" "$REMOTE_COMMAND" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+          test -f .env
+          test -f artisan
+          test -f ../public_html/index.php
+          php artisan down --retry=60
+          REMOTE
+
+          # Keep server secrets, dependencies, Git metadata, caches and uploads.
+          rsync -az -e "$RSYNC_SSH" \
+            --exclude='.git/' --exclude='.github/' --exclude='.env' \
+            --exclude='.env.*' --exclude='node_modules/' --exclude='vendor/' \
+            --exclude='/storage/' --exclude='/bootstrap/cache/' \
+            --exclude='/public/build/' --exclude='/public/hot' \
+            --exclude='/public/storage' \
+            ./ "$SERVER:$APP_PATH/"
+
+          # Preserve the hosting-specific entry point and existing uploads.
+          rsync -az -e "$RSYNC_SSH" \
+            --exclude='/index.php' --exclude='/hot' \
+            --exclude='/storage' --exclude='/build/' \
+            public/ "$SERVER:$PUBLIC_PATH/"
+          # Keep old hashed assets; publish the new manifest after its assets.
+          rsync -az -e "$RSYNC_SSH" public/build/assets/ "$SERVER:$PUBLIC_PATH/build/assets/"
+          rsync -az -e "$RSYNC_SSH" public/build/manifest.json "$SERVER:$PUBLIC_PATH/build/manifest.json"
+
+          ssh "${SSH_ARGS[@]}" "$SERVER" "$REMOTE_COMMAND" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+          composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+          composer check-platform-reqs --no-dev
+          php artisan optimize:clear
+          php artisan migrate --force
+          php artisan config:cache
+          php artisan view:cache
+          php artisan up
+          REMOTE
+
