@@ -51,12 +51,12 @@ export default function PublicHeader() {
           ))}
           <div className="ex-drawer-actions">
             <Link className="ex-btn ghost" to="/login">Sign in</Link>
-            <Link className="ex-btn grad" to="/register/candidate">Get started</Link>
+            <Link className="ex-btn grad" to="/register">Get started</Link>
           </div>
         </nav>
         <div className="ex-nav-actions">
           <Link className="ex-btn ghost small" to="/login">Sign in</Link>
-          <Link className="ex-btn grad small" to="/register/candidate">Get started</Link>
+          <Link className="ex-btn grad small" to="/register">Get started</Link>
         </div>
         <button
           type="button"
