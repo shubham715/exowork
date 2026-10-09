@@ -57,7 +57,10 @@ class WhatsAppWebhookController extends Controller
                         continue;
                     }
                     $local = str_starts_with($recipient, (string) config('whatsapp.default_country_code')) ? substr($recipient, strlen((string) config('whatsapp.default_country_code'))) : $recipient;
+                    DB::table('whatsapp_opt_outs')->updateOrInsert(['recipient' => $recipient], ['created_at' => now(), 'updated_at' => now()]);
                     DB::table('candidates')->where(fn ($q) => $q->where('whatsapp', $recipient)->orWhere('whatsapp', '+'.$recipient)->orWhere('whatsapp', $local))->whereNull('deleted_at')->update(['whatsapp_consent' => false, 'updated_at' => now()]);
+                    $centers = DB::table('training_centers')->whereNull('deleted_at')->where(fn ($q) => $q->where('spoc_phone', $recipient)->orWhere('spoc_phone', '+'.$recipient)->orWhere('spoc_phone', $local))->pluck('id');
+                    DB::table('whatsapp_center_preferences')->whereIn('training_center_id', $centers)->update(['consent' => false, 'updated_at' => now()]);
                 }
             }
         }
@@ -78,7 +81,7 @@ class WhatsAppWebhookController extends Controller
             $receipt = DB::table('whatsapp_receipts')->where('provider_message_id', $providerId)->first();
             $record = DB::table('whatsapp_messages')->where('provider_message_id', $providerId)->lockForUpdate()->first();
             if ($record && $receipt && $this->advances($record, $receipt->status, $receipt->status_timestamp)) {
-                DB::table('whatsapp_messages')->where('id', $record->id)->update(['status' => $receipt->status, 'status_timestamp' => $receipt->status_timestamp, 'error_code' => $receipt->error_code, 'updated_at' => now()]);
+                DB::table('whatsapp_messages')->where('id', $record->id)->update(['status' => $receipt->status, 'status_timestamp' => $receipt->status_timestamp, 'error_code' => $receipt->error_code, 'error_message' => $receipt->error_code ? \App\Jobs\SendWhatsAppMessage::error($receipt->error_code) : null, 'updated_at' => now()]);
             }
         });
     }

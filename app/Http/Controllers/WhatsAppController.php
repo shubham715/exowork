@@ -52,7 +52,7 @@ class WhatsAppController extends Controller
     {
         [$candidate] = $this->candidate($request, $code);
 
-        return response()->json(['candidate' => $candidate->only(['candidate_code', 'first_name', 'last_name', 'whatsapp', 'whatsapp_consent', 'qualification', 'district', 'state', 'skills', 'experience_type', 'availability', 'preferred_industry', 'training_center', 'created_at'])]);
+        return response()->json(['candidate' => ['photo_url' => $candidate->photo_path ? '/admin-api/candidates/'.rawurlencode($candidate->candidate_code).'/photo' : null, ...$candidate->only(['candidate_code', 'first_name', 'last_name', 'whatsapp', 'whatsapp_consent', 'qualification', 'district', 'state', 'skills', 'experience_type', 'availability', 'preferred_industry', 'training_center', 'created_at', 'email', 'profile_status', 'expected_monthly_salary', 'training_status', 'batch_code', 'languages', 'preferred_locations', 'relocation_preference'])]]);
     }
 
     public function context(Request $request, string $code, WhatsAppCloud $cloud)
@@ -65,6 +65,10 @@ class WhatsAppController extends Controller
         if (! $missing) {
             try {
                 $templates = $cloud->templates();
+                $templates = array_values(array_filter($templates, function ($t) {
+                    $local = DB::table('whatsapp_templates')->where('name', $t['name'])->where('language', $t['language'])->first();
+                    return ! $local || ($local->review_status === 'approved' && $local->account_id === (string) config('whatsapp.business_account_id') && $local->body === $t['body']);
+                }));
             } catch (HttpException|ConnectionException $e) {
                 $error = 'Unable to load approved templates from Meta. Check your credentials and network, then refresh.';
             }
@@ -92,48 +96,23 @@ class WhatsAppController extends Controller
         if (! $template || $template['parameter_count'] !== count($data['parameters'])) {
             throw ValidationException::withMessages(['template_name' => 'Choose an approved supported template and fill every variable in order.']);
         }
-        $inserted = DB::transaction(function () use ($candidate, $request, $employer, $data, $recipient, $template) {
-            $fresh = DB::table('candidates')->where('id', $candidate->id)->lockForUpdate()->first();
-            abort_unless($fresh && ! $fresh->deleted_at && $fresh->profile_status === 'active' && $fresh->whatsapp_consent, 422, 'Candidate profile or WhatsApp consent is no longer active.');
-            if (DB::table('whatsapp_messages')->where('request_id', $data['request_id'])->exists()) {
-                return false;
-            }
-            abort_if(DB::table('whatsapp_messages')->where('recipient', $recipient)->where('created_at', '>', now()->subSeconds(6))->exists(), 429, 'Wait at least six seconds before messaging this candidate again.');
-
-            return DB::table('whatsapp_messages')->insertOrIgnore([
-                'candidate_id' => $candidate->id, 'actor_user_id' => $request->user()->id, 'employer_id' => $employer?->id,
-                'request_id' => $data['request_id'], 'recipient' => $recipient, 'template_name' => $template['name'], 'language' => $template['language'], 'category' => $template['category'], 'status' => 'submitting', 'created_at' => now(), 'updated_at' => now(),
-            ]) > 0;
-        });
-        $record = DB::table('whatsapp_messages')->where('request_id', $data['request_id'])->first();
-        abort_unless($record && $record->candidate_id === $candidate->id && $record->actor_user_id === $request->user()->id, 409);
-        if (! $inserted) {
-            return $this->result($record);
-        }
-        try {
-            $response = $cloud->send($recipient, $template, $data['parameters']);
-            $providerId = $response->json('messages.0.id');
-            $changes = $response->successful() && is_string($providerId) && $providerId !== ''
-                ? ['status' => 'accepted', 'provider_message_id' => $providerId]
-                : ['status' => $response->serverError() || $response->successful() ? 'unknown' : 'failed', 'error_code' => substr((string) $response->json('error.code', 'META_RESPONSE'), 0, 40)];
-        } catch (ConnectionException $e) {
-            $changes = ['status' => 'unknown', 'error_code' => 'NETWORK_TIMEOUT'];
-        }
-        DB::table('whatsapp_messages')->where('id', $record->id)->update([...$changes, 'updated_at' => now()]);
-        if (isset($changes['provider_message_id'])) {
-            app(WhatsAppWebhookController::class)->reconcile($changes['provider_message_id']);
-        }
-        DB::table('audit_logs')->insert(['actor_user_id' => $request->user()->id, 'action' => 'whatsapp.submitted', 'subject_type' => 'candidate', 'subject_id' => $candidate->id, 'changes' => json_encode(['message_id' => $record->id, 'template' => $template['name']]), 'ip_address' => $request->ip(), 'created_at' => now()]);
-
-        return $this->result(DB::table('whatsapp_messages')->find($record->id));
+        abort_if(DB::table('whatsapp_messages')->where('recipient', $recipient)->where('created_at', '>', now()->subSeconds(6))->exists(), 429, 'Wait at least six seconds before messaging this candidate again.');
+        $record = app(\App\Services\WhatsAppOutbox::class)->enqueue($recipient, $template, $data['parameters'], [
+            'candidate_id' => $candidate->id, 'actor_user_id' => $request->user()->id, 'employer_id' => $employer?->id, 'request_id' => $data['request_id'], 'source' => 'manual',
+        ]);
+        abort_unless($record->candidate_id === $candidate->id && $record->actor_user_id === $request->user()->id, 409);
+        DB::table('audit_logs')->insert(['actor_user_id' => $request->user()->id, 'action' => 'whatsapp.queued', 'subject_type' => 'candidate', 'subject_id' => $candidate->id, 'changes' => json_encode(['message_id' => $record->id, 'template' => $template['name']]), 'ip_address' => $request->ip(), 'created_at' => now()]);
+        return $this->result($record);
     }
 
     private function result(object $record)
     {
         return response()->json(['message' => ['id' => $record->id, 'status' => $record->status, 'error_code' => $record->error_code], 'notice' => match ($record->status) {
+            'queued' => 'Message queued. The worker will check consent and Meta approval before sending.',
+            'skipped' => 'Message suppressed because recipient consent or eligibility changed.',
             'failed' => 'Meta rejected this message. Check the error code and setup guide.',
             'unknown', 'submitting' => 'Submission is uncertain. Do not resend until you check delivery in WhatsApp Manager.',
             default => 'Meta accepted the message. Delivery and read status will update through webhooks.',
-        }], in_array($record->status, ['failed', 'unknown', 'submitting']) ? 202 : 200);
+        }], in_array($record->status, ['queued', 'skipped', 'failed', 'unknown', 'submitting']) ? 202 : 200);
     }
 }

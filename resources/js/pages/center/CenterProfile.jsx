@@ -5,7 +5,7 @@ import { Building2, MapPin, Save, ShieldCheck } from 'lucide-react';
 
 const centerTypes = ['Individual', 'Private', 'Government', 'NGO', 'ITI', 'Polytechnic', 'College', 'Skill Training Center'];
 const emptyProfile = {
-  center_type: '', spoc_name: '', spoc_phone: '', spoc_email: '',
+  center_type: '', spoc_name: '', spoc_phone: '', spoc_email: '', whatsapp_consent: false,
   website: '', state: '', district: '', city_block: '', address: '', pincode: '',
 };
 
@@ -58,6 +58,7 @@ export default function CenterProfile({ onboarding = false }) {
         setProfile({
           ...emptyProfile,
           ...Object.fromEntries(Object.keys(emptyProfile).map(key => [key, current[key] ?? ''])),
+          whatsapp_consent: Boolean(current.whatsapp_consent),
           spoc_name: current.spoc_name || profileResponse.data.partner?.authorized_person || '',
           spoc_phone: current.spoc_phone || profileResponse.data.partner?.phone || '',
           spoc_email: current.spoc_email || profileResponse.data.partner?.email || '',
@@ -139,6 +140,7 @@ export default function CenterProfile({ onboarding = false }) {
           <Section number="02" title="Contact details" description="Who should we contact about this center?">
             {field('spoc_name', 'Contact person / owner', 'Enter full name', { required: true })}
             {field('spoc_phone', 'Center contact mobile', '10-digit mobile number', { required: true, type: 'tel' })}
+            <label className="wa-consent"><input type="checkbox" checked={Boolean(profile.whatsapp_consent)} onChange={e=>setProfile(p=>({...p,whatsapp_consent:e.target.checked}))}/>I agree to receive candidate interview and placement updates on this WhatsApp number. Reply STOP to opt out.</label>
             {field('spoc_email', 'Center email', 'center@example.org', { required: true, type: 'email' })}
             {field('website', 'Website', 'https://example.org', { type: 'url' })}
           </Section>

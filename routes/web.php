@@ -24,11 +24,46 @@ Route::post('/auth/login', [AuthSessionController::class, 'store'])->middleware(
 Route::post('/auth/register/training-center', [TrainingCenterRegistrationController::class, 'store'])->middleware('throttle:5,1');
 Route::post('/auth/logout', [AuthSessionController::class, 'destroy']);
 Route::middleware('auth:web')->group(function () {
+    foreach (['admin-api', 'employer-api'] as $prefix) {
+        Route::get("/$prefix/applications/{id}/resume", [\App\Http\Controllers\JobEngagementController::class, 'applicationResume'])->whereNumber('id');
+    }
+    Route::get('/admin-api/employment', [\App\Http\Controllers\EmploymentWorkflowController::class, 'index']);
+    Route::post('/admin-api/employment', [\App\Http\Controllers\EmploymentWorkflowController::class, 'save']);
+
+    Route::get('/admin-api/whatsapp/templates', [\App\Http\Controllers\AdminWhatsAppController::class, 'templates']);
+    Route::put('/admin-api/whatsapp/workflow', [\App\Http\Controllers\AdminWhatsAppController::class, 'workflow']);
+    Route::post('/admin-api/whatsapp/sync', [\App\Http\Controllers\AdminWhatsAppController::class, 'sync'])->middleware('throttle:10,1');
+    Route::patch('/admin-api/whatsapp/templates/{id}/review', [\App\Http\Controllers\AdminWhatsAppController::class, 'review'])->whereNumber('id')->middleware('throttle:10,1');
+    Route::post('/admin-api/whatsapp/templates/{id}/submit', [\App\Http\Controllers\AdminWhatsAppController::class, 'submit'])->whereNumber('id')->middleware('throttle:10,1');
+    Route::post('/admin-api/whatsapp/templates/{id}/test', [\App\Http\Controllers\AdminWhatsAppController::class, 'test'])->whereNumber('id')->middleware('throttle:10,1');
+    Route::get('/admin-api/whatsapp/logs', [\App\Http\Controllers\AdminWhatsAppController::class, 'logs']);
+    Route::get('/admin-api/whatsapp/logs/{id}', [\App\Http\Controllers\AdminWhatsAppController::class, 'show'])->whereNumber('id');
+    Route::post('/admin-api/whatsapp/resend', [\App\Http\Controllers\AdminWhatsAppController::class, 'resend'])->middleware('throttle:10,1');
+
+    Route::get('/admin-api/data-management/network', [\App\Http\Controllers\AdminDataManagementController::class, 'network']);
+    Route::get('/admin-api/data-management', [\App\Http\Controllers\AdminDataManagementController::class, 'index']);
+    Route::get('/admin-api/data-management/credentials', [\App\Http\Controllers\AdminDataManagementController::class, 'export']);
+    Route::post('/admin-api/data-management/generate', [\App\Http\Controllers\AdminDataManagementController::class, 'generate'])->middleware('throttle:5,1');
+    Route::post('/admin-api/data-management/delete', [\App\Http\Controllers\AdminDataManagementController::class, 'destroy']);
+    Route::get('/admin-api/communication', [\App\Http\Controllers\AdminCommunicationController::class, 'index']);
+    Route::put('/admin-api/communication/settings/{channel}', [\App\Http\Controllers\AdminCommunicationController::class, 'settings']);
+    Route::post('/admin-api/communication/smtp/test', [\App\Http\Controllers\AdminCommunicationController::class, 'testSmtp'])->middleware('throttle:5,1');
+    Route::post('/admin-api/communication/email-templates', [\App\Http\Controllers\AdminCommunicationController::class, 'saveTemplate']);
+    Route::put('/admin-api/communication/email-templates/{id}', [\App\Http\Controllers\AdminCommunicationController::class, 'saveTemplate'])->whereNumber('id');
+    Route::delete('/admin-api/communication/email-templates/{id}', [\App\Http\Controllers\AdminCommunicationController::class, 'deleteTemplate'])->whereNumber('id');
+    Route::get('/admin-api/communication/recipients', [\App\Http\Controllers\AdminCommunicationController::class, 'recipients']);
+    Route::get('/admin-api/communication/emails', [\App\Http\Controllers\AdminCommunicationController::class, 'history']);
+    Route::post('/admin-api/communication/emails', [\App\Http\Controllers\AdminCommunicationController::class, 'createCampaign'])->middleware('throttle:10,1');
+    Route::post('/admin-api/communication/emails/{id}/process', [\App\Http\Controllers\AdminCommunicationController::class, 'processCampaign'])->whereNumber('id')->middleware('throttle:120,1');
+    Route::get('/admin-api/communication/whatsapp-templates', [\App\Http\Controllers\AdminCommunicationController::class, 'whatsappTemplates']);
+    Route::post('/admin-api/communication/whatsapp-templates', [\App\Http\Controllers\AdminCommunicationController::class, 'submitWhatsappTemplate'])->middleware('throttle:10,1');
+    Route::delete('/admin-api/communication/whatsapp-templates', [\App\Http\Controllers\AdminCommunicationController::class, 'deleteWhatsappTemplate'])->middleware('throttle:10,1');
     Route::get('/admin-api/candidates', [\App\Http\Controllers\AdminCandidateController::class, 'index']);
     Route::get('/admin-api/candidates/export', [\App\Http\Controllers\AdminCandidateController::class, 'export']);
     Route::post('/admin-api/candidates/actions', [\App\Http\Controllers\AdminCandidateController::class, 'actions']);
     Route::patch('/admin-api/candidates/{code}', [\App\Http\Controllers\AdminCandidateController::class, 'update']);
     Route::get('/admin-api/candidates/{code}', [\App\Http\Controllers\WhatsAppController::class, 'show']);
+    Route::get('/admin-api/candidates/{code}/photo', [\App\Http\Controllers\AdminCandidateController::class, 'photo']);
     foreach (['admin-api', 'employer-api'] as $prefix) {
         Route::get("/$prefix/candidates/{code}/whatsapp", [\App\Http\Controllers\WhatsAppController::class, 'context'])->middleware('throttle:30,1');
         Route::post("/$prefix/candidates/{code}/whatsapp", [\App\Http\Controllers\WhatsAppController::class, 'send'])->middleware('throttle:10,1');
@@ -82,6 +117,7 @@ Route::middleware('auth:web')->group(function () {
     Route::patch('/admin-api/training-centers/{id}/review', [AdminTrainingCenterController::class, 'review']);
 });
 Route::middleware('auth:candidate')->group(function () {
+    Route::post('/candidate-api/jobs/{id}/apply', [\App\Http\Controllers\JobEngagementController::class, 'apply'])->whereNumber('id')->middleware('throttle:30,1');
     Route::get('/candidate-api/opportunities', [\App\Http\Controllers\JobEngagementController::class, 'opportunities']);
     Route::post('/candidate-api/jobs/{id}/events', [\App\Http\Controllers\JobEngagementController::class, 'record'])->whereNumber('id')->middleware('throttle:120,1');
     Route::get('/candidate-api/profile', [CandidateSessionController::class, 'show']);
@@ -98,5 +134,10 @@ Route::middleware('auth:candidate')->group(function () {
 | endpoints are registered separately and are deliberately excluded here.
 |
 */
+Route::middleware('auth:candidate')->group(function () {
+    Route::get('/candidate-api/employment', [\App\Http\Controllers\EmploymentWorkflowController::class, 'candidate']);
+    Route::post('/candidate-api/employment/respond', [\App\Http\Controllers\EmploymentWorkflowController::class, 'respond'])->middleware('throttle:30,1');
+});
+
 Route::view('/{path?}', 'app')
     ->where('path', '^(?!api(?:/|$)|webhooks(?:/|$)).*');

@@ -11,6 +11,41 @@ class EmployerWorkspaceTest extends TestCase {
  private function payload(): array {return ['account_name'=>'Asha Rao','name'=>'Acme','legal_name'=>'Acme Industries Ltd','industry'=>'Manufacturing','website'=>'https://example.com','description'=>'Manufacturing components.','gstin'=>'27ABCDE1234F1Z5','state'=>'Maharashtra','district'=>'Pune','address'=>'Factory Road 12','pincode'=>'411001','contact_name'=>'Asha Rao','contact_designation'=>'HR Manager','contact_phone'=>'9876543210 ext 12','contact_department'=>'Human Resources','email'=>'owner@example.com','phone'=>'9876543210','password'=>'SecurePass123','password_confirmation'=>'SecurePass123','terms_accepted'=>true,'privacy_accepted'=>true,'document'=>UploadedFile::fake()->create('gst-proof.pdf',50,'application/pdf')];}
  private function register(): void {$this->seed(PlatformRolesSeeder::class);Storage::fake('local');$this->post('/auth/register/employer',$this->payload(),['Accept'=>'application/json'])->assertCreated();}
  private function job(): array{return ['title'=>'Machine Operator','department'=>'Production','industry'=>'Manufacturing','job_type'=>'Full-Time','workplace_type'=>'On-site','state'=>'Maharashtra','district'=>'Pune','location'=>'Factory Road 12','openings'=>5,'description'=>'Operate machines.','responsibilities'=>'Safety and quality checks.','skills'=>'Machine operation','education'=>'ITI','experience'=>'Fresher','salary_type'=>'Fixed','salary_min'=>15000,'salary_max'=>20000,'benefits'=>'PF, ESIC','screening_questions'=>'When can you start?','application_deadline'=>now()->addDays(30)->toDateString(),'status'=>'draft'];}
+ public function test_screening_questions_and_application_answers_are_validated_and_preserved(): void {
+  $this->register();DB::table('employers')->update(['status'=>'verified']);
+  $job=$this->job();$job['status']='active';$job['screening_questions']=[['question'=>'Can you work shifts?','required'=>true,'type'=>'yes_no'],['question'=>'Years of experience?','required'=>false,'type'=>'number']];
+  $this->postJson('/employer-api/jobs',$job)->assertOk()->assertJsonPath('jobs.0.screening_questions.0.required',true);
+  $id=DB::table('job_posts')->value('id');$candidate=$this->eligibleCandidate();$this->actingAs($candidate,'candidate');
+  $this->getJson('/candidate-api/opportunities')->assertOk()->assertJsonPath('jobs.0.screening_questions.0.question','Can you work shifts?');
+  $this->postJson("/candidate-api/jobs/$id/apply",['answers'=>['','']])->assertUnprocessable()->assertJsonValidationErrors('answers.0');
+  $this->postJson("/candidate-api/jobs/$id/apply",['answers'=>['Maybe','']])->assertUnprocessable()->assertJsonValidationErrors('answers.0');
+  $this->postJson("/candidate-api/jobs/$id/apply",['answers'=>['No','']])->assertCreated();
+  $this->postJson("/candidate-api/jobs/$id/apply",['answers'=>['Yes','1']])->assertOk();$this->assertDatabaseCount('applications',1);
+  $saved=json_decode(DB::table('applications')->value('screening_answers'),true);$this->assertSame('No',$saved[0]['answer']);$this->assertSame('Can you work shifts?',$saved[0]['question']);
+  $this->getJson('/candidate-api/opportunities')->assertJsonPath('jobs.0.applied',true);
+  DB::table('job_posts')->update(['status'=>'closed']);$this->postJson("/candidate-api/jobs/$id/apply",['answers'=>['Yes']])->assertNotFound();
+ }
+ public function test_screening_builder_rejects_invalid_questions(): void {
+  $this->register();$job=$this->job();$job['screening_questions']=[['question'=>'','required'=>true,'type'=>'unknown']];
+  $this->postJson('/employer-api/jobs',$job)->assertUnprocessable()->assertJsonValidationErrors(['screening_questions.0.question','screening_questions.0.type']);
+ }
+ public function test_application_resume_upload_and_profile_snapshot(): void {
+  $this->register();DB::table('employers')->update(['status'=>'verified']);
+  $job=$this->job();$job['status']='active';$job['screening_questions']=[];
+  $this->postJson('/employer-api/jobs',$job)->assertOk();$id=DB::table('job_posts')->value('id');
+  $candidate=$this->eligibleCandidate();$this->actingAs($candidate,'candidate');
+  $this->postJson("/candidate-api/jobs/$id/apply",['answers'=>[],'resume_source'=>'profile'])->assertUnprocessable()->assertJsonValidationErrors('resume_source');
+  $this->postJson("/candidate-api/jobs/$id/apply",['answers'=>[],'resume_source'=>'upload'])->assertUnprocessable()->assertJsonValidationErrors('resume');
+  $this->post("/candidate-api/jobs/$id/apply",['answers'=>'[]','resume_source'=>'upload','resume'=>UploadedFile::fake()->create('latest.pdf',30,'application/pdf')],['Accept'=>'application/json'])->assertCreated();
+  $application=DB::table('applications')->first();$this->assertSame('upload',$application->resume_source);$this->assertSame('latest.pdf',$application->resume_name);Storage::assertExists($application->resume_path);
+  $this->assertNull($candidate->fresh()->resume_path);
+  Storage::put('candidate-documents/resume/profile.pdf','original resume');$candidate->update(['resume_path'=>'candidate-documents/resume/profile.pdf']);
+  $this->getJson('/candidate-api/opportunities')->assertJsonPath('profile_resume','profile.pdf');
+  $this->postJson('/employer-api/jobs',$job)->assertOk();$next=DB::table('job_posts')->max('id');
+  $this->postJson("/candidate-api/jobs/$next/apply",['answers'=>[],'resume_source'=>'profile'])->assertCreated();
+  $snapshot=DB::table('applications')->where('job_post_id',$next)->first();$this->assertNotSame($candidate->resume_path,$snapshot->resume_path);
+  Storage::put($candidate->resume_path,'updated resume');$this->assertSame('original resume',Storage::get($snapshot->resume_path));
+ }
  public function test_registration_persists_private_profile_and_login(): void {
   $this->register();$user=User::firstOrFail();$e=DB::table('employers')->first();$this->assertAuthenticatedAs($user);$this->assertTrue(Hash::check('SecurePass123',$user->password));$this->assertSame('pending',$e->status);$this->assertNotNull($e->terms_accepted_at);Storage::disk('local')->assertExists($e->document_path);
   $this->getJson('/employer-api/identity')->assertOk()->assertJsonMissingPath('employer.document_path')->assertJsonPath('employer.legal_name','Acme Industries Ltd');

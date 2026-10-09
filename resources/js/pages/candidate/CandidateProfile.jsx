@@ -47,7 +47,7 @@ export default function CandidateProfile(){
     </PageHead>
     {message&&<div className="profile-error" role="alert">{message}</div>}
     <section className="candidate-profile-cover">
-      <div className="candidate-photo"><div className="photo-person">{profile.initials||`${profile.first_name?.[0]||''}${profile.last_name?.[0]||''}`}</div></div>
+      <div className="candidate-photo"><div className="photo-person">{profile.photo_url?<img src={profile.photo_url} alt="Profile" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:profile.initials||`${profile.first_name?.[0]||''}${profile.last_name?.[0]||''}`}</div></div>
       <div><Status tone={profile.availability==='No'?'pending':'active'}>{status}</Status><h1>{profile.full_name}</h1><p>{profile.candidate_code} · {profile.preferred_industry||'Candidate profile'}</p><span><MapPin/>{[profile.current_location,profile.district,profile.state].filter(Boolean).join(', ')||'Location not provided'}</span></div>
       <div className="cover-score"><b>{strength}%</b><span>Profile strength</span></div>
     </section>
@@ -77,3 +77,4 @@ export default function CandidateProfile(){
     </div>
   </>;
 }
+

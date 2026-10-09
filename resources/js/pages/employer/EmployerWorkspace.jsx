@@ -38,7 +38,7 @@ const jobEmpty = {
     salary_min: "",
     salary_max: "",
     benefits: "",
-    screening_questions: "",
+    screening_questions: [],
     application_deadline: "",
     status: "draft",
 };
@@ -357,6 +357,7 @@ function JobEditor({ data, setData, setError, job, onClose }) {
             district: data.employer.district,
             ...(template ? Object.fromEntries(Object.keys(jobEmpty).filter(k => !["status", "application_deadline"].includes(k)).map(k => [k, template[k] ?? jobEmpty[k]])) : {}),
             ...job,
+            screening_questions: Array.isArray(job?.screening_questions ?? template?.screening_questions) ? (job?.screening_questions ?? template?.screening_questions) : (job?.screening_questions || template?.screening_questions || "").split(/\r?\n/).filter(x=>x.trim()).map(question=>({question,required:false,type:"text"})),
         }),
         [step, setStep] = useState(0),
         [preview, setPreview] = useState(false),
@@ -400,7 +401,7 @@ function JobEditor({ data, setData, setError, job, onClose }) {
             setErrors(fields);
             setMessage(fail(e));
             const key = Object.keys(fields)[0];
-            const index = jobSteps.findIndex((x) => x[1].includes(key));
+            const index = jobSteps.findIndex((x) => x[1].includes(key?.split(".")[0]));
             if (index >= 0) setStep(index);
             setPreview(false);
         } finally {
@@ -415,6 +416,7 @@ function JobEditor({ data, setData, setError, job, onClose }) {
         if (index === 0 && (!Number.isInteger(Number(form.openings)) || Number(form.openings) < 1 || Number(form.openings) > 100000)) next.openings = ["Enter between 1 and 100,000 openings."];
         if (index === 2 && form.salary_min !== "" && form.salary_max !== "" && Number(form.salary_max) < Number(form.salary_min)) next.salary_max = ["Maximum salary must be at least the minimum salary."];
         const today = new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+        if (index === 3) form.screening_questions.forEach((q,i)=>{ if(!q.question.trim()) next[`screening_questions.${i}.question`] = ["Enter a question or remove this row."]; });
         if (index === 3 && form.application_deadline && form.application_deadline < today) next.application_deadline = ["Choose today or a future deadline."];
         if (Object.keys(next).length) {
             setErrors(next); setMessage("Complete the highlighted fields to continue. You can still save a draft."); setStep(index); setPreview(false);
@@ -426,6 +428,23 @@ function JobEditor({ data, setData, setError, job, onClose }) {
     const advance = () => { if (validateStep(step)) setStep(s => s + 1); };
     const review = () => { for(let i=0;i<jobSteps.length;i++) if(!validateStep(i)) return; setPreview(true); };
     const field = (key) => {
+        if (key === "screening_questions") {
+            const update = (index, changes) => set(key, form[key].map((q,i)=>i===index?{...q,...changes}:q));
+            return <div className="field-label wide screening-builder" key={key} id="job-screening_questions">
+                <div className="screening-heading"><span>Screening questions</span><small>{form[key].length} / 20</small></div>
+                <p className="screening-hint">Choose what candidates should answer before applying.</p>
+                <div className="screening-list">{form[key].map((q,i)=><fieldset key={i} disabled={busy} className="screening-question" aria-label={`Question ${i+1}`}>
+                    <div className="screening-card-heading"><label htmlFor={`screening-${i}`}>Question {i+1}</label><button type="button" className="screening-remove" onClick={()=>set(key,form[key].filter((_,n)=>n!==i))} aria-label={`Remove question ${i+1}`} title="Remove question"><X size={16}/></button></div>
+                    <input id={`screening-${i}`} value={q.question} maxLength={500} placeholder="e.g. Can you work rotational shifts?" onChange={e=>update(i,{question:e.target.value})} aria-invalid={!!errors[`screening_questions.${i}.question`]}/>
+                    <div className="screening-controls"><select aria-label={`Answer type for question ${i+1}`} value={q.type} onChange={e=>update(i,{type:e.target.value})}><option value="text">Short answer</option><option value="yes_no">Yes / No</option><option value="number">Number</option></select>
+                    <label className="screening-required"><input type="checkbox" checked={q.required} onChange={e=>update(i,{required:e.target.checked})}/>Required</label></div>
+                    {Object.entries(errors).filter(([k])=>k.startsWith(`screening_questions.${i}.`)).map(([k,v])=><span className="employer-error" role="alert" key={k}>{v[0]}</span>)}
+                </fieldset>)}</div>
+                <button type="button" className="screening-add" disabled={busy || form[key].length>=20} onClick={()=>{const index=form[key].length;set(key,[...form[key],{question:"",type:"text",required:false}]);requestAnimationFrame(()=>document.getElementById(`screening-${index}`)?.focus());}}><Plus size={16}/>Add question</button>
+                {errors[key] && <span className="employer-error" role="alert">{errors[key][0]}</span>}
+            </div>;
+        }
+
         const options =
             key === "job_type"
                 ? [
@@ -596,7 +615,7 @@ function JobEditor({ data, setData, setError, job, onClose }) {
                     </p>
                 )}
                 {preview ? (
-                    <div className="employer-job-preview"><h2>{form.title || "Untitled job"}</h2><p>{data.employer.legal_name || data.employer.name} Â· Review your requirement before publishing.</p>{data.employer.status!=="verified"&&<p className="employer-error">Company approval is required to publish. Save a draft while verification is pending.</p>}{jobSteps.map(([title,keys],i)=><section className="employer-preview-section" key={title}><header><h3>{title}</h3><button className="btn ghost" onClick={()=>{setStep(i);setPreview(false);}}>Edit section</button></header><dl>{keys.map(key=><div key={key}><dt>{jobLabels[key]}</dt><dd>{form[key] || 'Not provided'}</dd></div>)}</dl></section>)}</div>
+                    <div className="employer-job-preview"><h2>{form.title || "Untitled job"}</h2><p>{data.employer.legal_name || data.employer.name} Â· Review your requirement before publishing.</p>{data.employer.status!=="verified"&&<p className="employer-error">Company approval is required to publish. Save a draft while verification is pending.</p>}{jobSteps.map(([title,keys],i)=><section className="employer-preview-section" key={title}><header><h3>{title}</h3><button className="btn ghost" onClick={()=>{setStep(i);setPreview(false);}}>Edit section</button></header><dl>{keys.map(key=><div key={key}><dt>{jobLabels[key]}</dt><dd>{key === 'screening_questions' ? (form[key].length ? <ol>{form[key].map((q,i)=><li key={i}>{q.question} · {q.type === 'yes_no' ? 'Yes / No' : q.type === 'number' ? 'Number' : 'Short answer'} · {q.required ? 'Required' : 'Optional'}</li>)}</ol> : 'No screening questions') : form[key] || 'Not provided'}</dd></div>)}</dl></section>)}</div>
                 ) : (
                     <>
                         <div className="employer-step-intro"><p>{["Define the role, workplace and number of people you need.", "Set clear eligibility and responsibilities for relevant candidates.", "Add salary and benefits so candidates understand the offer.", "Add screening questions and a deadline, then review your job."][step]}</p><span>{step+1} of 4 steps</span></div>

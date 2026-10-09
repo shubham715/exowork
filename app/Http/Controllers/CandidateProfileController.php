@@ -66,6 +66,9 @@ class CandidateProfileController extends Controller
         $changes = [];
 
         DB::transaction(function () use ($request, $candidate, $resolved, $languageIds, &$changes) {
+            if (! $candidate->whatsapp_consent && $resolved['whatsapp_consent']) {
+                DB::table('whatsapp_opt_outs')->where('recipient', app(\App\Services\WhatsAppCloud::class)->recipient($candidate->whatsapp))->delete();
+            }
             foreach (['location', 'photo', 'call', 'sms', 'whatsapp', 'email'] as $purpose) {
                 $field = $purpose.'_consent';
                 if ((bool) $candidate->{$field} !== (bool) $resolved[$field]) {
@@ -141,6 +144,7 @@ class CandidateProfileController extends Controller
             'sms_consent' => (bool) $candidate->sms_consent,
             'whatsapp_consent' => (bool) $candidate->whatsapp_consent,
             'email_consent' => (bool) $candidate->email_consent,
+            'photo_url' => $candidate->photo_path && str_starts_with($candidate->photo_path, 'demo-profiles/') ? '/storage/'.$candidate->photo_path : null,
             'photo_added' => filled($candidate->photo_path),
             'aadhaar_added' => filled($candidate->getRawOriginal('aadhaar_number')),
             'profile_status' => $candidate->profile_status,

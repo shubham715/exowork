@@ -6,6 +6,7 @@ use App\Models\Candidate;
 use App\Services\JobEligibility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class JobEngagementController extends Controller
@@ -57,10 +58,66 @@ class JobEngagementController extends Controller
         return response()->json(['skipped' => true]);
     }
     public function opportunities(Request $request) {
-        return response()->json(['jobs' => DB::table('job_posts as j')->join('employers as e', 'e.id', '=', 'j.employer_id')
+        return response()->json(['profile_resume' => $request->user('candidate')->resume_path && Storage::exists($request->user('candidate')->resume_path) ? basename($request->user('candidate')->resume_path) : null, 'jobs' => DB::table('job_posts as j')->join('employers as e', 'e.id', '=', 'j.employer_id')
             ->whereIn('j.status', ['active', 'published'])->where('e.status', 'verified')->whereNull('j.deleted_at')->whereNull('e.deleted_at')
             ->where(fn ($q) => $q->whereNull('j.application_deadline')->orWhere('j.application_deadline', '>=', now('Asia/Kolkata')->toDateString()))
-            ->orderByDesc('j.id')->get(['j.id', 'j.title', 'j.description', 'j.district', 'j.state', 'j.salary_min', 'j.salary_max', 'j.job_type', 'j.openings', 'j.education', 'j.skills', 'j.experience'])]);
+            ->selectSub(DB::table('applications')->selectRaw('COUNT(*)')->whereColumn('job_post_id', 'j.id')->where('candidate_id', $request->user('candidate')->id), 'applied')->orderByDesc('j.id')->addSelect(['j.id', 'j.title', 'j.description', 'j.district', 'j.state', 'j.salary_min', 'j.salary_max', 'j.salary_type', 'j.job_type', 'j.workplace_type', 'j.industry', 'j.responsibilities', 'j.benefits', 'j.location', 'j.published_at', 'j.openings', 'j.education', 'j.skills', 'j.experience', 'j.screening_questions', 'j.application_deadline'])->get()->map(function ($job) use ($request) {
+                $job->screening_questions = \App\Services\ScreeningQuestions::normalize($job->screening_questions);
+                $job->applied = (bool) $job->applied;
+                return $job;
+            })])->header('Cache-Control', 'no-store, private');
+    }
+    public function applicationResume(Request $request, int $id) {
+        $query = DB::table('applications as a')->join('job_posts as j', 'j.id', '=', 'a.job_post_id')->join('candidates as c', 'c.id', '=', 'a.candidate_id')->where('a.id', $id)->whereNull('j.deleted_at')->whereNull('c.deleted_at');
+        if ($request->is('employer-api/*')) {
+            $employer = app(EmployerWorkspaceController::class)->employer($request);
+            abort_unless($employer->status === 'verified', 403);
+            $query->where('j.employer_id', $employer->id)->whereExists(fn ($q) => $q->selectRaw('1')->from('interviews as i')->whereColumn('i.application_id', 'a.id'));
+        } else { app(WhatsAppController::class)->admin($request); }
+        $application = $query->select('a.resume_path', 'a.resume_name')->first();
+        abort_unless($application && $application->resume_path && Storage::exists($application->resume_path), 404);
+        return Storage::download($application->resume_path, $application->resume_name ?: 'Resume', ['Cache-Control' => 'no-store, private', 'X-Content-Type-Options' => 'nosniff']);
+    }
+    public function apply(Request $request, int $id) {
+        if (is_string($request->input('answers'))) $request->merge(['answers' => json_decode($request->input('answers'), true)]);
+        $candidate = $request->user('candidate');
+        $storedResume = null;
+        try { return DB::transaction(function () use ($request, $id, $candidate, &$storedResume) {
+            $job = DB::table('job_posts as j')->join('employers as e', 'e.id', '=', 'j.employer_id')
+                ->where('j.id', $id)->whereIn('j.status', ['active', 'published'])->where('e.status', 'verified')
+                ->whereNull('j.deleted_at')->whereNull('e.deleted_at')
+                ->where(fn ($q) => $q->whereNull('j.application_deadline')->orWhere('j.application_deadline', '>=', now('Asia/Kolkata')->toDateString()))
+                ->select('j.*')->lockForUpdate()->first();
+            abort_unless($job, 404, 'This job is no longer accepting applications.');
+            if (DB::table('applications')->where('candidate_id', $candidate->id)->where('job_post_id', $id)->exists()) return response()->json(['applied' => true]);
+            $questions = \App\Services\ScreeningQuestions::normalize($job->screening_questions);
+            $rules = ['answers' => ['present', 'array', 'max:20'], 'resume_source' => ['sometimes', Rule::in(['profile', 'upload', 'none'])], 'resume' => ['required_if:resume_source,upload', 'file', 'mimes:pdf,doc,docx', 'max:5120']];
+            foreach ($questions as $i => $q) {
+                $rules["answers.$i"] = [$q['required'] ? 'required' : 'nullable', ...match ($q['type']) {
+                    'yes_no' => [Rule::in(['Yes', 'No'])],
+                    'number' => ['numeric', 'min:0', 'max:1000000000'],
+                    default => ['string', 'max:2000'],
+                }];
+            }
+            $data = $request->validate($rules);
+            $answers = [];
+            foreach ($questions as $i => $q) $answers[] = [...$q, 'answer' => $data['answers'][$i] ?? null];
+            $source = $data['resume_source'] ?? 'none';
+            $resumePath = null;
+            if ($source === 'profile') {
+                if (!$candidate->resume_path || !Storage::exists($candidate->resume_path)) throw \Illuminate\Validation\ValidationException::withMessages(['resume_source' => 'Your profile has no available resume. Upload a resume or continue with your profile.']);
+                $extension = pathinfo($candidate->resume_path, PATHINFO_EXTENSION);
+                $storedResume = 'application-resumes/'.\Illuminate\Support\Str::uuid().'.'.$extension;
+                abort_unless(Storage::copy($candidate->resume_path, $storedResume), 500, 'Could not save your resume.');
+                $resumePath = $storedResume;
+            } elseif ($source === 'upload') {
+                $storedResume = $request->file('resume')->store('application-resumes');
+                abort_unless($storedResume, 500, 'Could not save your resume.');
+                $resumePath = $storedResume;
+            }
+            DB::table('applications')->insert(['candidate_id' => $candidate->id, 'job_post_id' => $id, 'status' => 'interested', 'submitted_at' => now(), 'screening_answers' => json_encode($answers), 'resume_path' => $resumePath, 'resume_source' => $source, 'resume_name' => $source === 'upload' ? $request->file('resume')->getClientOriginalName() : ($resumePath ? 'Profile resume.'.$extension : null), 'created_at' => now(), 'updated_at' => now()]);
+            return response()->json(['applied' => true], 201);
+        }); } catch (\Throwable $e) { if ($storedResume) Storage::delete($storedResume); throw $e; }
     }
     public function record(Request $request, int $id) {
         $data = $request->validate(['event_id' => ['required', 'uuid'], 'type' => ['required', Rule::in(['impression', 'click'])]]);

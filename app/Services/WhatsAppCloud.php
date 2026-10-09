@@ -32,7 +32,7 @@ class WhatsAppCloud
 
     public function ready(): void
     {
-        abort_if($this->missing(), 503, 'WhatsApp is not configured. Complete the WhatsApp environment settings; see docs/whatsapp-setup.html.');
+        abort_if($this->missing(), 503, 'WhatsApp is not configured. Ask an administrator to complete Settings → Communication → WhatsApp API.');
     }
 
     private function client()
@@ -90,6 +90,57 @@ class WhatsAppCloud
             }
         }
         abort(502, 'Template list is too large or incomplete. Narrow your WABA template library before sending.');
+    }
+
+    public function manageTemplates(): array
+    {
+        $this->ready();
+        $rows = [];
+        $after = null;
+        for ($page = 0; $page < 20; $page++) {
+            $query = ['fields' => 'id,name,language,status,category,components,parameter_format', 'limit' => 100];
+            if ($after) {
+                $query['after'] = $after;
+            }
+            $response = $this->client()->get($this->url(config('whatsapp.business_account_id').'/message_templates'), $query);
+            abort_unless($response->successful(), 502, 'Meta could not load templates. Check WABA ID, token and management permission.');
+            $rows = array_merge($rows, $response->json('data', []));
+            if (! $response->json('paging.next')) {
+                return $rows;
+            }
+            $after = $response->json('paging.cursors.after');
+            if (! $after) {
+                break;
+            }
+        }
+        abort(502, 'Meta returned an incomplete template list.');
+    }
+
+    public function submitTemplate(array $data): array
+    {
+        $this->ready();
+        $body = ['type' => 'BODY', 'text' => $data['body']];
+        if ($data['examples']) {
+            $body['example'] = ['body_text' => [$data['examples']]];
+        }
+        $payload = ['category' => $data['category'], 'components' => [$body]];
+        if (empty($data['id'])) {
+            $payload += ['name' => $data['name'], 'language' => $data['language'], 'parameter_format' => 'POSITIONAL'];
+        }
+        $path = $data['id'] ?? config('whatsapp.business_account_id').'/message_templates';
+        $response = $this->client()->post($this->url($path), $payload);
+        abort_unless($response->successful(), 422, 'Meta rejected the template. Check name uniqueness, language, category, text and sample values in WhatsApp Manager.');
+
+        return $response->json();
+    }
+
+    public function deleteTemplate(string $name): array
+    {
+        $this->ready();
+        $response = $this->client()->delete($this->url(config('whatsapp.business_account_id').'/message_templates'), ['name' => $name]);
+        abort_unless($response->successful(), 422, 'Meta could not delete the template. Check permissions and current template state.');
+
+        return $response->json();
     }
 
     public function recipient(string $number): string

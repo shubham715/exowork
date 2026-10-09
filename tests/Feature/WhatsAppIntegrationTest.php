@@ -118,6 +118,21 @@ class WhatsAppIntegrationTest extends TestCase
         $this->actingAs($this->user('employer'))->get('/admin-api/candidates/export')->assertForbidden();
     }
 
+    public function test_admin_profile_photos_are_available_only_to_authorized_admins(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        \Illuminate\Support\Facades\Storage::disk('local')->put('candidate-documents/photo/profile.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII='));
+        $this->candidate->update(['photo_path' => 'candidate-documents/photo/profile.png']);
+        $url = '/admin-api/candidates/EXO-CAN-000001/photo';
+        $this->getJson('/admin-api/candidates')->assertOk()->assertJsonPath('data.0.photo_url', $url)->assertJsonMissingPath('data.0.photo_path');
+        $this->getJson('/admin-api/candidates/EXO-CAN-000001')->assertOk()->assertJsonPath('candidate.photo_url', $url);
+        $this->get($url)->assertOk()->assertHeader('Content-Type', 'image/png');
+        $this->actingAs($this->user('employer'))->get($url)->assertForbidden();
+        $this->actingAs($this->admin);
+        $this->candidate->update(['photo_path' => null]);
+        $this->get($url)->assertNotFound();
+    }
+
     public function test_admin_reads_real_candidates_and_only_approved_supported_templates(): void
     {
         $this->getJson('/admin-api/candidates')->assertOk()->assertJsonPath('data.0.candidate_code', 'EXO-CAN-000001')->assertJsonMissingPath('data.0.password');
@@ -134,11 +149,13 @@ class WhatsAppIntegrationTest extends TestCase
         $payload = $this->payload();
         $this->postJson($this->url(), $payload)->assertOk()->assertJsonPath('message.status', 'accepted');
         $this->postJson($this->url(), $payload)->assertOk()->assertJsonPath('message.status', 'accepted');
-        Http::assertSentCount(2); // one template GET, one message POST
+        Http::assertSentCount(3); // request validation GET, worker approval GET, one message POST
         Http::assertSent(fn ($r) => $r->method() === 'POST' && $r->url() === 'https://graph.facebook.com/v26.0/123/messages' && $r->hasHeader('Authorization', 'Bearer secret-token') && $r['to'] === '919876543211' && $r['type'] === 'template' && $r['template']['components'][0]['parameters'][0] === ['type' => 'text', 'text' => 'Asha']);
         $this->assertDatabaseCount('whatsapp_messages', 1);
         $record = (array) DB::table('whatsapp_messages')->first();
         $this->assertArrayNotHasKey('parameters', $record);
+        $this->assertStringNotContainsString('Asha', $record['payload']);
+        $this->assertSame(['parameters' => ['Asha']], json_decode(\Illuminate\Support\Facades\Crypt::decryptString($record['payload']), true));
         $this->assertStringNotContainsString('secret-token', json_encode($record));
         $this->postJson($this->url(), $this->payload())->assertStatus(429);
     }

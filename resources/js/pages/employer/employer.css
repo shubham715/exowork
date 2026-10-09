@@ -517,3 +517,24 @@
 .employer-live .employer-jobs-panel .employer-list-filters input,.employer-live .employer-jobs-panel .employer-list-filters select{height:38px;min-height:38px;padding:8px 12px;font-size:12px}
 
 .job-stats-dialog{max-width:800px!important}.job-stats-totals{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:22px 0}.job-stats-totals>div{display:flex;flex-direction:column;padding:18px;background:#f5f8fc;border-radius:10px;gap:8px}.job-stats-totals strong{font-size:25px}.job-stats-totals span,.job-stats-help{font-size:12px;color:#667085;line-height:1.7}.job-chart-legend{display:flex;gap:22px;font-size:12px;color:#5470db}.job-chart-legend>span:last-child{color:#16a078}.job-stats-chart{width:100%;display:block;margin:18px 0}.job-stats-table{max-height:220px;overflow:auto;margin:18px 0}.job-stats-table summary{cursor:pointer;font-size:13px}.job-stats-table table{width:100%;font-size:12px;border-collapse:collapse;margin-top:12px}.job-stats-table th,.job-stats-table td{padding:8px;text-align:left;border-bottom:1px solid #e5e7eb}
+
+/* Screening questions: compact cards, isolated from generic field styles. */
+.employer-live .screening-builder{display:block;max-width:760px;width:100%;min-width:0}
+.employer-live .screening-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:600}
+.employer-live .screening-heading small{font-size:12px;font-weight:400;color:#98a2b3}
+.employer-live .screening-hint{font-size:13px;font-weight:400;color:#667085;line-height:1.5;margin:5px 0 16px}
+.employer-live .screening-list{display:grid;gap:12px}
+.employer-live .screening-question{min-width:0;border:1px solid #e4e7ec;background:#fff;border-radius:10px;padding:14px 16px;margin:0}
+.employer-live .screening-card-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:12px}
+.employer-live .screening-card-heading label{font-size:13px;font-weight:600;margin:0}
+.employer-live .screening-remove{display:grid;place-items:center;width:28px;height:28px;min-height:0;padding:0;border:0;border-radius:6px;background:transparent;color:#98a2b3;cursor:pointer}
+.employer-live .screening-remove:hover{background:#fef3f2;color:#b42318}
+.employer-live .screening-question>input{width:100%;box-sizing:border-box;min-height:42px;padding:10px 12px;font-size:14px;box-shadow:none}
+.employer-live .screening-controls{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:12px}
+.employer-live .screening-controls>select{width:160px;max-width:60%;min-height:36px;padding:7px 10px;font-size:13px;box-shadow:none}
+.employer-live .screening-controls .screening-required{display:inline-flex;flex-direction:row;align-items:center;gap:8px;margin:0;font-size:13px;font-weight:400;white-space:nowrap;cursor:pointer}
+.employer-live .screening-controls .screening-required input{width:16px;height:16px;min-height:16px;padding:0;margin:0;box-shadow:none;accent-color:#315be8;border-radius:4px}
+.employer-live .screening-add{display:inline-flex;align-items:center;gap:7px;margin-top:12px;padding:8px 0;background:transparent;border:0;color:#315be8;font:600 13px/1.5 'DM Sans',sans-serif;cursor:pointer}
+.employer-live .screening-add:hover{text-decoration:underline}
+.employer-live .screening-add:disabled{color:#98a2b3;cursor:not-allowed;text-decoration:none}
+@media(max-width:480px){.employer-live .screening-question{padding:12px}.employer-live .screening-controls{gap:10px}}

@@ -6,6 +6,7 @@ use App\Models\Candidate;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class AdminCandidateController extends Controller
@@ -70,6 +71,10 @@ class AdminCandidateController extends Controller
     {
         $this->authorize($request);
         $page = $this->query($request)->paginate((int) $request->input('per_page', 25));
+        $photos = Candidate::whereIn('id', $page->getCollection()->pluck('id'))->pluck('photo_path', 'id');
+        $page->getCollection()->each(function ($candidate) use ($photos) {
+            $candidate->photo_url = $photos[$candidate->id] ? '/admin-api/candidates/'.rawurlencode($candidate->candidate_code).'/photo' : null;
+        });
         $base = Candidate::whereNull('deleted_at');
         $options = [];
         foreach (['industries' => 'preferred_industry', 'states' => 'state', 'qualifications' => 'qualification', 'centers' => 'training_center'] as $key => $column) {
@@ -81,6 +86,16 @@ class AdminCandidateController extends Controller
             'training' => (clone $base)->where('training_status', 'Ongoing')->count(), 'consented' => (clone $base)->where('whatsapp_consent', true)->count(),
             'inactive' => (clone $base)->where('profile_status', 'inactive')->count(),
         ], 'filters' => $options]);
+    }
+
+    public function photo(Request $request, string $code)
+    {
+        $this->authorize($request);
+        $candidate = Candidate::whereNull('deleted_at')->where('candidate_code', $code)->firstOrFail();
+        abort_unless($candidate->photo_path, 404);
+        $disk = str_starts_with($candidate->photo_path, 'demo-profiles/') ? Storage::disk('public') : Storage::disk();
+        abort_unless($disk->exists($candidate->photo_path), 404);
+        return $disk->response($candidate->photo_path, null, ['Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff']);
     }
 
     public function export(Request $request)

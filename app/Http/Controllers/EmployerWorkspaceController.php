@@ -78,6 +78,7 @@ class EmployerWorkspaceController extends Controller
             ->selectRaw("job_post_id, SUM(CASE WHEN type = 'impression' THEN 1 ELSE 0 END) as impressions, SUM(CASE WHEN type = 'click' THEN 1 ELSE 0 END) as clicks")
             ->groupBy('job_post_id')->get()->keyBy('job_post_id');
         foreach ($jobs as $job) {
+            $job->screening_questions = \App\Services\ScreeningQuestions::normalize($job->screening_questions);
             $job->views_count = (int) ($engagement->get($job->id)->impressions ?? 0);
             $job->clicks_count = (int) ($engagement->get($job->id)->clicks ?? 0);
             $job->days_remaining = $job->application_deadline
@@ -85,7 +86,7 @@ class EmployerWorkspaceController extends Controller
                 : null;
         }
         // Identity is released only once operations schedules an interview for an application.
-        $interviews=DB::table('interviews as i')->join('applications as a','a.id','=','i.application_id')->join('job_posts as j','j.id','=','a.job_post_id')->join('candidates as c','c.id','=','a.candidate_id')->where('j.employer_id',$e->id)->whereNull('j.deleted_at')->whereNull('c.deleted_at')->select('i.id','i.scheduled_at','i.mode','i.location','i.status','j.title','j.id as job_post_id','a.id as application_id','c.id as candidate_id','c.first_name','c.last_name','c.candidate_code')->orderBy('i.scheduled_at')->get();
+        $interviews=DB::table('interviews as i')->join('applications as a','a.id','=','i.application_id')->join('job_posts as j','j.id','=','a.job_post_id')->join('candidates as c','c.id','=','a.candidate_id')->where('j.employer_id',$e->id)->whereNull('j.deleted_at')->whereNull('c.deleted_at')->select('i.id','i.scheduled_at','i.mode','i.location','i.status','j.title','j.id as job_post_id','a.id as application_id','a.screening_answers','a.resume_name','c.id as candidate_id','c.first_name','c.last_name','c.candidate_code')->orderBy('i.scheduled_at')->get();
         $placements=DB::table('placement_outcomes as p')->join('applications as a','a.id','=','p.application_id')->join('job_posts as j','j.id','=','a.job_post_id')->join('candidates as c','c.id','=','a.candidate_id')->where('j.employer_id',$e->id)->whereNull('j.deleted_at')->whereNull('c.deleted_at')->whereExists(fn($q)=>$q->selectRaw('1')->from('interviews as i')->whereColumn('i.application_id','a.id'))->select('p.id','p.status','p.expected_joining_on','p.joined_on','p.monthly_salary','j.id as job_post_id','j.title','c.first_name','c.last_name','c.candidate_code')->get();
         return response()->json(['employer'=>$this->publicProfile($e),'jobs'=>$jobs,'interviews'=>$interviews,'placements'=>$placements,'summary'=>['active_jobs'=>$jobs->whereIn('status',['active','published'])->count(),'draft_jobs'=>$jobs->where('status','draft')->count(),'candidates'=>$interviews->pluck('candidate_id')->unique()->count(),'interviews'=>$interviews->whereIn('status',['scheduled','confirmed'])->count(),'joined'=>$placements->whereNotNull('joined_on')->count()]]);
     }
@@ -125,9 +126,13 @@ class EmployerWorkspaceController extends Controller
             'education'=>[$required,'string','max:255'],'experience'=>[$required,'string','max:255'],
             'salary_type'=>[$required,Rule::in(['Fixed','Hourly','Incentive-based','Negotiable'])],
             'responsibilities'=>[$required,'string','max:5000'],'skills'=>[$required,'string','max:3000'],
-            'benefits'=>['nullable','string','max:3000'],'screening_questions'=>['nullable','string','max:3000'],
+            'benefits'=>['nullable','string','max:3000'],'screening_questions'=>['nullable', is_string($request->input('screening_questions')) ? 'string' : 'array', is_string($request->input('screening_questions')) ? 'max:3000' : 'max:20'],
+            'screening_questions.*.question'=>['required','string','max:500'],
+            'screening_questions.*.required'=>['required','boolean'],
+            'screening_questions.*.type'=>['required',Rule::in(['text','yes_no','number'])],
             'application_deadline'=>[$required,'date',...($publish?['after_or_equal:today']:[])],
         ]);
+        $data['screening_questions'] = json_encode(\App\Services\ScreeningQuestions::normalize($data['screening_questions'] ?? []));
         if($publish && $e->status!=='verified') throw ValidationException::withMessages(['status'=>'Your company must be verified before publishing jobs.']);
         if(!$id && in_array($data['status'],['paused','closed','filled'])) throw ValidationException::withMessages(['status'=>'Create a draft or publish a job first.']);
         DB::transaction(function() use($request,$e,$data,$old,$id){
@@ -160,3 +165,4 @@ class EmployerWorkspaceController extends Controller
     }
     private function audit(Request $request,string $action,string $type,int $id,array $changes,?int $actor=null): void { DB::table('audit_logs')->insert(['actor_user_id'=>$actor??$request->user()?->id,'action'=>$action,'subject_type'=>$type,'subject_id'=>$id,'changes'=>json_encode($changes),'ip_address'=>$request->ip(),'created_at'=>now()]); }
 }
+

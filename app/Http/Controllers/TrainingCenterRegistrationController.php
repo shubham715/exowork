@@ -70,6 +70,7 @@ class TrainingCenterRegistrationController extends Controller
             'step' => ['required', 'integer', 'between:0,3'],
             'center_type' => [$required, 'nullable', Rule::in(['Individual', 'Private', 'Government', 'NGO', 'ITI', 'Polytechnic', 'College', 'Skill Training Center'])],
             'spoc_name' => [$required, 'nullable', 'string', 'max:255'],
+            'whatsapp_consent' => 'sometimes|boolean',
             'spoc_phone' => [$required, 'nullable', 'regex:/^\d{10}$/'],
             'spoc_email' => [$required, 'nullable', 'email', 'max:255'],
             'website' => ['nullable', 'url', 'max:255'],
@@ -83,6 +84,14 @@ class TrainingCenterRegistrationController extends Controller
             'spoc_email' => 'contact email', 'city_block' => 'city or town', 'pincode' => 'PIN code',
         ]);
         $step = (int) $data['step']; unset($data['step']);
+        if (array_key_exists('whatsapp_consent', $data)) {
+            DB::table('whatsapp_center_preferences')->updateOrInsert(['training_center_id' => $center->id], ['consent' => $data['whatsapp_consent'], 'created_at' => now(), 'updated_at' => now()]);
+            if ($data['whatsapp_consent'] && ! $center->whatsapp_consent) {
+                $number = $data['spoc_phone'] ?? $center->spoc_phone;
+                if ($number) DB::table('whatsapp_opt_outs')->where('recipient', app(\App\Services\WhatsAppCloud::class)->recipient($number))->delete();
+            }
+            unset($data['whatsapp_consent']);
+        }
         DB::transaction(function () use ($center, $data, $step) {
             $partnerLocation = ['state' => $data['state'] ?? $center->state, 'district' => $data['district'] ?? $center->district];
             $data['onboarding_step'] = max($center->onboarding_step, $step);
@@ -101,6 +110,7 @@ class TrainingCenterRegistrationController extends Controller
         $center = DB::table('organization_memberships as m')->join('training_centers as c', 'c.id', '=', 'm.training_center_id')
             ->where('m.user_id', $request->user()->id)->where('m.status', 'active')->whereNull('c.deleted_at')->select('c.*')->first();
         abort_unless($center, 404);
+        $center->whatsapp_consent = (bool) DB::table('whatsapp_center_preferences')->where('training_center_id', $center->id)->value('consent');
         return $center;
     }
 }
