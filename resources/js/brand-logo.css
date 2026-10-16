@@ -8,3 +8,12 @@
 .reg-brand{width:185px;display:block}
 .reg-brand .exowork-logo{max-height:48px}
 @media(max-width:600px){.public-brand{width:175px;min-width:0}.public-brand.light{width:190px}.brand .exowork-logo{width:180px}.reg-brand{width:145px}}
+
+/* Preserve the full, stacked brand artwork in every shared logo placement. */
+.public-brand .exowork-logo,.brand .exowork-logo,.reg-brand .exowork-logo{max-height:none;height:auto}
+.public-brand{width:130px;min-width:0}
+.public-brand.light{width:145px}
+.brand .exowork-logo{width:130px}
+.reg-brand{width:100px}
+.login-account-link{margin:20px 0;text-align:center}
+.login-account-link .text-link{font-weight:700;text-decoration:underline;text-underline-offset:3px}

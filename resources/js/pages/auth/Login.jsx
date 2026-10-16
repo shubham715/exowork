@@ -29,6 +29,7 @@ export default function Login({ signup = false }) {
             <ArrowRight />
           </button>)}
         </div>
+        <p className="login-account-link">{signup ? <>Already have an account? <Link className="text-link" to="/login">Login here</Link></> : <>New to EXOWORK? <Link className="text-link" to="/register">Register here</Link></>}</p>
         <div className="login-picker-note"><ShieldCheck /> Your next step starts with a secure account.</div>
       </section>}
   </AuthLayout>;

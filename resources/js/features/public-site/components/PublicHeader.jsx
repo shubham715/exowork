@@ -55,8 +55,8 @@ export default function PublicHeader() {
           </div>
         </nav>
         <div className="ex-nav-actions">
-          <Link className="ex-btn ghost small" to="/login">Sign in</Link>
-          <Link className="ex-btn grad small" to="/register">Get started</Link>
+          <Link className="ex-btn ghost small" to="/login">Login</Link>
+          <Link className="ex-btn grad small" to="/register">Register</Link>
         </div>
         <button
           type="button"
