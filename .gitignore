@@ -1,6 +1,6 @@
 /.phpunit.cache
 /node_modules
-/public/build
+# Production assets are deployed through Git together with their Vite manifest.
 /public/hot
 /public/storage
 /storage/*.key
