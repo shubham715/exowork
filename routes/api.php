@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'verify']);
 Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'receive']);
+Route::post('/webhooks/gupshup', [\App\Http\Controllers\GupshupWebhookController::class, 'receive']);
 
 Route::get('/health', function () {
     return response()->json([

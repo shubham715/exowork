@@ -17,6 +17,7 @@ class WhatsAppOutbox
             $available = \Carbon\Carbon::parse($context['available_at'] ?? now());
             if ($previous && $previous->available_at && \Carbon\Carbon::parse($previous->available_at)->addSeconds(6)->gt($available)) $available = \Carbon\Carbon::parse($previous->available_at)->addSeconds(6);
             $row = [
+                'provider' => config('whatsapp.provider', 'meta'), 'provider_account_id' => app(WhatsAppCloud::class)->accountId(),
                 'request_id' => $key, 'candidate_id' => $context['candidate_id'] ?? null,
                 'actor_user_id' => $context['actor_user_id'] ?? null, 'employer_id' => $context['employer_id'] ?? null,
                 'training_center_id' => $context['training_center_id'] ?? null, 'recipient' => $recipient,
@@ -44,9 +45,10 @@ class WhatsAppOutbox
     {
         $template = DB::table('whatsapp_templates')->where('system_key', $key)->first();
         if (! $template || $template->review_status !== 'approved' || $template->meta_status !== 'APPROVED'
-            || $template->account_id !== (string) config('whatsapp.business_account_id')) {
+            || $template->account_id !== app(WhatsAppCloud::class)->accountId()) {
             return null;
         }
+        if (config('whatsapp.provider') === 'gupshup' && $key === 'welcome' && $template->name === 'exowork_welcome_v1') $parameters = [$parameters[0]];
         return $this->enqueue($recipient, (array) $template, $parameters, [...$context, 'source' => $key]);
     }
 }

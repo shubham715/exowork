@@ -1,6 +1,14 @@
 <?php
 
 return [
+    'provider' => env('WHATSAPP_PROVIDER', 'meta'),
+    'gupshup_app_id' => env('GUPSHUP_APP_ID'),
+    'gupshup_app_name' => env('GUPSHUP_APP_NAME'),
+    'gupshup_source' => env('GUPSHUP_SOURCE'),
+    'gupshup_api_key' => env('GUPSHUP_API_KEY'),
+    'gupshup_customer_secret' => env('GUPSHUP_CUSTOMER_SECRET'),
+    'gupshup_webhook_secret' => env('GUPSHUP_WEBHOOK_SECRET'),
+    'gupshup_automation_enabled' => env('GUPSHUP_AUTOMATION_ENABLED', false),
     'enabled' => env('WHATSAPP_ENABLED', false),
     'api_version' => env('WHATSAPP_API_VERSION', 'v26.0'),
     'access_token' => env('WHATSAPP_ACCESS_TOKEN'),

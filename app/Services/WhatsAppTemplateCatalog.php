@@ -21,7 +21,10 @@ class WhatsAppTemplateCatalog
         foreach ([7, 15, 30] as $day) {
             $rows[] = ['retention_day_'.$day, 'Day '.$day.' retention check', 'Candidate', 'Day '.$day.' after actual joining', 'UTILITY', 'en_US', 'Hello {{1}}, it has been '.$day.' days since you joined {{2}} as {{3}}. Are you still employed, do you need assistance, or have you left? Update EXOWORK securely: {{4}}. Our team will follow up if you need help. Reply STOP to opt out.', ['Candidate name', 'Company name', 'Job role', 'Retention page URL'], ['Asha Sharma', 'Example Industries', 'Machine Operator', 'https://example.com/candidate/retention']];
         }
-        return array_map(fn ($r) => ['key' => $r[0], 'name' => 'exowork_'.$r[0], 'title' => $r[1], 'audience' => $r[2], 'usage' => $r[3], 'category' => $r[4], 'language' => $r[5], 'body' => $r[6], 'labels' => $r[7], 'examples' => $r[8]], $rows);
+        if (config('whatsapp.provider') === 'gupshup') {
+            $rows[0] = ['welcome', 'Welcome & job interest', 'Candidate', 'After consented registration; Yes/No in WhatsApp', 'MARKETING', 'en_US', GupshupWhatsApp::WELCOME_BODY, ['Candidate name'], ['Asha']];
+        }
+        return array_map(fn ($r) => ['key' => $r[0], 'name' => $r[0] === 'welcome' && config('whatsapp.provider') === 'gupshup' ? 'exowork_welcome_v1' : 'exowork_'.$r[0], 'title' => $r[1], 'audience' => $r[2], 'usage' => $r[3], 'category' => $r[4], 'language' => $r[5], 'body' => $r[6], 'labels' => $r[7], 'examples' => $r[8]], $rows);
     }
 
     public static function get(string $key): array

@@ -37,6 +37,7 @@ Route::middleware('auth:web')->group(function () {
     Route::post('/admin-api/whatsapp/templates/{id}/submit', [\App\Http\Controllers\AdminWhatsAppController::class, 'submit'])->whereNumber('id')->middleware('throttle:10,1');
     Route::post('/admin-api/whatsapp/templates/{id}/test', [\App\Http\Controllers\AdminWhatsAppController::class, 'test'])->whereNumber('id')->middleware('throttle:10,1');
     Route::get('/admin-api/whatsapp/logs', [\App\Http\Controllers\AdminWhatsAppController::class, 'logs']);
+    Route::get('/admin-api/whatsapp/replies', [\App\Http\Controllers\AdminWhatsAppController::class, 'replies']);
     Route::get('/admin-api/whatsapp/logs/{id}', [\App\Http\Controllers\AdminWhatsAppController::class, 'show'])->whereNumber('id');
     Route::post('/admin-api/whatsapp/resend', [\App\Http\Controllers\AdminWhatsAppController::class, 'resend'])->middleware('throttle:10,1');
 

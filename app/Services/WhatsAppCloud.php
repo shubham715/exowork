@@ -7,8 +7,13 @@ use Illuminate\Validation\ValidationException;
 
 class WhatsAppCloud
 {
+    public function accountId(): string
+    {
+        return (string) config(config('whatsapp.provider') === 'gupshup' ? 'whatsapp.gupshup_app_id' : 'whatsapp.business_account_id');
+    }
     public function missing(): array
     {
+        if (config('whatsapp.provider') === 'gupshup') return app(GupshupWhatsApp::class)->missing();
         $missing = [];
         if (! config('whatsapp.enabled')) {
             $missing[] = 'WHATSAPP_ENABLED';
@@ -47,6 +52,7 @@ class WhatsAppCloud
 
     public function templates(): array
     {
+        if (config('whatsapp.provider') === 'gupshup') return app(GupshupWhatsApp::class)->templates();
         $this->ready();
         $templates = [];
         $after = null;
@@ -94,6 +100,7 @@ class WhatsAppCloud
 
     public function manageTemplates(): array
     {
+        if (config('whatsapp.provider') === 'gupshup') return app(GupshupWhatsApp::class)->manageTemplates();
         $this->ready();
         $rows = [];
         $after = null;
@@ -118,6 +125,7 @@ class WhatsAppCloud
 
     public function submitTemplate(array $data): array
     {
+        abort_if(config('whatsapp.provider') === 'gupshup', 422, 'Create or edit templates in the Gupshup dashboard, then sync their approval here.');
         $this->ready();
         $body = ['type' => 'BODY', 'text' => $data['body']];
         if ($data['examples']) {
@@ -136,6 +144,7 @@ class WhatsAppCloud
 
     public function deleteTemplate(string $name): array
     {
+        abort_if(config('whatsapp.provider') === 'gupshup', 422, 'Manage template deletion in the Gupshup dashboard, then sync here.');
         $this->ready();
         $response = $this->client()->delete($this->url(config('whatsapp.business_account_id').'/message_templates'), ['name' => $name]);
         abort_unless($response->successful(), 422, 'Meta could not delete the template. Check permissions and current template state.');
@@ -157,8 +166,9 @@ class WhatsAppCloud
         return $number;
     }
 
-    public function send(string $recipient, array $template, array $parameters)
+    public function send(string $recipient, array $template, array $parameters, ?int $messageId = null)
     {
+        if (config('whatsapp.provider') === 'gupshup') return app(GupshupWhatsApp::class)->send($recipient, $template, $parameters, $messageId);
         $this->ready();
         $payload = ['name' => $template['name'], 'language' => ['code' => $template['language']]];
         if ($parameters) {

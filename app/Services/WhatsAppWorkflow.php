@@ -16,6 +16,7 @@ class WhatsAppWorkflow
         app(CommunicationSettings::class)->apply();
         $this->settings = app(CommunicationSettings::class)->get('whatsapp_workflow');
         $cloud = app(WhatsAppCloud::class);
+        if (config('whatsapp.provider') === 'gupshup' && ! config('whatsapp.gupshup_automation_enabled')) return;
         if ($cloud->missing()) return;
         $start = $this->settings['start_at'] ?? now()->toDateTimeString();
         Candidate::whereNull('deleted_at')->where('profile_status', 'active')->where('whatsapp_consent', true)->chunkById(100, function ($candidates) use ($start) {

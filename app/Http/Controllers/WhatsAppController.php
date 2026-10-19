@@ -67,7 +67,7 @@ class WhatsAppController extends Controller
                 $templates = $cloud->templates();
                 $templates = array_values(array_filter($templates, function ($t) {
                     $local = DB::table('whatsapp_templates')->where('name', $t['name'])->where('language', $t['language'])->first();
-                    return ! $local || ($local->review_status === 'approved' && $local->account_id === (string) config('whatsapp.business_account_id') && $local->body === $t['body']);
+                    return ! $local || ($local->review_status === 'approved' && $local->account_id === app(WhatsAppCloud::class)->accountId() && $local->body === $t['body']);
                 }));
             } catch (HttpException|ConnectionException $e) {
                 $error = 'Unable to load approved templates from Meta. Check your credentials and network, then refresh.';

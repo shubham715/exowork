@@ -29,6 +29,12 @@ class SendWhatsAppMessage implements ShouldQueue
         if (! DB::table('whatsapp_messages')->where('id', $record->id)->where('status', 'queued')->update(['status' => 'submitting', 'attempts' => DB::raw('attempts + 1'), 'updated_at' => now()])) return;
         $postStarted = false;
         try {
+            if ($record->provider !== config('whatsapp.provider', 'meta') || ($record->provider_account_id && $record->provider_account_id !== $cloud->accountId())) {
+                $this->finish(['status' => 'skipped', 'error_code' => 'PROVIDER_CHANGED', 'error_message' => 'The sender account changed after this message was queued.']); return;
+            }
+            if ($record->provider === 'gupshup' && ! config('whatsapp.gupshup_automation_enabled') && ! in_array($record->source, ['test', 'manual'])) {
+                $this->finish(['status' => 'skipped', 'error_code' => 'AUTOMATION_PAUSED', 'error_message' => 'Automatic stage messages are paused.']); return;
+            }
             if (DB::table('whatsapp_opt_outs')->where('recipient', $record->recipient)->exists()) {
                 $this->finish(['status' => 'skipped', 'error_code' => 'OPT_OUT', 'error_message' => 'Recipient opted out of WhatsApp.']); return;
             }
@@ -63,7 +69,7 @@ class SendWhatsAppMessage implements ShouldQueue
                 }
             }
             $local = DB::table('whatsapp_templates')->where('name', $record->template_name)->where('language', $record->language)->first();
-            if ($local && ($local->review_status !== 'approved' || $local->account_id !== (string) config('whatsapp.business_account_id'))) {
+            if ($local && ($local->review_status !== 'approved' || $local->account_id !== $cloud->accountId())) {
                 $this->finish(['status' => 'failed', 'error_code' => 'TEMPLATE_DISABLED', 'error_message' => 'Administrator approval or account binding is missing.']); return;
             }
             $template = collect($cloud->templates())->first(fn ($t) => $t['name'] === $record->template_name && $t['language'] === $record->language);
@@ -72,13 +78,13 @@ class SendWhatsAppMessage implements ShouldQueue
                 $this->finish(['status' => 'failed', 'error_code' => 'TEMPLATE_NOT_APPROVED', 'error_message' => 'Template is not approved, its content changed, or variables do not match.']); return;
             }
             $postStarted = true;
-            $response = $cloud->send($record->recipient, $template, $parameters);
-            $providerId = $response->json('messages.0.id');
+            $response = $cloud->send($record->recipient, $template, $parameters, $record->id);
+            $providerId = $response->json(config('whatsapp.provider') === 'gupshup' ? 'messageId' : 'messages.0.id');
             if ($response->successful() && is_string($providerId) && $providerId !== '') {
                 $this->finish(['status' => 'accepted', 'provider_message_id' => $providerId, 'error_code' => null, 'error_message' => null]);
                 app(WhatsAppWebhookController::class)->reconcile($providerId);
             } else {
-                $code = substr((string) $response->json('error.code', 'META_RESPONSE'), 0, 40);
+                $code = substr((string) $response->json('error.code', config('whatsapp.provider') === 'gupshup' ? 'GUPSHUP_RESPONSE' : 'META_RESPONSE'), 0, 40);
                 $this->finish(['status' => $response->serverError() || $response->successful() ? 'unknown' : 'failed', 'error_code' => $code, 'error_message' => self::error($code)]);
             }
         } catch (ConnectionException $e) {
@@ -98,7 +104,7 @@ class SendWhatsAppMessage implements ShouldQueue
             '132000' => 'Template variables do not match the approved template.',
             '131026' => 'Message could not be delivered. Check that the number has WhatsApp.',
             '130429', '131048' => 'Meta rate or quality limit reached. Review WhatsApp Manager before retrying.',
-            default => 'Meta error '.$code.'. Review WhatsApp Manager and the API setup helper.',
+            default => config('whatsapp.provider') === 'gupshup' ? 'Provider error '.$code.'. Review Gupshup delivery details, credentials and wallet balance.' : 'Meta error '.$code.'. Review WhatsApp Manager and the API setup helper.',
         };
     }
 

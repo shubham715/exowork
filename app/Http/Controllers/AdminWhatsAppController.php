@@ -27,7 +27,7 @@ class AdminWhatsAppController extends Controller
     {
         $this->authorizeAdmin($request);
         $saved = DB::table('whatsapp_templates')->get()->keyBy('system_key');
-        return response()->json(['templates' => array_map(fn ($t) => [...$t, ...(array) $saved[$t['key']], 'account_matches' => $saved[$t['key']]->account_id === (string) config('whatsapp.business_account_id')], WhatsAppTemplateCatalog::all()), 'configured' => ! $cloud->missing(), 'missing' => $cloud->missing(), 'automation' => app(\App\Services\CommunicationSettings::class)->get('whatsapp_workflow')])->header('Cache-Control', 'no-store');
+        return response()->json(['templates' => array_map(fn ($t) => [...$t, ...(array) $saved[$t['key']], 'account_matches' => $saved[$t['key']]->account_id === $cloud->accountId()], WhatsAppTemplateCatalog::all()), 'provider' => config('whatsapp.provider'), 'configured' => ! $cloud->missing(), 'missing' => $cloud->missing(), 'automation' => app(\App\Services\CommunicationSettings::class)->get('whatsapp_workflow')])->header('Cache-Control', 'no-store');
     }
 
     public function workflow(Request $request)
@@ -44,12 +44,19 @@ class AdminWhatsAppController extends Controller
     {
         $this->authorizeAdmin($request);
         $remote = collect($cloud->manageTemplates());
+        if (config('whatsapp.provider') === 'gupshup') {
+            $spec = WhatsAppTemplateCatalog::get('welcome');
+            $welcome = DB::table('whatsapp_templates')->where('system_key', 'welcome')->first();
+            if ($welcome && ($welcome->name !== $spec['name'] || $welcome->body !== $spec['body'])) {
+                DB::table('whatsapp_templates')->where('id', $welcome->id)->update(['name' => $spec['name'], 'body' => $spec['body'], 'language' => $spec['language'], 'review_status' => 'pending', 'updated_at' => now()]);
+            }
+        }
         foreach (DB::table('whatsapp_templates')->get() as $t) {
             $meta = $remote->first(fn ($r) => $r['name'] === $t->name && $r['language'] === $t->language);
             $body = $meta ? (collect($meta['components'] ?? [])->firstWhere('type', 'BODY')['text'] ?? '') : '';
-            $supported = $meta && ($meta['parameter_format'] ?? 'POSITIONAL') === 'POSITIONAL' && count($meta['components'] ?? []) === 1;
+            $supported = $meta && ($meta['parameter_format'] ?? 'POSITIONAL') === 'POSITIONAL' && (config('whatsapp.provider') === 'gupshup' ? ($meta['supported'] ?? false) : count($meta['components'] ?? []) === 1);
             $status = $meta ? ($body === $t->body && $supported ? $meta['status'] : 'CONTENT_MISMATCH') : 'NOT_SUBMITTED';
-            DB::table('whatsapp_templates')->where('id', $t->id)->update(['meta_id' => $meta['id'] ?? null, 'meta_status' => $status, 'category' => $meta['category'] ?? $t->category, 'review_status' => $t->account_id && $t->account_id !== (string) config('whatsapp.business_account_id') ? 'pending' : $t->review_status, 'account_id' => (string) config('whatsapp.business_account_id'), 'synced_at' => now(), 'updated_at' => now()]);
+            DB::table('whatsapp_templates')->where('id', $t->id)->update(['meta_id' => $meta['id'] ?? null, 'meta_status' => $status, 'category' => $meta['category'] ?? $t->category, 'review_status' => $t->account_id && $t->account_id !== $cloud->accountId() ? 'pending' : $t->review_status, 'account_id' => $cloud->accountId(), 'synced_at' => now(), 'updated_at' => now()]);
         }
         $this->audit($request, 'templates_synced', 0);
         return $this->templates($request, $cloud);
@@ -82,7 +89,7 @@ class AdminWhatsAppController extends Controller
         $fresh = DB::table('whatsapp_templates')->find($id);
         abort_if($fresh->meta_id, 422, 'This name already exists in Meta. Review it in WhatsApp Manager and sync its status.');
         $result = $cloud->submitTemplate(['name' => $t->name, 'language' => $t->language, 'category' => $t->category, 'body' => $t->body, 'examples' => $spec['examples']]);
-        DB::table('whatsapp_templates')->where('id', $id)->update(['meta_id' => $result['id'] ?? null, 'meta_status' => $result['status'] ?? 'PENDING', 'account_id' => (string) config('whatsapp.business_account_id'), 'review_status' => 'pending', 'updated_at' => now()]);
+        DB::table('whatsapp_templates')->where('id', $id)->update(['meta_id' => $result['id'] ?? null, 'meta_status' => $result['status'] ?? 'PENDING', 'account_id' => $cloud->accountId(), 'review_status' => 'pending', 'updated_at' => now()]);
         $this->audit($request, 'template_submitted', $id);
         return response()->json(['message' => 'Submitted to Meta for review.']);
     }
@@ -139,6 +146,20 @@ class AdminWhatsAppController extends Controller
         return response()->json(['message' => $this->message($r)])->header('Cache-Control', 'no-store');
     }
 
+    public function replies(Request $request)
+    {
+        $this->authorizeAdmin($request);
+        $data = $request->validate(['page' => 'nullable|integer|min:1', 'search' => 'nullable|string|max:100']);
+        $rows = DB::table('whatsapp_inbound_messages as m')->leftJoin('candidates as c', 'c.id', '=', 'm.candidate_id')
+            ->when(! empty($data['search']), function ($q) use ($data) {
+                $needle = '%'.addcslashes($data['search'], '%_\\').'%';
+                $q->where(fn ($q) => $q->where('m.sender', 'like', $needle)->orWhere('c.candidate_code', 'like', $needle));
+            })->select('m.id', 'm.sender', 'm.type', 'm.content', 'm.outcome', 'm.created_at', 'c.first_name', 'c.last_name', 'c.candidate_code')
+            ->orderByDesc('m.id')->paginate(20);
+        $rows->through(function ($r) { $r->content = Crypt::decryptString($r->content); return $r; });
+        return response()->json(['replies' => $rows])->header('Cache-Control', 'no-store, private');
+    }
+
     public function resend(Request $request, WhatsAppOutbox $outbox, WhatsAppCloud $cloud)
     {
         $this->authorizeAdmin($request);
@@ -148,6 +169,7 @@ class AdminWhatsAppController extends Controller
             $result = DB::transaction(function () use ($id, $request, $outbox, $cloud) {
                 $r = DB::table('whatsapp_messages')->where('id', $id)->lockForUpdate()->first();
                 if (! $r || $r->status !== 'failed' || ! $r->payload) return ['id' => $id, 'queued' => false, 'reason' => 'Only failed messages with saved variables can be resent.'];
+                if ($r->provider !== config('whatsapp.provider', 'meta') || ($r->provider_account_id && $r->provider_account_id !== $cloud->accountId())) return ['id' => $id, 'queued' => false, 'reason' => 'The sender account changed. Create a new reviewed message.'];
                 if (DB::table('whatsapp_messages')->where('retry_of', $id)->exists()) return ['id' => $id, 'queued' => false, 'reason' => 'A retry already exists. Open the latest attempt.'];
                 if (DB::table('whatsapp_opt_outs')->where('recipient', $r->recipient)->exists()) return ['id' => $id, 'queued' => false, 'reason' => 'Recipient opted out.'];
                 if ($r->candidate_id) {

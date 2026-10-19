@@ -27,7 +27,7 @@ class AdminCommunicationController extends Controller
             'from_address' => config('mail.from.address'), 'from_name' => config('mail.from.name'),
         ], $settings->get('smtp'));
         $wa = config('whatsapp');
-        foreach (['smtp' => ['password'], 'whatsapp' => ['access_token', 'app_secret', 'verify_token']] as $channel => $keys) {
+        foreach (['smtp' => ['password'], 'whatsapp' => ['access_token', 'app_secret', 'verify_token', 'gupshup_api_key', 'gupshup_customer_secret', 'gupshup_webhook_secret']] as $channel => $keys) {
             foreach ($keys as $key) {
                 if ($channel === 'smtp') {
                     $smtp[$key.'_configured'] = ! empty($smtp[$key]);
@@ -39,7 +39,7 @@ class AdminCommunicationController extends Controller
             }
         }
 
-        return response()->json(['smtp' => $smtp, 'whatsapp' => $wa, 'webhook_url' => url('/api/webhooks/whatsapp'), 'templates' => DB::table('email_templates')->orderBy('name')->get()])->header('Cache-Control', 'no-store');
+        return response()->json(['smtp' => $smtp, 'whatsapp' => $wa, 'webhook_url' => url(config('whatsapp.provider') === 'gupshup' ? '/api/webhooks/gupshup' : '/api/webhooks/whatsapp'), 'templates' => DB::table('email_templates')->orderBy('name')->get()])->header('Cache-Control', 'no-store');
     }
 
     public function settings(Request $request, string $channel, CommunicationSettings $settings)
@@ -52,6 +52,12 @@ class AdminCommunicationController extends Controller
             'username' => 'nullable|string|max:255', 'password' => 'nullable|string|max:4096',
             'from_address' => 'required|email|max:255', 'from_name' => 'required|string|max:100',
         ] : [
+            'provider' => ['sometimes', Rule::in(['meta', 'gupshup'])],
+            'gupshup_automation_enabled' => 'sometimes|boolean',
+            'gupshup_app_id' => 'nullable|uuid', 'gupshup_app_name' => 'nullable|string|max:100|regex:/^[a-zA-Z0-9_]+$/',
+            'gupshup_source' => 'nullable|string|regex:/^[1-9][0-9]{7,14}$/',
+            'gupshup_api_key' => 'nullable|string|max:4096', 'gupshup_customer_secret' => 'nullable|string|max:4096',
+            'gupshup_webhook_secret' => 'nullable|string|min:32|max:255',
             'enabled' => 'required|boolean', 'api_version' => 'required|string|regex:/^v[0-9]+\.0$/',
             'phone_number_id' => 'nullable|string|max:40|regex:/^[0-9]+$/',
             'business_account_id' => 'nullable|string|max:40|regex:/^[0-9]+$/',
@@ -60,17 +66,27 @@ class AdminCommunicationController extends Controller
         ];
         $data = $request->validate($rules);
         $old = $channel === 'whatsapp' ? array_replace(config('whatsapp'), $settings->get($channel)) : array_replace(['password' => config('mail.mailers.smtp.password')], $settings->get($channel));
-        foreach ($channel === 'smtp' ? ['password'] : ['access_token', 'app_secret', 'verify_token'] as $key) {
+        foreach ($channel === 'smtp' ? ['password'] : ['access_token', 'app_secret', 'verify_token', 'gupshup_api_key', 'gupshup_customer_secret', 'gupshup_webhook_secret'] as $key) {
             if (empty($data[$key])) {
                 $data[$key] = $old[$key] ?? null;
             }
         }
+        if ($channel === 'whatsapp') {
+            foreach (['provider', 'gupshup_app_id', 'gupshup_app_name', 'gupshup_source', 'gupshup_automation_enabled'] as $key) $data[$key] = $data[$key] ?? $old[$key] ?? ($key === 'provider' ? 'meta' : null);
+        }
         if ($channel === 'whatsapp' && $data['enabled']) {
-            foreach (['access_token', 'phone_number_id', 'business_account_id', 'app_secret', 'verify_token'] as $key) {
+            $required = $data['provider'] === 'gupshup' ? ['gupshup_app_id', 'gupshup_app_name', 'gupshup_source', 'gupshup_webhook_secret'] : ['access_token', 'phone_number_id', 'business_account_id', 'app_secret', 'verify_token'];
+            if ($data['provider'] === 'gupshup' && empty($data['gupshup_api_key']) && empty($data['gupshup_customer_secret'])) $required[] = 'gupshup_customer_secret';
+            foreach ($required as $key) {
                 if (empty($data[$key])) {
                     throw ValidationException::withMessages([$key => 'Required before enabling WhatsApp.']);
                 }
             }
+        }
+        if ($channel === 'whatsapp' && $data['provider'] === 'gupshup' && ! empty($data['gupshup_automation_enabled'])
+            && (empty($old['gupshup_automation_enabled']) || ($old['provider'] ?? 'meta') !== 'gupshup')) {
+            // Starting/resuming automation must not welcome a historical registration list.
+            $settings->save('whatsapp_workflow', array_replace($settings->get('whatsapp_workflow'), ['start_at' => now()->toDateTimeString()]));
         }
         $settings->save($channel, $data);
 

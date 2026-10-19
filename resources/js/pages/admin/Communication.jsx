@@ -738,6 +738,18 @@ export default function Communication({ initialTab = "Email management", onlyTab
                             <span><b>WhatsApp messaging</b><small>Allow approved templates to be sent from your business number.</small></span>
                             <span className="wa-switch"><input type="checkbox" checked={Boolean(config.whatsapp.enabled)} onChange={e=>change("whatsapp","enabled",e.target.checked)}/><i/></span>
                         </label>
+                        <label className="wa-field">Messaging provider<select value={config.whatsapp.provider||'meta'} onChange={e=>change('whatsapp','provider',e.target.value)}><option value="meta">Meta Cloud API</option><option value="gupshup">Gupshup</option></select></label>
+                        {config.whatsapp.provider==='gupshup' ? <>
+                            <div className="wa-settings-section"><h4>Gupshup connection</h4><div className="wa-settings-fields">
+                                {field('whatsapp','gupshup_app_id','Gupshup app ID')}
+                                {field('whatsapp','gupshup_app_name','Gupshup app name')}
+                                {field('whatsapp','gupshup_source','Sender number','text','Country code and number, without +.')}
+                                {field('whatsapp','gupshup_customer_secret','Customer Secret','password','Preferred: CATs refresh automatically. Rotate the account secret before its 90-day expiry.')}
+                                {field('whatsapp','gupshup_api_key','Legacy API key (optional)','password','Only needed if no Customer Secret is configured; legacy keys retire 31 March 2027.')}
+                                {field('whatsapp','gupshup_webhook_secret','Webhook authentication secret','password','At least 32 random characters. In Gupshup, add this as the X-Exowork-Webhook-Token header.')}
+                                {field('whatsapp','default_country_code','Default country code')}
+                            </div><label className="wa-consent"><input type="checkbox" checked={Boolean(config.whatsapp.gupshup_automation_enabled)} onChange={e=>change('whatsapp','gupshup_automation_enabled',e.target.checked)}/>Enable automatic stage messages after successful live testing</label><p>Gupshup webhook: <code>{new URL('/api/webhooks/gupshup',config.webhook_url).href}</code></p><p>Choose Gupshup format (v2). Enable Message, Enqueued, Failed, Sent, Delivered and Read events. Create templates in Gupshup, then sync and approve them here. Keep automation disabled while sending controlled tests.</p></div>
+                        </> : <>
                         <div className="wa-settings-section">
                             <div className="wa-settings-section-head"><span className="wa-settings-number">01</span><div><h4>Account identity</h4><p>Find these IDs in Meta Developers → WhatsApp → API Setup.</p></div></div>
                             <div className="wa-settings-fields">
@@ -761,6 +773,7 @@ export default function Communication({ initialTab = "Email management", onlyTab
                             </div>
                             <div className="wa-webhook-box"><label htmlFor="wa-callback">Webhook callback URL</label><div><input id="wa-callback" readOnly value={config.webhook_url}/><button className="wa-copy-link" aria-label="Copy webhook callback URL" onClick={async()=>{try{await navigator.clipboard.writeText(config.webhook_url);setNotice("Webhook URL copied.");}catch{setError("Select and copy the webhook URL manually.");}}}><Copy size={16}/></button></div><small>A publicly reachable HTTPS URL is required for Meta delivery updates.</small></div>
                         </div>
+                        </>}
                         <div className="wa-settings-footer"><span><ShieldCheck size={15}/>Secrets stay encrypted</span><button className="btn wa-button-save" disabled={busy} onClick={()=>saveSettings("whatsapp")}><Save size={16}/>{busy?"Saving…":"Save connection"}</button></div>
                     </section>
                     <aside className="wa-api-aside">
