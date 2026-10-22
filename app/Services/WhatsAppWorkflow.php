@@ -21,10 +21,7 @@ class WhatsAppWorkflow
         $start = $this->settings['start_at'] ?? now()->toDateTimeString();
         Candidate::whereNull('deleted_at')->where('profile_status', 'active')->where('whatsapp_consent', true)->chunkById(100, function ($candidates) use ($start) {
             foreach ($candidates as $c) {
-                if ($c->created_at->gte(Carbon::parse($start, 'UTC'))) $this->candidate('welcome', $c, [$c->first_name, url('/candidate/consent')], 'welcome:'.$c->id);
-                if ($c->job_interest_status === 'no_response' && DB::table('whatsapp_messages')->where('candidate_id', $c->id)->where('source', 'welcome')->whereIn('status', ['delivered', 'read'])->where('updated_at', '<', now()->subDay())->exists()) {
-                    app(EmploymentFollowups::class)->create($c->id, null, 'welcome_no_response:'.$c->id, 'No response to the delivered welcome message after 24 hours. Call candidate to confirm job interest.');
-                }
+                if ($c->created_at->gte(Carbon::parse($start, 'UTC'))) $this->candidate('welcome', $c, [$c->first_name, url('/candidate/profile')], 'welcome:'.$c->id);
                 if ($c->job_interest_status !== 'interested') continue;
                 if ($c->training_status === 'Ongoing' && ! $c->batch_end_date) continue;
                 $deferred = $c->training_status === 'Ongoing' && $c->batch_end_date && $c->batch_end_date->toDateString() > now('Asia/Kolkata')->addDays(15)->toDateString();
@@ -58,7 +55,7 @@ class WhatsAppWorkflow
                 if (! $c || ! $job || ! $employer) continue;
                 $when = Carbon::parse($r->scheduled_at, 'UTC')->setTimezone('Asia/Kolkata');
                 $event = 'interview:'.$r->id.':'.Carbon::parse($r->scheduled_at)->timestamp;
-                if (! empty($this->settings['preparation_video_url']) && $r->location) $this->candidate('interview_scheduled', $c, [$c->first_name, $job->title, $employer->name, $when->format('d F Y, h:i A').' IST', $r->location, $employer->contact_name ?: 'EXOWORK coordinator', $this->salary($job), $this->settings['preparation_video_url'], url('/candidate/interviews')], $event);
+                if ($r->location) $this->candidate('interview_scheduled', $c, [$c->first_name, $job->title, $employer->name, $when->format('d F Y, h:i A').' IST', $r->location, $employer->contact_name ?: 'EXOWORK coordinator', $this->salary($job), url('/candidate/interviews')], $event);
                 if ($when->toDateString() === now('Asia/Kolkata')->addDay()->toDateString()) $this->candidate('interview_reminder', $c, [$c->first_name, $job->title, $when->format('d F Y, h:i A').' IST', url('/candidate/interviews')], 'reminder:'.$event);
                 if (! $r->attendance_response && DB::table('whatsapp_messages')->where('event_key', 'reminder:'.$event)->whereIn('status', ['delivered', 'read'])->where('updated_at', '<', now()->subHours(6))->exists()) app(EmploymentFollowups::class)->create($c->id, $r->application_id, 'interview_no_response:'.$event, 'No attendance response after 6 hours. Call before the interview.');
                 $this->center($c, $job, $employer, 'Interview scheduled', $when->format('d F Y, h:i A').' IST', $event);

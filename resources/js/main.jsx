@@ -16,6 +16,7 @@ import "./workspace-headers.css";
 import "./modal-forms.css";
 import "./data-tables.css";
 import "./scrollbars.css";
+import "./admin-typography.css";
 
 createRoot(document.getElementById("root")).render(
   <BrowserRouter

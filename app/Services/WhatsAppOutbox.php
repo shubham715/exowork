@@ -48,7 +48,9 @@ class WhatsAppOutbox
             || $template->account_id !== app(WhatsAppCloud::class)->accountId()) {
             return null;
         }
-        if (config('whatsapp.provider') === 'gupshup' && $key === 'welcome' && $template->name === 'exowork_welcome_v1') $parameters = [$parameters[0]];
+        // A retired welcome template must never consume the new profile-review parameters.
+        $spec = WhatsAppTemplateCatalog::get($key);
+        if ($template->name !== $spec['name'] || $template->body !== $spec['body']) return null;
         return $this->enqueue($recipient, (array) $template, $parameters, [...$context, 'source' => $key]);
     }
 }

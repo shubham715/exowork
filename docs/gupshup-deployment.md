@@ -43,23 +43,45 @@ In Gupshup → ExoworkNotifications → Webhooks → Add Webhook:
 
 The receiver requires the matching app name and the secret header. A direct unsigned request should return 403; that is expected. It stores encrypted message text, suppresses repeated deliveries, reconciles Gupshup IDs with WhatsApp delivery IDs, and applies STOP before further sends. Do not use a secret query parameter in the callback URL. Verify the custom header is present during a Gupshup test before enabling events.
 
-## Template and reply testing
+## Formatted templates and testing (21 October 2026)
 
-`exowork_welcome_v1` was submitted through the Gupshup dashboard with English (US), category Marketing, one name variable and Yes/No quick replies. This code does not submit additional templates to Gupshup. Manage them in Gupshup and sync them into EXOWORK. Sync checks the exact body, language, current approval and supported components; enable the local approval only after Meta approval. The welcome quick replies are deliberately restricted to this exact template; arbitrary buttons/media templates are excluded.
+The catalog uses `exowork_registration_v3` and twelve stage templates ending in `_v2`. Bodies include WhatsApp bold markers and line breaks. Copy the exact body, category, language and sample variables from EXOWORK. Templates remain unusable until Meta approval, an exact-content sync and local approval. Earlier unformatted drafts remain in Gupshup but are not selected by this release. The old welcome job-interest question is retired. The migration resets local reviews and skips queued retired workflow templates without replaying them.
 
-1. Sync templates in EXOWORK and approve the welcome template once its provider status is APPROVED.
-2. Confirm wallet funding privately; no payment or recharge is performed by this change.
-3. Queue a consenting staff test from the template test dialog. Verify accepted → sent → delivered/read. No candidate stage is changed by test sends.
-4. Send the welcome template manually to one consenting, active test candidate through their candidate WhatsApp action. Tapping Yes/No uses a per-message postback ID and updates that candidate's job interest only if unanswered. Verify the saved reply under WhatsApp → Logs → Candidate replies and the interest result in CRM. A response cannot update another candidate. A prior portal decision is preserved.
-5. Typed responses (including an unscoped Yes/No), media notifications and unsupported actions are recorded as `needs_review`; staff handle these in the retained WhatsApp Business mobile app. Media files are not downloaded. This is a received-message log, not a full two-way inbox.
-6. Reply STOP and confirm consent is withdrawn and pending sends are suppressed. Retried delivery events must not create duplicate messages or decisions. Confirm failed and unknown sends are distinct; never blindly retry an unknown submission.
-7. Other stage templates continue using authenticated portal links. Create and approve those exact catalog templates in Gupshup before enabling their workflows. Interview/retention buttons are not automatically interpreted by this release.
+The new registration confirmation has two variables: candidate name and `https://exowork.in/candidate/profile`. It confirms registration without asking job interest in WhatsApp. Candidates review profile data and open **Placement preferences → Review job interest & communication** to explicitly save their preference in their account. Profile availability alone does not silently opt a candidate into job outreach.
+
+### First controlled test
+
+1. Deploy this release using the commands above, including the new migration and queue restart. Keep automatic stage messaging OFF. Enable WhatsApp messaging only for sync and manual tests.
+2. Open Admin → WhatsApp → Templates, click **Sync Meta status**, and locally approve only templates whose exact provider content is APPROVED. Check the returned category; Meta may reclassify a Utility submission.
+3. Open **Test** on the registration template. Enter a consenting staff number (not the business sender itself), the staff name and `https://exowork.in/candidate/profile`. Send once. Confirm the phone shows bold text and paragraph breaks and the log reaches accepted → sent → delivered/read. Acceptance alone is not delivery.
+4. Reply with an ordinary text message. Confirm it appears in **WhatsApp → Logs → Candidate replies**. Staff reply using the retained WhatsApp Business app. Arbitrary Yes/No replies do not change candidate or interview records.
+5. In staging, enable automation and register a new test candidate using that consenting number, then activate the account. Verify one registration message. Open the profile link, sign in, review data, and explicitly confirm job interest via Placement preferences. Running the scheduler again must not repeat the welcome. On production, keep automation OFF during individual template tests: enabling it also makes existing upcoming interviews and due employment check-ins eligible, not just the test candidate.
+
+### Stage-by-stage test
+
+Use staging first for date simulation and disposable records. On production use only your controlled test candidate and actual future dates; never change the server clock or alter real candidate outcomes to manufacture a test.
+
+| Stage | Action | Expected message/response |
+| --- | --- | --- |
+| Training | Interested candidate, ongoing batch ending more than 15 days away | Training reconnect once; no job recommendations yet |
+| Ready for jobs | Candidate explicitly interested, available, eligible and within 15 days of completion (or completed/not enrolled) | Career intro only if a real career video is configured; eligible job alert with employer hidden |
+| Job interest | Candidate registers interest in a live eligible job | Interview availability link; candidate chooses within 3 days / 7 days / later in account; coordinator follow-up is created |
+| Interview | Staff schedule an interview with location and future date | Confirmed details, company visible; no preparation-video configuration required |
+| Reschedule | Staff change the interview date/time | New schedule notification; old queued schedule/reminder is suppressed |
+| Reminder | Interview is tomorrow in Asia/Kolkata | Hindi reminder once; candidate confirms attendance, needs help or cannot attend in account |
+| Selection | Staff record selected/rejected | Application decision update; candidate views next steps |
+| Joining | Staff record joining pending, then actual joining with date | Joining update for each stage |
+| Retention | Day 7, 15 or 30 after recorded actual joining | One due check-in; portal response is saved and assistance creates follow-up; left employment stops later checks |
+| Center | Linked center has recorded WhatsApp consent and valid SPOC phone | Center placement update for interview/selection/joining |
+| STOP | Test number replies STOP | Consent withdrawn and later queued/manual stage sends suppressed; do this last |
+
+Scheduler must run each minute and queue workers must run continuously. Delivery/read receipts and candidate responses are separate records. Portal links require candidate authentication. Interview/retention decisions are submitted in the secure portal; free-text WhatsApp responses are logged for staff review and media is not downloaded.
 
 ## Enable automation gradually
 
 After the controlled test, turn on automatic stage messages and monitor daily limits, wallet balance, provider errors and opt-outs. Turning the Gupshup automation switch on (including after a pause) resets the registration/application start date to that moment, so historical registrations are not welcomed automatically. Existing upcoming interviews and due retention checks are still eligible for their approved stage templates. Candidates registered while paused need a deliberately reviewed manual welcome if required. The onboarding dashboard showed a business portfolio limit of 250 customers per 24 hours; verify its current value in Meta/Gupshup. This code does not override Meta's limit.
 
-Only the welcome template has been submitted so far. Other templates require provider approval and local review. Coexistence eligibility and phone-app availability still depend on Meta. Keep the Business app active as required by the provider. Automated messaging is never guaranteed protection from restrictions: record consent, honour opt-outs and monitor quality.
+All templates require provider approval and local review before sending. General career introductions and new-job alerts remain Marketing; registration and event-specific updates are submitted as Utility, with final category determined by Meta. Coexistence eligibility and phone-app availability still depend on Meta. Keep the Business app active as required by the provider. Automated messaging is never guaranteed protection from restrictions: record consent, honour opt-outs and monitor quality.
 
 ## Official protocol references
 

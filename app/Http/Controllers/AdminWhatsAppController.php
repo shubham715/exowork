@@ -44,11 +44,10 @@ class AdminWhatsAppController extends Controller
     {
         $this->authorizeAdmin($request);
         $remote = collect($cloud->manageTemplates());
-        if (config('whatsapp.provider') === 'gupshup') {
-            $spec = WhatsAppTemplateCatalog::get('welcome');
-            $welcome = DB::table('whatsapp_templates')->where('system_key', 'welcome')->first();
-            if ($welcome && ($welcome->name !== $spec['name'] || $welcome->body !== $spec['body'])) {
-                DB::table('whatsapp_templates')->where('id', $welcome->id)->update(['name' => $spec['name'], 'body' => $spec['body'], 'language' => $spec['language'], 'review_status' => 'pending', 'updated_at' => now()]);
+        foreach (WhatsAppTemplateCatalog::all() as $spec) {
+            $saved = DB::table('whatsapp_templates')->where('system_key', $spec['key'])->first();
+            if ($saved && ($saved->name !== $spec['name'] || $saved->body !== $spec['body'])) {
+                DB::table('whatsapp_templates')->where('id', $saved->id)->update(['name' => $spec['name'], 'body' => $spec['body'], 'language' => $spec['language'], 'category' => $spec['category'], 'review_status' => 'pending', 'updated_at' => now()]);
             }
         }
         foreach (DB::table('whatsapp_templates')->get() as $t) {

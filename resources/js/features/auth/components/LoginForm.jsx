@@ -56,7 +56,7 @@ export default function LoginForm({ roles, admin = false, onChangeRole }) {
         <ArrowLeft /> Back to home
       </Link>
       <span className="section-kicker">{admin ? "ADMIN PORTAL" : "WELCOME BACK"}</span>
-      <h2>{admin ? "Admin sign in" : `${role.label} login`}</h2>
+      <h2 className={admin ? "admin-h2" : undefined}>{admin ? "Admin sign in" : `${role.label} login`}</h2>
       <p>
         {admin
           ? "Use your authorized EXOWORK operations account."

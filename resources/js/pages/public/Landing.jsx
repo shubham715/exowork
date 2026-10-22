@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import HeroSlider from "../../components/HeroSlider.jsx";
 import PublicHeader from "../../features/public-site/components/PublicHeader.jsx";
 import PublicFooter from "../../features/public-site/components/PublicFooter.jsx";
 import "./landing-reference.css";
@@ -346,46 +347,7 @@ export default function Landing() {
     <div className="ex-home" id="top">
       <PublicHeader />
       <main>
-        <section className="ex-hero">
-          <div className="ex-hero-bg">
-            <i className="b1" />
-            <i className="b2" />
-            <i className="b3" />
-            <b />
-          </div>
-          <div className="ex-wrap ex-hero-grid">
-            <div>
-              <h1>
-                From Opportunity to <em>Long-Term Employment.</em>
-              </h1>
-              <p className="ex-hero-sub">
-                EXOWORK connects candidates, employers and training partners —
-                helping people move from preparation and opportunity to joining,
-                retention and long-term career growth.
-              </p>
-              <p className="ex-hero-sub ex-hero-supporting">
-                We don't just help people to get jobs.
-              </p>
-              <p className="ex-hero-sub ex-hero-supporting ex-hero-closing">
-                <strong>We help them build sustainable employment.</strong>
-              </p>
-              <div className="ex-actions">
-                <a className="ex-btn grad" href="#contact">
-                  Join EXOWORK
-                </a>
-                <a className="ex-btn ghost" href="#pipeline">
-                  See how it works
-                </a>
-              </div>
-            </div>
-            <div className="ex-hero-image">
-              <img
-                src="/hero1.png"
-                alt="EXOWORK candidates using the job opportunities platform"
-              />
-            </div>
-          </div>
-        </section>
+        <HeroSlider />
         <DiscoverySections />
         <CareerProgression />
         <section id="pipeline">

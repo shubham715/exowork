@@ -24,6 +24,9 @@ Route::post('/auth/login', [AuthSessionController::class, 'store'])->middleware(
 Route::post('/auth/register/training-center', [TrainingCenterRegistrationController::class, 'store'])->middleware('throttle:5,1');
 Route::post('/auth/logout', [AuthSessionController::class, 'destroy']);
 Route::middleware('auth:web')->group(function () {
+    Route::post('/admin-api/hero-slides', [\App\Http\Controllers\HeroSlideController::class, 'save']);
+    Route::post('/admin-api/hero-slides/{id}', [\App\Http\Controllers\HeroSlideController::class, 'save'])->whereNumber('id');
+    Route::delete('/admin-api/hero-slides/{id}', [\App\Http\Controllers\HeroSlideController::class, 'destroy'])->whereNumber('id');
     foreach (['admin-api', 'employer-api'] as $prefix) {
         Route::get("/$prefix/applications/{id}/resume", [\App\Http\Controllers\JobEngagementController::class, 'applicationResume'])->whereNumber('id');
     }
@@ -139,6 +142,9 @@ Route::middleware('auth:candidate')->group(function () {
     Route::get('/candidate-api/employment', [\App\Http\Controllers\EmploymentWorkflowController::class, 'candidate']);
     Route::post('/candidate-api/employment/respond', [\App\Http\Controllers\EmploymentWorkflowController::class, 'respond'])->middleware('throttle:30,1');
 });
+
+Route::get('/public-api/hero-slides', [\App\Http\Controllers\HeroSlideController::class, 'index']);
+Route::get('/public-api/hero-slides/{id}/image', [\App\Http\Controllers\HeroSlideController::class, 'image'])->whereNumber('id')->name('hero-slide.image');
 
 Route::view('/{path?}', 'app')
     ->where('path', '^(?!api(?:/|$)|webhooks(?:/|$)).*');

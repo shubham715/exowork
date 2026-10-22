@@ -14,7 +14,7 @@ export default function AuthLayout({ children, admin = false }) {
           <div className="login-kicker">
             <ShieldCheck /> {admin ? "SECURE ADMIN ACCESS" : "OPPORTUNITY THAT LASTS"}
           </div>
-          <h1>
+          <h1 className={admin ? "admin-h1" : undefined}>
             Skills meet opportunity.
             <br />
             People build futures.

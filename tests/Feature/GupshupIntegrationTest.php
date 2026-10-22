@@ -37,7 +37,7 @@ class GupshupIntegrationTest extends TestCase
 
     private function remote(string $status = 'APPROVED', array $overrides = []): array
     {
-        return array_replace(['id' => 'template-uuid', 'elementName' => 'exowork_welcome_v1', 'languageCode' => 'en_US', 'category' => 'MARKETING', 'status' => $status, 'templateType' => 'TEXT', 'containerMeta' => json_encode(['data' => GupshupWhatsApp::WELCOME_BODY, 'buttons' => [['type' => 'QUICK_REPLY', 'text' => 'Yes'], ['type' => 'QUICK_REPLY', 'text' => 'No']]])], $overrides);
+        return array_replace(['id' => 'template-uuid', 'elementName' => 'exowork_registration_v3', 'languageCode' => 'en_US', 'category' => 'UTILITY', 'status' => $status, 'templateType' => 'TEXT', 'containerMeta' => json_encode(['data' => \App\Services\WhatsAppTemplateCatalog::get('welcome')['body']])], $overrides);
     }
 
     private function outbound(): object
@@ -102,17 +102,17 @@ class GupshupIntegrationTest extends TestCase
         $this->assertDatabaseHas('whatsapp_messages', ['id' => $row->id, 'status' => 'read']);
     }
 
-    public function test_sending_uses_approved_template_and_correlated_buttons_without_retrying(): void
+    public function test_registration_sends_profile_link_without_interest_buttons_or_duplicate_submission(): void
     {
         Http::fake(['api.gupshup.io/wa/app/*/template*' => Http::response(['templates' => [$this->remote()]]), 'api.gupshup.io/wa/api/v1/template/msg' => Http::response(['status' => 'submitted', 'messageId' => 'gs-accepted'], 202)]);
         $this->admin();
         $this->postJson('/admin-api/whatsapp/sync')->assertOk();
         $id = DB::table('whatsapp_templates')->where('system_key', 'welcome')->value('id');
         $this->patchJson('/admin-api/whatsapp/templates/'.$id.'/review', ['status' => 'approved'])->assertOk();
-        $row = $this->outbound();
+        $row = app(WhatsAppOutbox::class)->system('welcome', '919876543211', ['Asha', 'https://exowork.in/candidate/profile'], ['candidate_id' => $this->candidate->id]);
         (new SendWhatsAppMessage($row->id))->handle(app(WhatsAppCloud::class));
         $this->assertDatabaseHas('whatsapp_messages', ['id' => $row->id, 'status' => 'accepted', 'provider_message_id' => 'gs-accepted']);
-        Http::assertSent(fn ($r) => $r->url() === 'https://api.gupshup.io/wa/api/v1/template/msg' && $r->hasHeader('apikey', 'test-key') && json_decode($r['template'], true) === ['id' => 'template-uuid', 'params' => ['Asha']] && str_contains($r['postbackTexts'], 'exowork:welcome:'.$row->id.':yes'));
+        Http::assertSent(fn ($r) => $r->url() === 'https://api.gupshup.io/wa/api/v1/template/msg' && $r->hasHeader('apikey', 'test-key') && json_decode($r['template'], true) === ['id' => 'template-uuid', 'params' => ['Asha', 'https://exowork.in/candidate/profile']] && ! isset($r['postbackTexts']));
         (new SendWhatsAppMessage($row->id))->handle(app(WhatsAppCloud::class));
         $this->assertSame(1, count(Http::recorded(fn ($r) => str_contains($r->url(), '/template/msg'))));
     }
@@ -176,10 +176,38 @@ class GupshupIntegrationTest extends TestCase
     public function test_send_timeout_is_unknown_and_does_not_auto_retry(): void
     {
         Http::fake(['api.gupshup.io/wa/app/*/template*' => Http::response(['templates' => [$this->remote()]]), 'api.gupshup.io/wa/api/v1/template/msg' => Http::failedConnection()]);
-        $row = $this->outbound();
+        DB::table('whatsapp_templates')->where('system_key', 'welcome')->update(['review_status' => 'approved', 'meta_status' => 'APPROVED', 'account_id' => $this->appId]);
+        $row = app(WhatsAppOutbox::class)->enqueue('919876543211', ['name' => 'exowork_registration_v3', 'language' => 'en_US', 'category' => 'UTILITY'], ['Asha', 'https://exowork.in/candidate/profile'], ['candidate_id' => $this->candidate->id, 'source' => 'welcome']);
         (new SendWhatsAppMessage($row->id))->handle(app(WhatsAppCloud::class));
         $this->assertDatabaseHas('whatsapp_messages', ['id' => $row->id, 'status' => 'unknown']);
         (new SendWhatsAppMessage($row->id))->handle(app(WhatsAppCloud::class));
         $this->assertSame(1, DB::table('whatsapp_messages')->where('id', $row->id)->value('attempts'));
+    }
+
+    public function test_retired_job_interest_welcome_cannot_be_selected_or_sent_by_workflow(): void
+    {
+        Http::fake(['api.gupshup.io/wa/app/*/template*' => Http::response(['templates' => [$this->remote('APPROVED', ['elementName' => 'exowork_welcome_v1', 'containerMeta' => json_encode(['data' => GupshupWhatsApp::WELCOME_BODY, 'buttons' => [['type' => 'QUICK_REPLY', 'text' => 'Yes'], ['type' => 'QUICK_REPLY', 'text' => 'No']]])])]])]);
+        $this->assertSame([], app(WhatsAppCloud::class)->templates());
+        DB::table('whatsapp_templates')->where('system_key', 'welcome')->update(['name' => 'exowork_welcome_v1', 'body' => GupshupWhatsApp::WELCOME_BODY, 'review_status' => 'approved', 'meta_status' => 'APPROVED', 'account_id' => $this->appId]);
+        $this->assertNull(app(WhatsAppOutbox::class)->system('welcome', '919876543211', ['Asha', 'https://exowork.in/candidate/profile'], ['candidate_id' => $this->candidate->id]));
+        $this->assertDatabaseCount('whatsapp_messages', 0);
+    }
+
+    public function test_formatted_catalog_syncs_all_versions_and_keeps_profile_review_separate_from_interest(): void
+    {
+        $catalog = \App\Services\WhatsAppTemplateCatalog::all();
+        foreach ($catalog as $spec) {
+            $this->assertStringContainsString("\n\n*", $spec['body']);
+            $this->assertStringNotContainsString("\r", $spec['body']);
+        }
+        $this->assertSame('UTILITY', $catalog[0]['category']);
+        $this->assertStringNotContainsString('looking for', $catalog[0]['body']);
+        $this->admin();
+        Http::fake(['api.gupshup.io/wa/app/*/template*' => Http::response(['templates' => array_map(fn ($spec) => $this->remote('APPROVED', ['id' => $spec['key'], 'elementName' => $spec['name'], 'languageCode' => $spec['language'], 'category' => $spec['category'], 'containerMeta' => json_encode(['data' => $spec['body']])]), $catalog)])]);
+        DB::table('whatsapp_templates')->where('system_key', 'joining_update')->update(['name' => 'exowork_joining_update', 'body' => 'Old body', 'review_status' => 'approved']);
+        $this->postJson('/admin-api/whatsapp/sync')->assertOk();
+        $this->assertSame(13, DB::table('whatsapp_templates')->where('meta_status', 'APPROVED')->count());
+        $this->assertDatabaseHas('whatsapp_templates', ['system_key' => 'joining_update', 'name' => 'exowork_joining_update_v2', 'review_status' => 'pending']);
+        $this->assertSame('no_response', $this->candidate->fresh()->job_interest_status);
     }
 }

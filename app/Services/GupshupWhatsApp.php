@@ -59,15 +59,13 @@ class GupshupWhatsApp
                 // Never infer the body from Gupshup's flattened data (it may include headers/buttons).
                 if (! is_array($meta) || ! is_string($meta['data'] ?? null)) continue;
                 $components = [['type' => 'BODY', 'text' => $meta['data']]];
-                $supported = ($row['templateType'] ?? 'TEXT') === 'TEXT' && empty($meta['header']) && empty($meta['mediaType']) && empty($meta['cards']);
+                $supported = ($row['templateType'] ?? 'TEXT') === 'TEXT' && empty($meta['header']) && empty($meta['mediaType']) && empty($meta['cards'])
+                    && ! in_array($row['elementName'], ['exowork_welcome', 'exowork_welcome_v1', 'exowork_registration_v2', 'exowork_career_intro', 'exowork_training_reconnect', 'exowork_job_opportunity', 'exowork_interview_availability']);
                 if (! empty($meta['footer'])) $supported = false;
                 $buttons = $meta['buttons'] ?? [];
-                // Only the reviewed welcome quick replies are enabled initially. Other stages use portal links.
+                // Current workflow decisions use authenticated portal links, not WhatsApp buttons.
                 if ($buttons) {
-                    $supported = $supported && ($row['elementName'] ?? '') === 'exowork_welcome_v1'
-                        && $meta['data'] === self::WELCOME_BODY && count($buttons) === 2
-                        && ($buttons[0]['type'] ?? '') === 'QUICK_REPLY' && ($buttons[0]['text'] ?? '') === 'Yes'
-                        && ($buttons[1]['type'] ?? '') === 'QUICK_REPLY' && ($buttons[1]['text'] ?? '') === 'No';
+                    $supported = false;
                     $components[] = ['type' => 'BUTTONS', 'buttons' => $buttons];
                 }
                 $rows[] = ['id' => $row['id'], 'name' => $row['elementName'], 'language' => $row['languageCode'], 'status' => strtoupper($row['status']), 'category' => strtoupper($row['category']), 'parameter_format' => 'POSITIONAL', 'components' => $components, 'supported' => $supported];
@@ -96,9 +94,6 @@ class GupshupWhatsApp
     {
         abort_if($this->missing(), 503, 'Gupshup is not configured.');
         $payload = ['channel' => 'whatsapp', 'source' => config('whatsapp.gupshup_source'), 'destination' => $recipient, 'src.name' => config('whatsapp.gupshup_app_name'), 'template' => json_encode(['id' => $template['id'], 'params' => $parameters], JSON_THROW_ON_ERROR)];
-        if ($template['name'] === 'exowork_welcome_v1' && $messageId) {
-            $payload['postbackTexts'] = json_encode([['index' => 0, 'text' => 'exowork:welcome:'.$messageId.':yes'], ['index' => 1, 'text' => 'exowork:welcome:'.$messageId.':no']], JSON_THROW_ON_ERROR);
-        }
         // Never retry a send automatically: a timeout may already have submitted it.
         return $this->client()->asForm()->post('https://api.gupshup.io/wa/api/v1/template/msg', $payload);
     }
