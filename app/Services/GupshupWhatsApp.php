@@ -34,10 +34,24 @@ class GupshupWhatsApp
             $encrypted = Cache::lock($key.':lock', 30)->block(5, function () use ($key, $secret) {
                 if ($cached = Cache::get($key)) return $cached;
                 $response = Http::acceptJson()->connectTimeout(5)->timeout(20)->withHeaders(['X-Customer-Secret' => $secret])->post('https://api.gupshup.io/wa/app/'.rawurlencode(config('whatsapp.gupshup_app_id')).'/auth/app-token');
-                abort_unless($response->successful() && is_string($response->json('token')) && is_string($response->json('expiresAt')), 502, 'Gupshup token generation failed. Check the account secret and its expiry.');
-                $expiry = \Carbon\Carbon::parse($response->json('expiresAt'))->subMinutes(5);
-                abort_unless($expiry->isFuture(), 502, 'Gupshup returned an expired token.');
-                $encrypted = Crypt::encryptString($response->json('token'));
+                // Never include the provider response body: it can contain credentials or tokens.
+                abort_unless($response->successful(), 502, match ($response->status()) {
+                    400, 401 => 'Gupshup token request rejected (HTTP '.$response->status().'). Check that Customer Secret contains the account secret, not an app token or API key, and belongs to this app owner.',
+                    403 => 'Gupshup token access denied (HTTP 403). Check app ownership and whether this app requires partner authentication.',
+                    404 => 'Gupshup token endpoint returned HTTP 404. Check the saved Gupshup app ID.',
+                    409, 429 => 'Gupshup token limit reached (HTTP '.$response->status().'). Check active Customer App Tokens in Gupshup Settings; avoid repeated token generation.',
+                    default => 'Gupshup token request failed (HTTP '.$response->status().'). Retry later or ask Gupshup support to check the token endpoint.',
+                });
+                $token = $response->json('token');
+                $expiresAt = $response->json('expiresAt');
+                abort_unless(is_string($token) && trim($token) !== '' && is_string($expiresAt) && trim($expiresAt) !== '', 502, 'Gupshup token response was incomplete (HTTP '.$response->status().'): expected token and expiresAt. Contact Gupshup support; do not share the response body publicly.');
+                try {
+                    $expiry = \Carbon\Carbon::parse($expiresAt)->subMinutes(5);
+                } catch (\Throwable $e) {
+                    abort(502, 'Gupshup token response contained an invalid expiry date. Contact Gupshup support.');
+                }
+                abort_unless($expiry->isFuture(), 502, 'Gupshup returned a token that is expired or expires within five minutes. Check the live server clock and Gupshup token expiry.');
+                $encrypted = Crypt::encryptString($token);
                 Cache::put($key, $encrypted, $expiry);
                 return $encrypted;
             });

@@ -438,7 +438,9 @@ export default function Communication({ initialTab = "Email management", onlyTab
                 throw e;
             }
             await load();
-            setNotice(channel === "whatsapp" ? "WhatsApp connection saved successfully." : "Settings saved.");
+            const message = channel === "whatsapp" ? "WhatsApp connection saved successfully." : "Settings saved.";
+            setNotice(message);
+            if (channel === "whatsapp") setSettingsToast({ error: false, message });
         });
     const change = (channel, key, value) =>
         setConfig((c) => ({
@@ -738,17 +740,33 @@ export default function Communication({ initialTab = "Email management", onlyTab
                             <span><b>WhatsApp messaging</b><small>Allow approved templates to be sent from your business number.</small></span>
                             <span className="wa-switch"><input type="checkbox" checked={Boolean(config.whatsapp.enabled)} onChange={e=>change("whatsapp","enabled",e.target.checked)}/><i/></span>
                         </label>
-                        <label className="wa-field">Messaging provider<select value={config.whatsapp.provider||'meta'} onChange={e=>change('whatsapp','provider',e.target.value)}><option value="meta">Meta Cloud API</option><option value="gupshup">Gupshup</option></select></label>
+                        <div className="wa-provider-picker"><label className="field-label">Messaging provider<select value={config.whatsapp.provider||'meta'} onChange={e=>change('whatsapp','provider',e.target.value)}><option value="meta">Meta Cloud API</option><option value="gupshup">Gupshup</option></select></label><p>Choose the service connected to your WhatsApp Business number.</p></div>
                         {config.whatsapp.provider==='gupshup' ? <>
-                            <div className="wa-settings-section"><h4>Gupshup connection</h4><div className="wa-settings-fields">
+                            <div className="wa-settings-section">
+                                <div className="wa-settings-section-head"><span className="wa-settings-number">01</span><div><h4>Gupshup account</h4><p>Your app identity and business sender number.</p></div></div>
+                                <div className="wa-settings-fields">
                                 {field('whatsapp','gupshup_app_id','Gupshup app ID')}
                                 {field('whatsapp','gupshup_app_name','Gupshup app name')}
                                 {field('whatsapp','gupshup_source','Sender number','text','Country code and number, without +.')}
-                                {field('whatsapp','gupshup_customer_secret','Customer Secret','password','Preferred: CATs refresh automatically. Rotate the account secret before its 90-day expiry.')}
+                                {field('whatsapp','default_country_code','Default country code','text','91 for India. Do not include +.')}
+                                </div>
+                            </div>
+                            <div className="wa-settings-section">
+                                <div className="wa-settings-section-head"><span className="wa-settings-number purple"><KeyRound size={17}/></span><div><h4>Access & security</h4><p>Leave a saved secret blank to keep its current value.</p></div><span className="wa-security-label"><ShieldCheck size={13}/>Protected</span></div>
+                                <div className="wa-settings-fields">
+                                {field('whatsapp','gupshup_customer_secret','Customer Secret','password','Preferred authentication. Renew before the account secret expires.')}
+                                {field('whatsapp','gupshup_webhook_secret','Webhook authentication secret','password','At least 32 random characters. Use the same secret in Gupshup.')}
+                                </div>
+                                <details className="wa-legacy-settings"><summary>Legacy API authentication (optional)</summary><div className="wa-settings-fields">
                                 {field('whatsapp','gupshup_api_key','Legacy API key (optional)','password','Only needed if no Customer Secret is configured; legacy keys retire 31 March 2027.')}
-                                {field('whatsapp','gupshup_webhook_secret','Webhook authentication secret','password','At least 32 random characters. In Gupshup, add this as the X-Exowork-Webhook-Token header.')}
-                                {field('whatsapp','default_country_code','Default country code')}
-                            </div><label className="wa-consent"><input type="checkbox" checked={Boolean(config.whatsapp.gupshup_automation_enabled)} onChange={e=>change('whatsapp','gupshup_automation_enabled',e.target.checked)}/>Enable automatic stage messages after successful live testing</label><p>Gupshup webhook: <code>{new URL('/api/webhooks/gupshup',config.webhook_url).href}</code></p><p>Choose Gupshup format (v2). Enable Message, Enqueued, Failed, Sent, Delivered and Read events. Create templates in Gupshup, then sync and approve them here. Keep automation disabled while sending controlled tests.</p></div>
+                                </div></details>
+                            </div>
+                            <div className="wa-settings-section">
+                                <div className="wa-settings-section-head"><span className="wa-settings-number blue"><Webhook size={17}/></span><div><h4>Webhooks & automation</h4><p>Receive candidate replies and delivery updates.</p></div></div>
+                                <div className="wa-webhook-box"><label htmlFor="wa-gupshup-callback">Webhook callback URL</label><div><input id="wa-gupshup-callback" readOnly value={new URL('/api/webhooks/gupshup',config.webhook_url).href}/><button type="button" className="wa-copy-link" aria-label="Copy Gupshup webhook URL" onClick={async()=>{try{await navigator.clipboard.writeText(new URL('/api/webhooks/gupshup',config.webhook_url).href);setSettingsToast({error:false,message:'Webhook URL copied.'});}catch{setSettingsToast({error:true,message:'Select and copy the webhook URL manually.'});}}}><Copy size={16}/></button></div><small>Gupshup format (v2) · Header: X-Exowork-Webhook-Token</small></div>
+                                <p className="wa-webhook-instructions">Enable Message, Enqueued, Failed, Sent, Delivered and Read events in Gupshup.</p>
+                                <label className="wa-enable-row wa-automation-row"><span><b>Automatic stage messages</b><small>Keep this off during manual tests. Enable after templates and delivery have been verified.</small></span><span className="wa-switch"><input type="checkbox" checked={Boolean(config.whatsapp.gupshup_automation_enabled)} onChange={e=>change('whatsapp','gupshup_automation_enabled',e.target.checked)}/><i/></span></label>
+                            </div>
                         </> : <>
                         <div className="wa-settings-section">
                             <div className="wa-settings-section-head"><span className="wa-settings-number">01</span><div><h4>Account identity</h4><p>Find these IDs in Meta Developers → WhatsApp → API Setup.</p></div></div>
@@ -778,7 +796,7 @@ export default function Communication({ initialTab = "Email management", onlyTab
                     </section>
                     <aside className="wa-api-aside">
                         <div className="wa-connection-card"><div className="wa-brand-symbol"><MessageCircle size={30}/></div><span>MESSAGING CHANNEL</span><h3>WhatsApp Business</h3><p>One connected number.<br/>Every step of the employment journey.</p><div className={"wa-connection-state "+(config.whatsapp.enabled?"enabled":"")}><i/>{config.whatsapp.enabled?"Messaging enabled":"Messaging disabled"}</div></div>
-                        <div className="wa-setup-checklist"><h4>Ready to connect?</h4><p>A few essentials before your first message.</p><div><span><CheckCircle2 size={17}/></span><p><b>Business account</b><small>Add your WABA and sender IDs.</small></p></div><div><span className="purple"><KeyRound size={17}/></span><p><b>Production access</b><small>Use a token with messaging and management permissions.</small></p></div><div><span className="blue"><Webhook size={17}/></span><p><b>Delivery updates</b><small>Verify your public HTTPS webhook in Meta.</small></p></div><a className="wa-meta-link" href="https://developers.facebook.com/apps/" target="_blank" rel="noreferrer">Open Meta Developers<ExternalLink size={15}/></a></div>
+                        <div className="wa-setup-checklist"><h4>Ready to connect?</h4><p>A few essentials before your first message.</p><div><span><CheckCircle2 size={17}/></span><p><b>Business account</b><small>{config.whatsapp.provider==='gupshup'?'Add your Gupshup app and sender details.':'Add your WABA and sender IDs.'}</small></p></div><div><span className="purple"><KeyRound size={17}/></span><p><b>Production access</b><small>{config.whatsapp.provider==='gupshup'?'Save your Customer Secret securely.':'Use a token with messaging and management permissions.'}</small></p></div><div><span className="blue"><Webhook size={17}/></span><p><b>Delivery updates</b><small>Verify your public HTTPS webhook in {config.whatsapp.provider==='gupshup'?'Gupshup':'Meta'}.</small></p></div><a className="wa-meta-link" href={config.whatsapp.provider==='gupshup'?'https://apps.gupshup.io/whatsapp/dashboard':'https://developers.facebook.com/apps/'} target="_blank" rel="noreferrer">Open {config.whatsapp.provider==='gupshup'?'Gupshup':'Meta Developers'}<ExternalLink size={15}/></a></div>
                         <div className="wa-api-note"><ShieldCheck size={18}/><p>Only approved templates are sent. Recipient consent is checked before every message.</p></div>
                     </aside>
                 </div>

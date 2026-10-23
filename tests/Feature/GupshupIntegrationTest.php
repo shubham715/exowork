@@ -147,6 +147,34 @@ class GupshupIntegrationTest extends TestCase
         Http::assertSent(fn ($r) => str_contains($r->url(), '/template') && $r->hasHeader('Authorization', 'Bearer cat-token') && ! $r->hasHeader('X-Customer-Secret'));
     }
 
+    public function test_token_errors_explain_status_without_leaking_provider_secrets(): void
+    {
+        $this->admin();
+        config(['whatsapp.gupshup_customer_secret' => 'private-customer-secret']);
+        $sequence = Http::sequence();
+        foreach ([401, 403, 404, 429, 503] as $status) $sequence->push(['token' => 'provider-token-must-stay-private', 'message' => 'private-customer-secret'], $status);
+        Http::fake(['api.gupshup.io/wa/app/*/auth/app-token' => $sequence]);
+        foreach ([401 => 'rejected', 403 => 'access denied', 404 => 'HTTP 404', 429 => 'limit reached', 503 => 'HTTP 503'] as $status => $expected) {
+            $response = $this->postJson('/admin-api/whatsapp/sync')->assertStatus(502)->assertSee($expected);
+            $response->assertDontSee('provider-token-must-stay-private')->assertDontSee('private-customer-secret');
+        }
+    }
+
+    public function test_malformed_token_response_never_caches_or_forwards_token(): void
+    {
+        $this->admin();
+        config(['whatsapp.gupshup_customer_secret' => 'private-customer-secret']);
+        $sequence = Http::sequence();
+        foreach ([[], ['token' => ''], ['token' => 'private-token', 'expiresAt' => 'not-a-date'], ['token' => 'private-token', 'expiresAt' => now()->subMinute()->toIso8601String()]] as $payload) {
+            $sequence->push($payload);
+        }
+        Http::fake(['api.gupshup.io/wa/app/*/auth/app-token' => $sequence]);
+        foreach (['incomplete', 'incomplete', 'invalid expiry date', 'expired'] as $expected) {
+            $this->postJson('/admin-api/whatsapp/sync')->assertStatus(502)->assertSee($expected)->assertDontSee('private-token')->assertDontSee('private-customer-secret');
+        }
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), '/template'));
+    }
+
     public function test_pausing_automation_blocks_workflow_and_previously_queued_stage_sends(): void
     {
         $row = $this->outbound();

@@ -15,3 +15,23 @@
 .wa-test-dialog .wa-chat-bubble p{font-size:13px;line-height:1.5}
 .wa-test-dialog .wa-test-form{min-width:0}
 @media(max-width:800px){.modal.ui-modal.wa-test-dialog .wa-test-layout{grid-template-columns:minmax(0,1fr)}.wa-test-dialog .wa-phone{position:static;margin:0 auto}}
+/* Connection settings share a consistent field layout in both provider forms. */
+.wa-provider-picker{padding:24px 28px 0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:end;gap:22px}
+.wa-provider-picker .field-label,.wa-settings-fields .field-label{display:flex;flex-direction:column;gap:8px;min-width:0}
+.wa-provider-picker .field-label{font-size:12px;font-weight:600;color:#4d6077;margin:0}
+.wa-provider-picker select{min-height:44px;border-radius:8px;font-size:13px;background:#fbfcfe}
+.wa-provider-picker>p{font-size:12px;line-height:1.6;color:#718096;margin:0 0 2px}
+.wa-settings-fields input,.wa-provider-picker select{width:100%;box-sizing:border-box}
+.wa-settings-fields .field-label small{display:block;overflow-wrap:anywhere}
+.wa-settings-section .wa-automation-row{margin:18px 0 20px;padding:16px;background:#f5faf7}
+.wa-webhook-instructions{font-size:12px;line-height:1.7;color:#718096;margin:0 0 18px}
+.wa-webhook-box input#wa-gupshup-callback{border:0;background:transparent;padding:0;border-radius:0;font-size:12px;color:#6380ad;min-width:0;flex:1;box-shadow:none;font-family:ui-monospace,SFMono-Regular,monospace}
+.wa-legacy-settings{margin:0 0 18px;border:1px solid #e5eaf0;border-radius:9px;padding:13px 15px}
+.wa-legacy-settings summary{font-size:12px;font-weight:500;color:#64748b;cursor:pointer}
+.wa-legacy-settings[open] summary{margin-bottom:18px}
+.wa-legacy-settings .field-label{margin-bottom:0}
+.wa-api-main,.wa-api-aside{min-width:0}
+@media(min-width:1500px){.wa-provider-picker{padding-left:32px;padding-right:32px}}
+@media(max-width:1100px){.wa-provider-picker{padding-left:22px;padding-right:22px;grid-template-columns:1fr;gap:10px}}
+@media(max-width:550px){.wa-provider-picker{padding:22px 20px 0}.wa-settings-section .wa-automation-row{align-items:flex-start}.wa-settings-section-head>div{min-width:0}.wa-settings-footer .wa-button-save{width:100%;justify-content:center}}
+.wa-api-aside .wa-connection-card h3{color:#fff}

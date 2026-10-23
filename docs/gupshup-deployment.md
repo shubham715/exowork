@@ -15,7 +15,33 @@ php artisan optimize:clear
 php artisan queue:restart
 ```
 
-Build assets in your existing CI/build process instead if Node is not installed on the server. Keep `APP_URL=https://exowork.in`, `QUEUE_CONNECTION=database`, and a shared persistent `CACHE_STORE=database` or Redis. Run the database queue worker continuously and `php artisan schedule:run` once per minute, as described in whatsapp-management.md. Workers must restart after credential/provider changes. Do not run migrations locally against the production database.
+Build assets in your existing CI/build process instead if Node is not installed on the server. Keep `APP_URL=https://exowork.in`, `QUEUE_CONNECTION=database`, and a shared persistent `CACHE_STORE=database` or Redis. VPS hosts can run the queue worker continuously and `php artisan schedule:run` once per minute. For cron-only hosting use the alternative below. Do not run migrations locally against the production database.
+
+## Cron-only hosting (no permanent worker)
+
+The web server continues serving Laravel through `public/index.php`. Cron invokes PHP CLI separately; `npm run build` is unchanged. No public cron URL or `artisan serve` process is needed.
+
+Set these values in the server `.env`:
+
+```dotenv
+QUEUE_CONNECTION=database
+CACHE_STORE=database
+DB_QUEUE_RETRY_AFTER=180
+```
+
+After pulling the updated code run `php artisan migrate --force` and `php artisan config:clear` once from the project directory. Use the PHP CLI executable supplied by your host (PHP 8.2 or newer). If there is no terminal, run these as temporary cron entries and remove them after the log confirms success; do not leave migration/config-clear commands running every minute. Clearing the cache every minute also destroys the cached Gupshup tokens.
+
+Add one cron entry with all five time fields set to `*` (every minute). Replace both example paths with the actual hosting paths:
+
+```cron
+* * * * * cd /home/YOURUSER/exowork/app && /usr/local/bin/php artisan whatsapp:cron >> /home/YOURUSER/exowork/app/storage/logs/whatsapp-cron.log 2>&1
+```
+
+In a cPanel Command box enter only the portion beginning with `cd`; choose “Once Per Minute” separately. The working directory must contain `artisan`, `.env`, and `vendor`, not be the `public` directory. The cron user must be able to write `storage` and `bootstrap/cache`.
+
+`whatsapp:cron` checks the stage workflow and recovers the outbox, then runs the database queue for at most 50 jobs or about 45 seconds, finishing any current job. It exits immediately when empty. A persistent ten-minute lock prevents overlapping cron workers; after a host forcibly kills a run, a later run may wait until that lock expires. The per-job timeout is 60 seconds; PHP CLI and hosting limits must allow a batch to finish (potentially about 105 seconds including the final job, plus stage checks). Larger backlogs drain across subsequent runs. This processes the configured default database queue, including manually queued tests even while stage automation is paused.
+
+Use either this cron entry OR the scheduler/permanent-worker setup, not both for WhatsApp. Expected new messages are sent on a subsequent cron run, usually within a minute plus queue/provider time; this is not an immediate-delivery guarantee. Check the cron log for start/finish lines and EXOWORK logs for delivery status. Keep automation OFF until manual delivery and reply tests pass. Gupshup token errors still need to be resolved separately.
 
 ## Save connection, with automation OFF
 
