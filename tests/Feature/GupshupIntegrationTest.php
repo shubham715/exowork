@@ -147,6 +147,21 @@ class GupshupIntegrationTest extends TestCase
         Http::assertSent(fn ($r) => str_contains($r->url(), '/template') && $r->hasHeader('Authorization', 'Bearer cat-token') && ! $r->hasHeader('X-Customer-Secret'));
     }
 
+    public function test_live_millisecond_token_expiry_is_accepted_and_refreshed_before_expiry(): void
+    {
+        $this->freezeTime();
+        config(['whatsapp.gupshup_customer_secret' => 'customer-secret']);
+        Http::fake(['api.gupshup.io/wa/app/*/auth/app-token' => fn () => Http::response(['status' => 'success', 'token' => 'cat-token', 'expiresAt' => now()->addDay()->getTimestampMs()]), 'api.gupshup.io/wa/app/*/template*' => Http::response(['templates' => []])]);
+        app(WhatsAppCloud::class)->templates();
+        $this->travel(23)->hours();
+        app(WhatsAppCloud::class)->templates();
+        Http::assertSentCount(3);
+        $this->travel(56)->minutes();
+        app(WhatsAppCloud::class)->templates();
+        Http::assertSentCount(5);
+        Http::assertSent(fn ($r) => str_contains($r->url(), '/template') && $r->hasHeader('Authorization', 'Bearer cat-token'));
+    }
+
     public function test_token_errors_explain_status_without_leaking_provider_secrets(): void
     {
         $this->admin();

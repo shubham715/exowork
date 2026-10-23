@@ -44,9 +44,13 @@ class GupshupWhatsApp
                 });
                 $token = $response->json('token');
                 $expiresAt = $response->json('expiresAt');
-                abort_unless(is_string($token) && trim($token) !== '' && is_string($expiresAt) && trim($expiresAt) !== '', 502, 'Gupshup token response was incomplete (HTTP '.$response->status().'): expected token and expiresAt. Contact Gupshup support; do not share the response body publicly.');
+                abort_unless(is_string($token) && trim($token) !== '' && (is_int($expiresAt) || (is_string($expiresAt) && trim($expiresAt) !== '')), 502, 'Gupshup token response was incomplete (HTTP '.$response->status().'): expected token and expiresAt. Contact Gupshup support; do not share the response body publicly.');
                 try {
-                    $expiry = \Carbon\Carbon::parse($expiresAt)->subMinutes(5);
+                    // The live API returns Unix milliseconds; older responses used ISO dates.
+                    $expiry = (is_int($expiresAt) || ctype_digit($expiresAt))
+                        ? \Carbon\Carbon::createFromTimestampMs($expiresAt, 'UTC')
+                        : \Carbon\Carbon::parse($expiresAt);
+                    $expiry->subMinutes(5);
                 } catch (\Throwable $e) {
                     abort(502, 'Gupshup token response contained an invalid expiry date. Contact Gupshup support.');
                 }
