@@ -144,6 +144,7 @@ class GupshupIntegrationTest extends TestCase
         app(WhatsAppCloud::class)->templates();
         app(WhatsAppCloud::class)->templates();
         Http::assertSentCount(3);
+        Http::assertSent(fn ($r) => str_contains($r->url(), '/auth/app-token') && $r->method() === 'POST' && $r->body() === '' && $r->hasHeader('Content-Type', 'application/x-www-form-urlencoded') && $r->hasHeader('X-Customer-Secret', 'customer-secret') && ! $r->hasHeader('Cookie') && ! $r->hasHeader('Authorization'));
         Http::assertSent(fn ($r) => str_contains($r->url(), '/template') && $r->hasHeader('Authorization', 'Bearer cat-token') && ! $r->hasHeader('X-Customer-Secret'));
     }
 

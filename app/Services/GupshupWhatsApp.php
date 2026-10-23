@@ -33,7 +33,8 @@ class GupshupWhatsApp
         if (! $encrypted) {
             $encrypted = Cache::lock($key.':lock', 30)->block(5, function () use ($key, $secret) {
                 if ($cached = Cache::get($key)) return $cached;
-                $response = Http::acceptJson()->connectTimeout(5)->timeout(20)->withHeaders(['X-Customer-Secret' => $secret])->post('https://api.gupshup.io/wa/app/'.rawurlencode(config('whatsapp.gupshup_app_id')).'/auth/app-token');
+                // Match the console's successful request: an empty form body, not JSON [].
+                $response = Http::acceptJson()->connectTimeout(5)->timeout(20)->withHeaders(['X-Customer-Secret' => $secret])->withBody('', 'application/x-www-form-urlencoded')->post('https://api.gupshup.io/wa/app/'.rawurlencode(config('whatsapp.gupshup_app_id')).'/auth/app-token');
                 // Never include the provider response body: it can contain credentials or tokens.
                 abort_unless($response->successful(), 502, match ($response->status()) {
                     400, 401 => 'Gupshup token request rejected (HTTP '.$response->status().'). Check that Customer Secret contains the account secret, not an app token or API key, and belongs to this app owner.',
