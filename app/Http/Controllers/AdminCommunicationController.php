@@ -12,6 +12,14 @@ use Illuminate\Validation\ValidationException;
 
 class AdminCommunicationController extends Controller
 {
+    public function testGupshup(Request $request, CommunicationSettings $settings, \App\Services\GupshupWhatsApp $gupshup)
+    {
+        $this->authorizeAdmin($request);
+        $settings->apply();
+        abort_unless(config('whatsapp.provider') === 'gupshup', 422, 'Save Gupshup as the messaging provider first.');
+        return response()->json($gupshup->testConnection())->header('Cache-Control', 'no-store');
+    }
+
     private function authorizeAdmin(Request $request): void
     {
         abort_unless($request->user()->hasPermission('masters.manage'), 403);

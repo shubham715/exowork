@@ -35,3 +35,6 @@
 @media(max-width:1100px){.wa-provider-picker{padding-left:22px;padding-right:22px;grid-template-columns:1fr;gap:10px}}
 @media(max-width:550px){.wa-provider-picker{padding:22px 20px 0}.wa-settings-section .wa-automation-row{align-items:flex-start}.wa-settings-section-head>div{min-width:0}.wa-settings-footer .wa-button-save{width:100%;justify-content:center}}
 .wa-api-aside .wa-connection-card h3{color:#fff}
+
+.wa-diagnostics pre { background: #101c30; color: #e2e8f0; padding: 16px; border-radius: 10px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 300px; overflow: auto; font-size: 12px; }
+.wa-diagnostics h3 { margin-top: 20px; }

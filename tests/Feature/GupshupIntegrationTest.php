@@ -163,6 +163,26 @@ class GupshupIntegrationTest extends TestCase
         Http::assertSent(fn ($r) => str_contains($r->url(), '/template') && $r->hasHeader('Authorization', 'Bearer cat-token'));
     }
 
+    public function test_connection_diagnostics_redact_credentials_and_cache_successful_token(): void
+    {
+        $this->admin();
+        config(['whatsapp.gupshup_customer_secret' => 'private-customer-secret']);
+        Http::fake(['api.gupshup.io/wa/app/*/auth/app-token' => Http::response(['token' => 'private-token', 'expiresAt' => now()->addDay()->getTimestampMs(), 'nested' => ['accessToken' => 'private-token'], 'message' => 'private-customer-secret']), 'api.gupshup.io/wa/app/*/template*' => Http::response(['templates' => []])]);
+        $this->postJson('/admin-api/communication/gupshup/test')->assertOk()->assertJsonPath('success', true)->assertJsonPath('response.body.token', '[REDACTED]')->assertJsonPath('response.body.nested.accessToken', '[REDACTED]')->assertJsonPath('request.body', '')->assertDontSee('private-token')->assertDontSee('private-customer-secret')->assertHeader('Cache-Control', 'no-store, private');
+        app(WhatsAppCloud::class)->templates();
+        Http::assertSentCount(2);
+    }
+
+    public function test_connection_diagnostics_return_provider_failure_and_require_admin_permission(): void
+    {
+        $this->admin();
+        config(['whatsapp.gupshup_customer_secret' => 'private-customer-secret']);
+        Http::fake(['api.gupshup.io/wa/app/*/auth/app-token' => Http::response(['message' => 'Authentication Failed'], 401)]);
+        $this->postJson('/admin-api/communication/gupshup/test')->assertOk()->assertJsonPath('success', false)->assertJsonPath('response.status', 401)->assertJsonPath('response.body.message', 'Authentication Failed');
+        auth()->logout();
+        $this->postJson('/admin-api/communication/gupshup/test')->assertUnauthorized();
+    }
+
     public function test_token_errors_explain_status_without_leaking_provider_secrets(): void
     {
         $this->admin();

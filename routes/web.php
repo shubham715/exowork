@@ -52,6 +52,7 @@ Route::middleware('auth:web')->group(function () {
     Route::get('/admin-api/communication', [\App\Http\Controllers\AdminCommunicationController::class, 'index']);
     Route::put('/admin-api/communication/settings/{channel}', [\App\Http\Controllers\AdminCommunicationController::class, 'settings']);
     Route::post('/admin-api/communication/smtp/test', [\App\Http\Controllers\AdminCommunicationController::class, 'testSmtp'])->middleware('throttle:5,1');
+    Route::post('/admin-api/communication/gupshup/test', [\App\Http\Controllers\AdminCommunicationController::class, 'testGupshup'])->middleware('throttle:1,1');
     Route::post('/admin-api/communication/email-templates', [\App\Http\Controllers\AdminCommunicationController::class, 'saveTemplate']);
     Route::put('/admin-api/communication/email-templates/{id}', [\App\Http\Controllers\AdminCommunicationController::class, 'saveTemplate'])->whereNumber('id');
     Route::delete('/admin-api/communication/email-templates/{id}', [\App\Http\Controllers\AdminCommunicationController::class, 'deleteTemplate'])->whereNumber('id');

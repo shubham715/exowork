@@ -8,6 +8,62 @@ use Illuminate\Support\Facades\Http;
 
 class GupshupWhatsApp
 {
+    private function tokenUrl(): string
+    {
+        return 'https://api.gupshup.io/wa/app/'.rawurlencode(config('whatsapp.gupshup_app_id')).'/auth/app-token';
+    }
+
+    private function requestToken(string $secret)
+    {
+        return Http::acceptJson()->connectTimeout(5)->timeout(20)
+            ->withHeaders(['X-Customer-Secret' => $secret])
+            ->withBody('', 'application/x-www-form-urlencoded')->post($this->tokenUrl());
+    }
+
+    public function testConnection(): array
+    {
+        $secret = (string) config('whatsapp.gupshup_customer_secret');
+        abort_unless($secret !== '' && \Illuminate\Support\Str::isUuid(config('whatsapp.gupshup_app_id')), 422, 'Save a valid app ID and Customer Secret before testing.');
+        $result = ['request' => ['method' => 'POST', 'url' => $this->tokenUrl(), 'headers' => ['Accept' => 'application/json', 'Content-Type' => 'application/x-www-form-urlencoded', 'X-Customer-Secret' => '[REDACTED]'], 'body' => '', 'credentials_source' => 'Saved server settings'], 'success' => false];
+        try {
+            $response = $this->requestToken($secret);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            return $result + ['response' => ['status' => null, 'body' => 'Connection failed or timed out. No provider response received.']];
+        }
+        // Do not expose response headers (cookies) or raw non-JSON bodies (HTML may echo credentials).
+        $returnedToken = $response->json('token');
+        $redact = function ($value, $key = '') use (&$redact, $secret, $returnedToken) {
+            if (preg_match('/token|secret|password|authorization|cookie|api.?key/i', (string) $key)) return '[REDACTED]';
+            if (is_array($value)) {
+                foreach ($value as $k => $v) $value[$k] = $redact($v, $k);
+                return $value;
+            }
+            if (is_string($value)) {
+                foreach ([$secret, is_string($returnedToken) ? $returnedToken : '', (string) config('whatsapp.gupshup_api_key'), (string) config('whatsapp.gupshup_webhook_secret')] as $credential) {
+                    if ($credential !== '') $value = str_replace($credential, '[REDACTED]', $value);
+                }
+                return preg_replace('/\b[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]+\b/', '[REDACTED]', $value);
+            }
+            return $value;
+        };
+        $json = $response->json();
+        $result['response'] = ['status' => $response->status(), 'content_type' => $response->header('Content-Type'), 'body' => is_array($json) ? $redact($json) : '[Non-JSON response omitted]'];
+        try {
+            $expiresAt = $response->json('expiresAt');
+            $expiry = (is_int($expiresAt) || (is_string($expiresAt) && ctype_digit($expiresAt)))
+                ? \Carbon\Carbon::createFromTimestampMs($expiresAt, 'UTC')->subMinutes(5)
+                : \Carbon\Carbon::parse(is_string($expiresAt) ? $expiresAt : throw new \UnexpectedValueException())->subMinutes(5);
+            $token = $response->json('token');
+            $result['success'] = $response->successful() && is_string($token) && trim($token) !== '' && $expiry->isFuture();
+            if ($result['success']) {
+                Cache::put('gupshup-cat:'.hash('sha256', config('whatsapp.gupshup_app_id').'|'.$secret), Crypt::encryptString($token), $expiry);
+            }
+        } catch (\Throwable $e) {
+            $result['success'] = false;
+        }
+        return $result;
+    }
+
     public const WELCOME_BODY = 'Hello {{1}}, welcome to EXOWORK. Are you interested in finding a job with our placement support? Choose Yes or No below. Reply STOP to stop WhatsApp messages.';
 
     public function missing(): array
@@ -34,7 +90,7 @@ class GupshupWhatsApp
             $encrypted = Cache::lock($key.':lock', 30)->block(5, function () use ($key, $secret) {
                 if ($cached = Cache::get($key)) return $cached;
                 // Match the console's successful request: an empty form body, not JSON [].
-                $response = Http::acceptJson()->connectTimeout(5)->timeout(20)->withHeaders(['X-Customer-Secret' => $secret])->withBody('', 'application/x-www-form-urlencoded')->post('https://api.gupshup.io/wa/app/'.rawurlencode(config('whatsapp.gupshup_app_id')).'/auth/app-token');
+                $response = $this->requestToken($secret);
                 // Never include the provider response body: it can contain credentials or tokens.
                 abort_unless($response->successful(), 502, match ($response->status()) {
                     400, 401 => 'Gupshup token request rejected (HTTP '.$response->status().'). Check that Customer Secret contains the account secret, not an app token or API key, and belongs to this app owner.',

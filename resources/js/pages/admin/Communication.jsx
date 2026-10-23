@@ -325,6 +325,20 @@ export default function Communication({ initialTab = "Email management", onlyTab
     const settingsFields = useRef({});
     const [fieldErrors, setFieldErrors] = useState({});
     const [settingsToast, setSettingsToast] = useState(null);
+    const [connectionTest, setConnectionTest] = useState(null);
+    const [testingConnection, setTestingConnection] = useState(false);
+    const testConnection = async () => {
+        setTestingConnection(true);
+        setConnectionTest({loading: true});
+        try {
+            const {data} = await axios.post(`${base}/gupshup/test`, {}, {headers: headers()});
+            setConnectionTest(data);
+        } catch (e) {
+            setConnectionTest({error: e.response?.data?.message || 'Connection test could not complete.'});
+        } finally {
+            setTestingConnection(false);
+        }
+    };
     useEffect(() => {
         if (tab !== "WhatsApp API" || (!error && !notice)) return;
         setSettingsToast({ error: !!error, message: error || notice });
@@ -792,7 +806,7 @@ export default function Communication({ initialTab = "Email management", onlyTab
                             <div className="wa-webhook-box"><label htmlFor="wa-callback">Webhook callback URL</label><div><input id="wa-callback" readOnly value={config.webhook_url}/><button className="wa-copy-link" aria-label="Copy webhook callback URL" onClick={async()=>{try{await navigator.clipboard.writeText(config.webhook_url);setNotice("Webhook URL copied.");}catch{setError("Select and copy the webhook URL manually.");}}}><Copy size={16}/></button></div><small>A publicly reachable HTTPS URL is required for Meta delivery updates.</small></div>
                         </div>
                         </>}
-                        <div className="wa-settings-footer"><span><ShieldCheck size={15}/>Secrets stay encrypted</span><button className="btn wa-button-save" disabled={busy} onClick={()=>saveSettings("whatsapp")}><Save size={16}/>{busy?"Saving…":"Save connection"}</button></div>
+                        <div className="wa-settings-footer"><span><ShieldCheck size={15}/>Secrets stay encrypted</span>{config.whatsapp.provider==='gupshup' && <button type="button" className="btn" disabled={busy || testingConnection} onClick={testConnection}><RefreshCw size={16}/>{testingConnection?'Testing…':'Test connection'}</button>}<button className="btn wa-button-save" disabled={busy} onClick={()=>saveSettings("whatsapp")}><Save size={16}/>{busy?"Saving…":"Save connection"}</button></div>
                     </section>
                     <aside className="wa-api-aside">
                         <div className="wa-connection-card"><div className="wa-brand-symbol"><MessageCircle size={30}/></div><span>MESSAGING CHANNEL</span><h3>WhatsApp Business</h3><p>One connected number.<br/>Every step of the employment journey.</p><div className={"wa-connection-state "+(config.whatsapp.enabled?"enabled":"")}><i/>{config.whatsapp.enabled?"Messaging enabled":"Messaging disabled"}</div></div>
@@ -1488,6 +1502,17 @@ export default function Communication({ initialTab = "Email management", onlyTab
                     )}
                 </section>
             )}
+            <Modal open={Boolean(connectionTest)} onClose={()=>setConnectionTest(null)} title="Gupshup connection test" className="comm-modal wa-diagnostics">
+                <p>Tests saved settings. Save connection first if you edited any fields. This requests a new token (up to 3 may be active); it does not send a message. Tests are limited to once per minute.</p>
+                {connectionTest?.loading ? <p role="status">Sending authentication request…</p> : connectionTest?.error ? <p role="alert">{connectionTest.error}</p> : connectionTest && <>
+                    <p role="status"><strong>{connectionTest.success?'Authentication successful':'Authentication failed or response invalid'}</strong></p>
+                    <h3>Actual request (credentials redacted)</h3>
+                    <pre>{JSON.stringify(connectionTest.request, null, 2)}</pre>
+                    <h3>Provider response (credentials redacted)</h3>
+                    <pre>{JSON.stringify(connectionTest.response, null, 2)}</pre>
+                    <p>This checks token authentication only. Delivery and webhook handling must be tested separately.</p>
+                </>}
+            </Modal>
             <Modal
                 open={Boolean(help)}
                 onClose={() => setHelp(null)}
