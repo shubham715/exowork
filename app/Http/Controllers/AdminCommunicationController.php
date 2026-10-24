@@ -65,6 +65,7 @@ class AdminCommunicationController extends Controller
             'gupshup_app_id' => 'nullable|uuid', 'gupshup_app_name' => 'nullable|string|max:100|regex:/^[a-zA-Z0-9_]+$/',
             'gupshup_source' => 'nullable|string|regex:/^[1-9][0-9]{7,14}$/',
             'gupshup_api_key' => 'nullable|string|max:4096', 'gupshup_customer_secret' => 'nullable|string|max:4096',
+            'gupshup_auth_mode' => ['sometimes', Rule::in(['auto', 'cat', 'api_key'])],
             'gupshup_webhook_secret' => 'nullable|string|min:32|max:255',
             'enabled' => 'required|boolean', 'api_version' => 'required|string|regex:/^v[0-9]+\.0$/',
             'phone_number_id' => 'nullable|string|max:40|regex:/^[0-9]+$/',
@@ -80,11 +81,12 @@ class AdminCommunicationController extends Controller
             }
         }
         if ($channel === 'whatsapp') {
-            foreach (['provider', 'gupshup_app_id', 'gupshup_app_name', 'gupshup_source', 'gupshup_automation_enabled'] as $key) $data[$key] = $data[$key] ?? $old[$key] ?? ($key === 'provider' ? 'meta' : null);
+            foreach (['provider', 'gupshup_app_id', 'gupshup_app_name', 'gupshup_source', 'gupshup_automation_enabled', 'gupshup_auth_mode'] as $key) $data[$key] = $data[$key] ?? $old[$key] ?? match ($key) { 'provider' => 'meta', 'gupshup_auth_mode' => 'auto', default => null };
         }
         if ($channel === 'whatsapp' && $data['enabled']) {
             $required = $data['provider'] === 'gupshup' ? ['gupshup_app_id', 'gupshup_app_name', 'gupshup_source', 'gupshup_webhook_secret'] : ['access_token', 'phone_number_id', 'business_account_id', 'app_secret', 'verify_token'];
             if ($data['provider'] === 'gupshup' && empty($data['gupshup_api_key']) && empty($data['gupshup_customer_secret'])) $required[] = 'gupshup_customer_secret';
+            if ($data['provider'] === 'gupshup' && ($data['gupshup_auth_mode'] ?? 'auto') !== 'auto') $required[] = $data['gupshup_auth_mode'] === 'api_key' ? 'gupshup_api_key' : 'gupshup_customer_secret';
             foreach ($required as $key) {
                 if (empty($data[$key])) {
                     throw ValidationException::withMessages([$key => 'Required before enabling WhatsApp.']);

@@ -8,6 +8,12 @@ use Illuminate\Support\Facades\Http;
 
 class GupshupWhatsApp
 {
+    private function usesApiKey(): bool
+    {
+        return config('whatsapp.gupshup_auth_mode', 'auto') === 'api_key'
+            || (config('whatsapp.gupshup_auth_mode', 'auto') === 'auto' && ! config('whatsapp.gupshup_customer_secret'));
+    }
+
     private function tokenUrl(): string
     {
         return 'https://api.gupshup.io/wa/app/'.rawurlencode(config('whatsapp.gupshup_app_id')).'/auth/app-token';
@@ -24,23 +30,27 @@ class GupshupWhatsApp
 
     public function testConnection(): array
     {
-        $secret = (string) config('whatsapp.gupshup_customer_secret');
-        abort_unless($secret !== '' && \Illuminate\Support\Str::isUuid(config('whatsapp.gupshup_app_id')), 422, 'Save a valid app ID and Customer Secret before testing.');
+        $apiKey = $this->usesApiKey();
+        $secret = (string) config($apiKey ? 'whatsapp.gupshup_api_key' : 'whatsapp.gupshup_customer_secret');
+        abort_unless($secret !== '' && \Illuminate\Support\Str::isUuid(config('whatsapp.gupshup_app_id')), 422, 'Save a valid app ID and the credential for your selected authentication method before testing.');
         $result = ['request' => null, 'success' => false];
         try {
-            $response = $this->requestToken($secret, function (\Illuminate\Http\Client\Request $request) use (&$result) {
-                $sentSecret = $request->header('X-Customer-Secret')[0] ?? '';
+            $inspect = function (\Illuminate\Http\Client\Request $request) use (&$result, $apiKey) {
+                $sentSecret = $request->header($apiKey ? 'apikey' : 'X-Customer-Secret')[0] ?? '';
                 $masked = strlen($sentSecret) > 16 ? substr($sentSecret, 0, 4).'…'.substr($sentSecret, -4) : '[REDACTED]';
                 $headers = [];
                 foreach ($request->headers() as $name => $values) {
-                    $headers[$name] = strtolower($name) === 'x-customer-secret' ? $masked
+                    $headers[$name] = strtolower($name) === ($apiKey ? 'apikey' : 'x-customer-secret') ? $masked
                         : (in_array(strtolower($name), ['accept', 'content-type', 'content-length', 'user-agent', 'host'], true) ? implode(', ', $values) : '[REDACTED]');
                 }
                 $result['request'] = ['method' => $request->method(), 'url' => $request->url(), 'headers' => $headers, 'body' => $request->body(),
                     'credentials_source' => 'Effective server configuration (saved admin settings override environment)',
-                    'customer_secret' => ['preview' => $masked, 'length' => strlen($sentSecret), 'sha256_prefix' => substr(hash('sha256', $sentSecret), 0, 12),
+                    ($apiKey ? 'api_key' : 'customer_secret') => ['preview' => $masked, 'length' => strlen($sentSecret), 'sha256_prefix' => substr(hash('sha256', $sentSecret), 0, 12),
                         'has_surrounding_whitespace' => $sentSecret !== trim($sentSecret), 'has_non_printable_characters' => (bool) preg_match('/[^\x20-\x7E]/', $sentSecret)]];
-            });
+            };
+            $response = $apiKey
+                ? $this->client()->beforeSending($inspect)->get('https://api.gupshup.io/wa/app/'.rawurlencode(config('whatsapp.gupshup_app_id')).'/template', ['pageNo' => 0, 'pageSize' => 1])
+                : $this->requestToken($secret, $inspect);
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
             return $result + ['response' => ['status' => null, 'body' => 'Connection failed or timed out. No provider response received.']];
         }
@@ -62,6 +72,10 @@ class GupshupWhatsApp
         };
         $json = $response->json();
         $result['response'] = ['status' => $response->status(), 'content_type' => $response->header('Content-Type'), 'body' => is_array($json) ? $redact($json) : '[Non-JSON response omitted]'];
+        if ($apiKey) {
+            $result['success'] = $response->successful() && is_array($response->json('templates'));
+            return $result;
+        }
         try {
             $expiresAt = $response->json('expiresAt');
             $expiry = (is_int($expiresAt) || (is_string($expiresAt) && ctype_digit($expiresAt)))
@@ -87,6 +101,7 @@ class GupshupWhatsApp
             if (! config('whatsapp.gupshup_'.$key)) $missing[] = 'GUPSHUP_'.strtoupper($key);
         }
         if (! config('whatsapp.gupshup_api_key') && ! config('whatsapp.gupshup_customer_secret')) $missing[] = 'GUPSHUP_CUSTOMER_SECRET';
+        if (! config($this->usesApiKey() ? 'whatsapp.gupshup_api_key' : 'whatsapp.gupshup_customer_secret')) $missing[] = $this->usesApiKey() ? 'GUPSHUP_API_KEY' : 'GUPSHUP_CUSTOMER_SECRET';
         if (strlen((string) config('whatsapp.gupshup_webhook_secret')) < 32) $missing[] = 'GUPSHUP_WEBHOOK_SECRET';
         if (config('whatsapp.gupshup_source') && ! preg_match('/^[1-9]\d{7,14}$/', config('whatsapp.gupshup_source'))) $missing[] = 'GUPSHUP_SOURCE';
         return array_unique($missing);
@@ -96,7 +111,7 @@ class GupshupWhatsApp
     {
         $client = Http::acceptJson()->connectTimeout(5)->timeout(20);
         $secret = config('whatsapp.gupshup_customer_secret');
-        if (! $secret) return $client->withHeaders(['apikey' => config('whatsapp.gupshup_api_key')]);
+        if ($this->usesApiKey()) return $client->withHeaders(['apikey' => config('whatsapp.gupshup_api_key')]);
         // Cache encrypted CATs; refresh before expiry. Changing account/secret invalidates the cache key.
         $key = 'gupshup-cat:'.hash('sha256', config('whatsapp.gupshup_app_id').'|'.$secret);
         $encrypted = Cache::get($key);

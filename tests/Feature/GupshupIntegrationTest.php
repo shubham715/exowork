@@ -173,6 +173,26 @@ class GupshupIntegrationTest extends TestCase
         Http::assertSentCount(2);
     }
 
+    public function test_explicit_api_key_mode_ignores_saved_customer_secret_for_tests_templates_and_sends(): void
+    {
+        $this->admin();
+        config(['whatsapp.gupshup_auth_mode' => 'api_key', 'whatsapp.gupshup_customer_secret' => 'saved-cat-secret', 'whatsapp.gupshup_api_key' => 'app-api-key']);
+        Http::fake(['api.gupshup.io/wa/app/*/template*' => Http::response(['templates' => []]), 'api.gupshup.io/wa/api/v1/template/msg' => Http::response(['status' => 'submitted', 'messageId' => 'test-message'])]);
+        $this->postJson('/admin-api/communication/gupshup/test')->assertOk()->assertJsonPath('success', true)->assertJsonPath('request.method', 'GET')->assertJsonPath('request.api_key.length', 11)->assertDontSee('app-api-key')->assertDontSee('saved-cat-secret');
+        app(GupshupWhatsApp::class)->templates();
+        app(GupshupWhatsApp::class)->send('919876543211', ['id' => 'template-id'], ['Asha'], null);
+        Http::assertSentCount(3);
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), '/auth/app-token') || $r->hasHeader('Authorization') || $r->hasHeader('X-Customer-Secret'));
+        Http::assertSent(fn ($r) => str_contains($r->url(), '/template/msg') && $r->hasHeader('apikey', 'app-api-key'));
+    }
+
+    public function test_explicit_api_key_mode_requires_key_even_when_customer_secret_is_saved(): void
+    {
+        config(['whatsapp.gupshup_auth_mode' => 'api_key', 'whatsapp.gupshup_customer_secret' => 'saved-cat-secret', 'whatsapp.gupshup_api_key' => null]);
+        $this->assertContains('GUPSHUP_API_KEY', app(GupshupWhatsApp::class)->missing());
+        Http::assertNothingSent();
+    }
+
     public function test_connection_diagnostics_show_masked_actual_outgoing_secret(): void
     {
         $this->admin();

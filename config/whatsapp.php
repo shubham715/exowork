@@ -6,6 +6,7 @@ return [
     'gupshup_app_name' => env('GUPSHUP_APP_NAME'),
     'gupshup_source' => env('GUPSHUP_SOURCE'),
     'gupshup_api_key' => env('GUPSHUP_API_KEY'),
+    'gupshup_auth_mode' => env('GUPSHUP_AUTH_MODE', 'auto'),
     'gupshup_customer_secret' => env('GUPSHUP_CUSTOMER_SECRET'),
     'gupshup_webhook_secret' => env('GUPSHUP_WEBHOOK_SECRET'),
     'gupshup_automation_enabled' => env('GUPSHUP_AUTOMATION_ENABLED', false),

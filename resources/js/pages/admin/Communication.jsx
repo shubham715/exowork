@@ -768,12 +768,11 @@ export default function Communication({ initialTab = "Email management", onlyTab
                             <div className="wa-settings-section">
                                 <div className="wa-settings-section-head"><span className="wa-settings-number purple"><KeyRound size={17}/></span><div><h4>Access & security</h4><p>Leave a saved secret blank to keep its current value.</p></div><span className="wa-security-label"><ShieldCheck size={13}/>Protected</span></div>
                                 <div className="wa-settings-fields">
+                                <label className="field-label">Authentication method<select value={config.whatsapp.gupshup_auth_mode || 'auto'} onChange={e=>change('whatsapp','gupshup_auth_mode',e.target.value)}><option value="auto">Automatic (existing configuration)</option><option value="api_key">App API key</option><option value="cat">Customer Secret / CAT</option></select><small>App API key ignores the saved Customer Secret. API keys retire on 31 March 2027.</small></label>
+                                {field('whatsapp','gupshup_api_key','App API key','password','Gupshup app Settings → API Keys. Save connection before testing.')}
                                 {field('whatsapp','gupshup_customer_secret','Customer Secret','password','Preferred authentication. Renew before the account secret expires.')}
                                 {field('whatsapp','gupshup_webhook_secret','Webhook authentication secret','password','At least 32 random characters. Use the same secret in Gupshup.')}
                                 </div>
-                                <details className="wa-legacy-settings"><summary>Legacy API authentication (optional)</summary><div className="wa-settings-fields">
-                                {field('whatsapp','gupshup_api_key','Legacy API key (optional)','password','Only needed if no Customer Secret is configured; legacy keys retire 31 March 2027.')}
-                                </div></details>
                             </div>
                             <div className="wa-settings-section">
                                 <div className="wa-settings-section-head"><span className="wa-settings-number blue"><Webhook size={17}/></span><div><h4>Webhooks & automation</h4><p>Receive candidate replies and delivery updates.</p></div></div>
@@ -1503,14 +1502,14 @@ export default function Communication({ initialTab = "Email management", onlyTab
                 </section>
             )}
             <Modal open={Boolean(connectionTest)} onClose={()=>setConnectionTest(null)} title="Gupshup connection test" className="comm-modal wa-diagnostics">
-                <p>Tests saved settings. Save connection first if you edited any fields. This requests a new token (up to 3 may be active); it does not send a message. Tests are limited to once per minute.</p>
+                <p>Tests saved settings. Save connection first if you edited any fields. API key mode checks template access; CAT mode requests a token (up to 3 may be active). No message is sent. Tests are limited to once per minute.</p>
                 {connectionTest?.loading ? <p role="status">Sending authentication request…</p> : connectionTest?.error ? <p role="alert">{connectionTest.error}</p> : connectionTest && <>
                     <p role="status"><strong>{connectionTest.success?'Authentication successful':'Authentication failed or response invalid'}</strong></p>
                     <h3>Actual request (credentials redacted)</h3>
                     <pre>{JSON.stringify(connectionTest.request, null, 2)}</pre>
                     <h3>Provider response (credentials redacted)</h3>
                     <pre>{JSON.stringify(connectionTest.response, null, 2)}</pre>
-                    <p>This checks token authentication only. Delivery and webhook handling must be tested separately.</p>
+                    <p>This checks the selected authentication method only. Delivery and webhook handling must be tested separately.</p>
                 </>}
             </Modal>
             <Modal

@@ -116,3 +116,10 @@ All templates require provider approval and local review before sending. General
 - https://docs.gupshup.io/reference/get-all-templates-for-an-app
 - https://docs.gupshup.io/docs/message-events
 - https://docs.gupshup.io/docs/cats
+
+## Explicit app API key authentication
+
+In WhatsApp API settings choose **App API key**, enter the key generated under the Gupshup app Settings → API Keys, and save. This explicitly ignores any retained Customer Secret. Test connection reads the app template endpoint with the apikey header; it does not mint a CAT or send a message. Sync templates after a successful test, then test one approved template with a consenting test recipient. Existing automatic mode remains unchanged. App API keys are a transitional option: Gupshup's published CAT guide sets retirement at 31 March 2027.
+
+Deploy backend and public/build together. If Laravel configuration/routes are cached, clear those caches after pulling. No database migration is required for the authentication selection.
+
