@@ -173,6 +173,22 @@ class GupshupIntegrationTest extends TestCase
         Http::assertSentCount(2);
     }
 
+    public function test_connection_diagnostics_show_masked_actual_outgoing_secret(): void
+    {
+        $this->admin();
+        $secret = 'abcd'.str_repeat('m', 56).'wxyz';
+        config(['whatsapp.gupshup_customer_secret' => $secret]);
+        Http::fake(['api.gupshup.io/wa/app/*/auth/app-token' => Http::response(['message' => 'Authentication Failed'], 401)]);
+        $this->postJson('/admin-api/communication/gupshup/test')->assertOk()
+            ->assertJsonPath('request.customer_secret.preview', 'abcd…wxyz')
+            ->assertJsonPath('request.customer_secret.length', 64)
+            ->assertJsonPath('request.customer_secret.sha256_prefix', substr(hash('sha256', $secret), 0, 12))
+            ->assertJsonPath('request.customer_secret.has_surrounding_whitespace', false)
+            ->assertJsonPath('request.headers.X-Customer-Secret', 'abcd…wxyz')
+            ->assertJsonPath('request.headers.Content-Type', 'application/x-www-form-urlencoded')
+            ->assertDontSee($secret);
+    }
+
     public function test_connection_diagnostics_return_provider_failure_and_require_admin_permission(): void
     {
         $this->admin();

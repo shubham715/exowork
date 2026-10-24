@@ -13,20 +13,34 @@ class GupshupWhatsApp
         return 'https://api.gupshup.io/wa/app/'.rawurlencode(config('whatsapp.gupshup_app_id')).'/auth/app-token';
     }
 
-    private function requestToken(string $secret)
+    private function requestToken(string $secret, ?callable $inspect = null)
     {
-        return Http::acceptJson()->connectTimeout(5)->timeout(20)
+        $client = Http::acceptJson()->connectTimeout(5)->timeout(20)
             ->withHeaders(['X-Customer-Secret' => $secret])
-            ->withBody('', 'application/x-www-form-urlencoded')->post($this->tokenUrl());
+            ->withBody('', 'application/x-www-form-urlencoded');
+        if ($inspect) $client->beforeSending($inspect);
+        return $client->post($this->tokenUrl());
     }
 
     public function testConnection(): array
     {
         $secret = (string) config('whatsapp.gupshup_customer_secret');
         abort_unless($secret !== '' && \Illuminate\Support\Str::isUuid(config('whatsapp.gupshup_app_id')), 422, 'Save a valid app ID and Customer Secret before testing.');
-        $result = ['request' => ['method' => 'POST', 'url' => $this->tokenUrl(), 'headers' => ['Accept' => 'application/json', 'Content-Type' => 'application/x-www-form-urlencoded', 'X-Customer-Secret' => '[REDACTED]'], 'body' => '', 'credentials_source' => 'Saved server settings'], 'success' => false];
+        $result = ['request' => null, 'success' => false];
         try {
-            $response = $this->requestToken($secret);
+            $response = $this->requestToken($secret, function (\Illuminate\Http\Client\Request $request) use (&$result) {
+                $sentSecret = $request->header('X-Customer-Secret')[0] ?? '';
+                $masked = strlen($sentSecret) > 16 ? substr($sentSecret, 0, 4).'…'.substr($sentSecret, -4) : '[REDACTED]';
+                $headers = [];
+                foreach ($request->headers() as $name => $values) {
+                    $headers[$name] = strtolower($name) === 'x-customer-secret' ? $masked
+                        : (in_array(strtolower($name), ['accept', 'content-type', 'content-length', 'user-agent', 'host'], true) ? implode(', ', $values) : '[REDACTED]');
+                }
+                $result['request'] = ['method' => $request->method(), 'url' => $request->url(), 'headers' => $headers, 'body' => $request->body(),
+                    'credentials_source' => 'Effective server configuration (saved admin settings override environment)',
+                    'customer_secret' => ['preview' => $masked, 'length' => strlen($sentSecret), 'sha256_prefix' => substr(hash('sha256', $sentSecret), 0, 12),
+                        'has_surrounding_whitespace' => $sentSecret !== trim($sentSecret), 'has_non_printable_characters' => (bool) preg_match('/[^\x20-\x7E]/', $sentSecret)]];
+            });
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
             return $result + ['response' => ['status' => null, 'body' => 'Connection failed or timed out. No provider response received.']];
         }
