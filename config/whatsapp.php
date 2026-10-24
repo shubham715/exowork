@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'http_cron_enabled' => env('WHATSAPP_HTTP_CRON_ENABLED', false),
     'provider' => env('WHATSAPP_PROVIDER', 'meta'),
     'gupshup_app_id' => env('GUPSHUP_APP_ID'),
     'gupshup_app_name' => env('GUPSHUP_APP_NAME'),

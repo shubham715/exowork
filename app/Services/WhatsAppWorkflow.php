@@ -11,7 +11,21 @@ class WhatsAppWorkflow
 {
     private array $settings = [];
 
-    public function run(): void
+    private ?float $deadline = null;
+
+    public function run(?float $deadline = null): void
+    {
+        $this->deadline = $deadline;
+        try {
+            $this->runStages();
+        } catch (WhatsAppWorkflowBudgetExceeded $e) {
+            // The next cron run safely resumes deduplicated stage checks.
+        } finally {
+            $this->deadline = null;
+        }
+    }
+
+    private function runStages(): void
     {
         app(CommunicationSettings::class)->apply();
         $this->settings = app(CommunicationSettings::class)->get('whatsapp_workflow');
@@ -91,6 +105,7 @@ class WhatsAppWorkflow
 
     private function candidate(string $key, Candidate $c, array $parameters, string $event): bool
     {
+        if ($this->deadline !== null && microtime(true) >= $this->deadline) throw new WhatsAppWorkflowBudgetExceeded();
         if ($c->deleted_at || $c->profile_status !== 'active' || ! $c->whatsapp_consent) return false;
         try { $number = app(WhatsAppCloud::class)->recipient($c->whatsapp); } catch (ValidationException $e) { return false; }
         if (DB::table('whatsapp_opt_outs')->where('recipient', $number)->exists() || DB::table('whatsapp_messages')->where('event_key', $event)->exists()) return false;
@@ -99,6 +114,7 @@ class WhatsAppWorkflow
 
     private function center(Candidate $c, object $job, object $employer, string $status, string $date, string $event): void
     {
+        if ($this->deadline !== null && microtime(true) >= $this->deadline) throw new WhatsAppWorkflowBudgetExceeded();
         $center = $c->training_center_id ? DB::table('training_centers')->find($c->training_center_id) : null;
         if (! $center || $center->deleted_at || ! DB::table('whatsapp_center_preferences')->where('training_center_id', $center->id)->where('consent', true)->exists() || ! $center->spoc_phone) return;
         try { $number = app(WhatsAppCloud::class)->recipient($center->spoc_phone); } catch (ValidationException $e) { return; }

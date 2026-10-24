@@ -7,8 +7,15 @@ import Communication from './Communication';
 import './whatsapp-management.css';
 
 const base='/admin-api/whatsapp';
-const failure=e=>Object.values(e.response?.data?.errors||{}).flat().join(' ')||e.response?.data?.message||'Request failed. Please try again.';
-const headers=()=>({'X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]')?.content});
+const failure=e=>{
+ const status=e.response?.status;
+ const detail=Object.values(e.response?.data?.errors||{}).flat().join(' ')||e.response?.data?.message;
+ if(typeof detail==='string'&&detail.trim())return `${status?`HTTP ${status}: `:''}${detail}`;
+ if(!e.response)return 'No server response received. Check message logs before retrying; the submission may have been recorded.';
+ const hints={401:'Your session has expired. Sign in again.',403:'Your account cannot perform this action.',419:'Your session security token expired. Reload the page.',422:'Check the test number, consent and template variables.',429:'Too many requests. Wait one minute before trying again.',500:'The server could not complete the request. Check Laravel logs.',502:'The upstream service could not complete the request.',503:'The messaging service is unavailable.',504:'The server timed out. Check message logs before retrying.'};
+ return `HTTP ${status}: ${hints[status]||'The server returned an unexpected response. Check message logs before retrying.'}`;
+};
+const headers=()=>({'Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]')?.content});
 const date=v=>v?new Date(v.replace(' ','T')+(v.endsWith('Z')||v.includes('+')?'':'Z')).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',dateStyle:'medium',timeStyle:'short'})+' IST':'—';
 const tone=s=>['approved','APPROVED','accepted','sent','delivered','read'].includes(s)?'active':['failed','rejected','REJECTED','CONTENT_MISMATCH'].includes(s)?'rejected':'pending';
 

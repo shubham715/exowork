@@ -123,3 +123,20 @@ In WhatsApp API settings choose **App API key**, enter the key generated under t
 
 Deploy backend and public/build together. If Laravel configuration/routes are cached, clear those caches after pulling. No database migration is required for the authentication selection.
 
+## Public HTTP cron for shared hosting
+
+Use this as an alternative to the CLI cron entry, not an additional cron job. It does not solve a hosting scheduler that never starts; it avoids direct execution of Artisan by the hosting scheduler.
+
+1. Set `WHATSAPP_HTTP_CRON_ENABLED=true` in the live `.env`. Keep a persistent cache (database or file). Run `php artisan config:clear` and `php artisan route:clear` after deployment.
+2. Replace the old hPanel Custom cron with the following command, with all schedule fields set to `*`:
+
+```sh
+/usr/bin/curl --silent --show-error --max-time 55 "https://exowork.in/api/cron/whatsapp?run=1"
+```
+
+View Output should contain `{"status":"ok","processed":0}` or `processed:1`. Busy means another run holds the shared lock. The same URL can be opened manually in a browser. Requests require `run=1`; no authentication secret is used, as explicitly requested. Anyone with the URL can trigger the limited run. A shared global limit permits one HTTP run per 60 seconds, regardless of IP or GET/POST method; additional requests return HTTP 429 with a retry delay. Responses expose counts only, not recipients, message contents or provider credentials.
+
+Each call uses an 8-second cooperative stage-check budget and processes at most one due outbox message, using existing atomic claims, template checks and consent enforcement. Provider requests retain their normal timeouts; the budget does not interrupt an in-flight SQL or provider request. Interrupted submissions become unknown after five minutes and are never blindly retried. Heavy stage scans and message bursts require CLI workers/VPS rather than this shared-host workaround.
+
+While HTTP mode is enabled, new outbox records do not also create database queue jobs. Previously queued jobs are harmless duplicates because the outbox claim is atomic; an existing CLI worker can drain them. Other Laravel queues are not processed by this endpoint. To switch back, disable HTTP mode, clear config, remove the URL cron and restore the CLI cron/worker configuration.
+

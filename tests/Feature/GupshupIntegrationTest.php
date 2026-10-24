@@ -186,6 +186,21 @@ class GupshupIntegrationTest extends TestCase
         Http::assertSent(fn ($r) => str_contains($r->url(), '/template/msg') && $r->hasHeader('apikey', 'app-api-key'));
     }
 
+    public function test_approved_gupshup_registration_test_is_queued_once_with_api_key(): void
+    {
+        $this->admin();
+        config(['whatsapp.gupshup_auth_mode' => 'api_key', 'whatsapp.gupshup_customer_secret' => 'unused-secret']);
+        Http::fake(['api.gupshup.io/wa/app/*/template*' => Http::response(['templates' => [$this->remote()]])]);
+        $this->postJson('/admin-api/whatsapp/sync')->assertOk();
+        $t = DB::table('whatsapp_templates')->where('system_key', 'welcome')->first();
+        $this->patchJson('/admin-api/whatsapp/templates/'.$t->id.'/review', ['status' => 'approved'])->assertOk();
+        $payload = ['request_id' => (string) Str::uuid(), 'number' => '9876543211', 'consent' => true, 'parameters' => \App\Services\WhatsAppTemplateCatalog::get('welcome')['examples']];
+        $this->postJson('/admin-api/whatsapp/templates/'.$t->id.'/test', $payload)->assertAccepted()->assertJsonPath('message.status', 'queued');
+        $this->postJson('/admin-api/whatsapp/templates/'.$t->id.'/test', $payload)->assertOk();
+        $this->assertDatabaseCount('whatsapp_messages', 1);
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), '/auth/app-token'));
+    }
+
     public function test_explicit_api_key_mode_requires_key_even_when_customer_secret_is_saved(): void
     {
         config(['whatsapp.gupshup_auth_mode' => 'api_key', 'whatsapp.gupshup_customer_secret' => 'saved-cat-secret', 'whatsapp.gupshup_api_key' => null]);

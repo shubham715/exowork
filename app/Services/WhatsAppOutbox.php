@@ -37,7 +37,8 @@ class WhatsAppOutbox
         });
         // The scheduler also recovers committed outbox rows if dispatch is interrupted.
         $available = DB::table('whatsapp_messages')->where('id', $id)->value('available_at');
-        SendWhatsAppMessage::dispatch($id)->delay(\Carbon\Carbon::parse($available))->afterCommit();
+        // HTTP cron drains the durable outbox directly; do not accumulate duplicate queue jobs.
+        if (! config('whatsapp.http_cron_enabled')) SendWhatsAppMessage::dispatch($id)->delay(\Carbon\Carbon::parse($available))->afterCommit();
         return DB::table('whatsapp_messages')->find($id);
     }
 
