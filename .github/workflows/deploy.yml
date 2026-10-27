@@ -64,6 +64,7 @@ jobs:
           test -f .env
           test -f artisan
           test -f ../public_html/index.php
+          mkdir -p public/build/assets ../public_html/build/assets
           php artisan down --retry=60
           REMOTE
 
@@ -84,6 +85,10 @@ jobs:
           # Keep old hashed assets; publish the new manifest after its assets.
           rsync -az -e "$RSYNC_SSH" public/build/assets/ "$SERVER:$PUBLIC_PATH/build/assets/"
           rsync -az -e "$RSYNC_SSH" public/build/manifest.json "$SERVER:$PUBLIC_PATH/build/manifest.json"
+          # Laravel resolves @vite from its application public path. Keep that
+          # manifest and assets in sync as well as the hosting document root.
+          rsync -az -e "$RSYNC_SSH" public/build/assets/ "$SERVER:$APP_PATH/public/build/assets/"
+          rsync -az -e "$RSYNC_SSH" public/build/manifest.json "$SERVER:$APP_PATH/public/build/manifest.json"
 
           ssh "${SSH_ARGS[@]}" "$SERVER" "$REMOTE_COMMAND" <<'REMOTE'
           set -euo pipefail
