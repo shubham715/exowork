@@ -583,7 +583,7 @@ export default function EmployerRegistration({verifiedPhone="",verificationToken
         </label>
     );
     return (
-        <div className="candidate-register employer-registration employer-quick-signup">
+        <div className="candidate-register employer-registration employer-quick-signup auth-registration">
             <header className="reg-top">
                 <Link to="/">
                     <ArrowLeft />

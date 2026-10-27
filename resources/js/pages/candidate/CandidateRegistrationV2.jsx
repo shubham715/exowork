@@ -91,7 +91,7 @@ export default function CandidateRegistration({mode='public',verifiedPhone='',ve
 
   </section></main>;
 
-  return <div className={'candidate-register '+(mode==='public'?'public-reg':'embedded-reg')}>
+  return <div className={'candidate-register '+(mode==='public'?'public-reg auth-registration':'embedded-reg')}>
 
     <header className="reg-top"><Link to={mode==='public'?'/':'/admin/candidates'}><ArrowLeft/>Exit registration</Link><div className="reg-brand"><BrandLogo/></div><div className="draft-status">{savedAt&&<small>Saved {new Date(savedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</small>}<button type="button" className="btn ghost reg-draft-top" disabled={savingDraft} onClick={saveDraft}><Save/>{savingDraft?'Saving…':'Save draft'}</button></div></header>
 

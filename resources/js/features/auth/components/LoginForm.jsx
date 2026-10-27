@@ -54,7 +54,7 @@ export default function LoginForm({ roles, admin = false, onChangeRole }) {
     }
   };
 
-  if(!admin&&!authSettings)return <div className="login-form"><div className={settingsError?'auth-notice error':'auth-notice'} role={settingsError?'alert':'status'}>{settingsError||'Loading secure login…'}</div>{settingsError&&<button type="button" className="btn ghost block" onClick={loadSettings}>Retry</button>}</div>;
+  if(!admin&&!authSettings)return <div className="login-form"><div className={settingsError?'auth-notice error':'auth-notice loading'} role={settingsError?'alert':'status'}>{settingsError||'Loading secure login…'}</div>{settingsError&&<button type="button" className="btn ghost block" onClick={loadSettings}>Retry</button>}</div>;
   if(!admin&&authSettings.login_enabled&&!passwordMode)return <div className="login-form"><div className="selected-login-role"><span>{role.label}</span><button type="button" onClick={onChangeRole}>Change account type</button></div><PhoneVerification role={role.id} purpose="login" onVerified={data=>{const meta=document.querySelector('meta[name="csrf-token"]');if(meta&&data.csrf_token)meta.content=data.csrf_token;navigate(data.destination)}}/><div className="login-divider"><span>OR</span></div><button type="button" className="btn ghost block" onClick={()=>setPasswordMode(true)}>Log in with password</button><div className="otp-alternative"><button type="button" className="btn ghost" onClick={onChangeRole}>Change account type</button><Link className="btn dark" to={role.id === "employer" ? "/register/employer" : role.id === "candidate" ? "/register/candidate" : "/register/training-center"}>Create an account</Link></div></div>;
   return (
     <form className="login-form" onSubmit={submit} noValidate>
@@ -145,7 +145,7 @@ export default function LoginForm({ roles, admin = false, onChangeRole }) {
         <div className="login-divider"><span>OR</span></div>
         <div className="login-signup">
           <p>New to EXOWORK?</p>
-          <Link className="btn ghost block" to={role.id === "employer" ? "/register/employer" : role.id === "candidate" ? "/register/candidate" : "/register/training-center"}>Sign up as {role.id === "employer" ? "an employer" : role.id === "candidate" ? "a candidate" : "a training center"} <ArrowRight /></Link>
+          <Link className="btn dark block" to={role.id === "employer" ? "/register/employer" : role.id === "candidate" ? "/register/candidate" : "/register/training-center"}>Sign up as {role.id === "employer" ? "an employer" : role.id === "candidate" ? "a candidate" : "a training center"} <ArrowRight /></Link>
         </div>
       </>}
     </form>
