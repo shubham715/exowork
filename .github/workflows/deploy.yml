@@ -102,3 +102,18 @@ jobs:
           php artisan up
           REMOTE
 
+      - name: Verify live frontend assets
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const entry = JSON.parse(fs.readFileSync('public/build/manifest.json'))['resources/js/main.jsx'];
+          const expected = [entry.file, ...entry.css];
+          const response = await fetch(`https://exowork.in/login?deployment=${process.env.GITHUB_SHA}`, {headers: {'Cache-Control': 'no-cache'}});
+          const html = await response.text();
+          if (!response.ok || expected.some(asset => !html.includes(`/build/${asset}`))) {
+            const served = [...new Set(html.match(/build\/assets\/[^"\s<>]+/g) || [])];
+            console.log(`::error title=Live asset mismatch::Expected ${expected.join(', ')}; served ${served.join(', ')}; HTTP ${response.status}`);
+            process.exit(1);
+          }
+          JS
+
