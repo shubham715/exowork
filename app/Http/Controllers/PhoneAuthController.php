@@ -23,7 +23,10 @@ class PhoneAuthController extends Controller
         $settings = app(AuthVerification::class)->settings();
         abort_unless($settings[$data['purpose']==='login'?'login_enabled':'registration_enabled'], 403, 'WhatsApp verification is disabled.');
         $key = 'phone-otp:'.hash('sha256', $data['phone']);
-        abort_if(RateLimiter::tooManyAttempts($key, 1), 429, 'Please wait 60 seconds before requesting another code.');
+        if (RateLimiter::tooManyAttempts($key, 1)) {
+            $retry = RateLimiter::availableIn($key);
+            return response()->json(['message'=>'Please wait before requesting another code.', 'retry_after'=>$retry], 429)->header('Retry-After', $retry);
+        }
         RateLimiter::hit($key, 60);
         $code = (string)random_int(100000, 999999);
         app(CommunicationSettings::class)->apply();
@@ -32,7 +35,7 @@ class PhoneAuthController extends Controller
         abort_unless($response->successful() && !in_array(strtolower((string)$response->json('status')), ['error','failed','failure']), 502, 'We could not send the code. Please try again later.');
         $id = Str::random(64);
         Cache::put('otp:'.$id, [...$data, 'hash'=>Hash::make($code), 'session'=>hash('sha256',$request->session()->getId())], now()->addMinutes(5));
-        return response()->json(['challenge_id'=>$id,'expires_in'=>300,'retry_after'=>60]);
+        return response()->json(['message'=>'Code sent on WhatsApp. Enter it below to continue.','challenge_id'=>$id,'expires_in'=>300,'retry_after'=>60]);
     }
     public function verify(Request $request) {
         $data = $request->validate(['challenge_id'=>'required|string|size:64','code'=>'required|digits:6']);

@@ -10,7 +10,8 @@ const INITIAL_VALUES = { identifier: "", password: "", remember: true };
 export default function LoginForm({ roles, admin = false, onChangeRole }) {
   const navigate = useNavigate();
   const [authSettings,setAuthSettings]=useState(null),[passwordMode,setPasswordMode]=useState(false),[settingsError,setSettingsError]=useState('');
-  useEffect(()=>{if(!admin)axios.get('/auth/settings').then(({data})=>setAuthSettings(data)).catch(()=>setSettingsError('Unable to load login options. Refresh the page to retry.'))},[admin]);
+  const loadSettings=()=>{setSettingsError('');axios.get('/auth/settings').then(({data})=>setAuthSettings(data)).catch(()=>setSettingsError('Unable to load login options. Please retry.'))};
+  useEffect(()=>{if(!admin)loadSettings()},[admin]);
   const identifierRef = useRef(null);
   const [roleId, setRoleId] = useState(roles[0].id);
   const [values, setValues] = useState(INITIAL_VALUES);
@@ -53,8 +54,8 @@ export default function LoginForm({ roles, admin = false, onChangeRole }) {
     }
   };
 
-  if(!admin&&!authSettings)return <p role="status">{settingsError||'Loading secure login…'}</p>;
-  if(!admin&&authSettings.login_enabled&&!passwordMode)return <div className="login-form"><div className="selected-login-role"><span>{role.label}</span><button type="button" onClick={onChangeRole}>Change account type</button></div><PhoneVerification role={role.id} purpose="login" onVerified={data=>{const meta=document.querySelector('meta[name="csrf-token"]');if(meta&&data.csrf_token)meta.content=data.csrf_token;navigate(data.destination)}}/><div className="login-divider"><span>OR</span></div><button type="button" className="btn ghost block" onClick={()=>setPasswordMode(true)}>Log in with password</button><p className="otp-alternative"><button className="text-link" onClick={onChangeRole}>Change account type</button> · <Link to="/register">Create an account</Link></p></div>;
+  if(!admin&&!authSettings)return <div className="login-form"><div className={settingsError?'auth-notice error':'auth-notice'} role={settingsError?'alert':'status'}>{settingsError||'Loading secure login…'}</div>{settingsError&&<button type="button" className="btn ghost block" onClick={loadSettings}>Retry</button>}</div>;
+  if(!admin&&authSettings.login_enabled&&!passwordMode)return <div className="login-form"><div className="selected-login-role"><span>{role.label}</span><button type="button" onClick={onChangeRole}>Change account type</button></div><PhoneVerification role={role.id} purpose="login" onVerified={data=>{const meta=document.querySelector('meta[name="csrf-token"]');if(meta&&data.csrf_token)meta.content=data.csrf_token;navigate(data.destination)}}/><div className="login-divider"><span>OR</span></div><button type="button" className="btn ghost block" onClick={()=>setPasswordMode(true)}>Log in with password</button><div className="otp-alternative"><button type="button" className="btn ghost" onClick={onChangeRole}>Change account type</button><Link className="btn dark" to={role.id === "employer" ? "/register/employer" : role.id === "candidate" ? "/register/candidate" : "/register/training-center"}>Create an account</Link></div></div>;
   return (
     <form className="login-form" onSubmit={submit} noValidate>
       <Link className="login-back" to="/">
@@ -88,14 +89,14 @@ export default function LoginForm({ roles, admin = false, onChangeRole }) {
           name="identifier"
           type="text"
           autoComplete={admin || role.id !== "candidate" ? "username" : "tel"}
-          inputMode={role.id === "candidate" ? "email" : "text"}
+          inputMode={admin ? "text" : "tel"}
           value={values.identifier}
           placeholder={admin?role.identifierPlaceholder:"Registered 10-digit mobile number"}
           aria-invalid={Boolean(errors.identifier)}
           aria-describedby={errors.identifier ? "identifier-error" : undefined}
           onChange={(event) => updateValue("identifier", event.target.value)}
         />
-        {errors.identifier && <small id="identifier-error" className="field-error">{errors.identifier}</small>}
+        {errors.identifier && <small role="alert" id="identifier-error" className="auth-notice error">{errors.identifier}</small>}
       </label>
 
       <label htmlFor="login-password">
@@ -132,7 +133,7 @@ export default function LoginForm({ roles, admin = false, onChangeRole }) {
           />
           Remember me
         </label>
-        {role.id === "employer" ? <Link className="text-link" to="/forgot-password/employer">Forgot password?</Link> : <button type="button">Forgot password?</button>}
+        {role.id === "employer" ? <Link className="text-link" to="/forgot-password/employer">Forgot password?</Link> : !admin && authSettings?.login_enabled ? <button type="button" onClick={()=>setPasswordMode(false)}>Recover with WhatsApp</button> : null}
       </div>
 
       <button className="btn primary block" type="submit" disabled={submitting}>

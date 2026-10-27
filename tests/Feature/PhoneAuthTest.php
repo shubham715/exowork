@@ -62,9 +62,9 @@ class PhoneAuthTest extends TestCase {
   $request->merge(['verification_token'=>$proof['verification_token']]);
   app(AuthVerification::class)->requireRegistration($request,'employer','9876543211');
   $request->replace(['phone'=>'9876543211','role'=>'employer','purpose'=>'registration']);
-  $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
-  $controller->send($request);
+  $limited=$controller->send($request);
+  $this->assertSame(429, $limited->getStatusCode());
+  $this->assertGreaterThan(0, $limited->getData(true)['retry_after']);
  }
 
 }
-

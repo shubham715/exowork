@@ -60,12 +60,13 @@ export default function EmployerPassword() {
                 </p>
                 {message && (
                     <p
-                        role="status"
+                        role={done ? "status" : "alert"}
                         className={done ? "employer-success" : "employer-error"}
                     >
                         {message}
                     </p>
                 )}
+                {done && <Link className="btn dark block" to="/login">Back to login</Link>}
                 {!done && (
                     <>
                         <label>

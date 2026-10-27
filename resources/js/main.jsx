@@ -29,3 +29,4 @@ createRoot(document.getElementById("root")).render(
   </BrowserRouter>,
 );
 import "./pages/center/center-workspace-pages.css";
+import "./features/auth/components/auth-ui.css";

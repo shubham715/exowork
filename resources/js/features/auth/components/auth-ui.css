@@ -1,0 +1,28 @@
+/* Shared authentication controls, loaded after application styles. */
+.login-page main .login-form{width:min(460px,100%);max-width:100%}
+.login-page main{min-width:0;overflow-y:auto;padding:40px 28px}
+.login-page .login-form h2{font-size:30px;line-height:1.25;letter-spacing:-.8px;margin:14px 0 12px}
+.login-page .login-form p{font-size:15px;line-height:1.65}
+.login-page .login-form label,.login-page .otp-digits legend{font-size:14px;font-weight:600;color:#243347}
+.login-page .login-form input:not([type=checkbox]),.login-page .login-form select{min-height:52px;font-size:16px;border-radius:10px;padding:12px 14px}
+.login-page .login-form .btn{min-height:52px;padding:12px 18px;font-size:14px;white-space:normal;line-height:1.4}
+.login-page .login-form .password{padding:0;min-height:52px}.login-page .login-form .password input{margin:0}
+.login-page .login-form .field-error{font-size:13px;line-height:1.5;color:#b42318;margin-top:8px}
+.login-page .selected-login-role{margin:0 0 24px;padding:12px 14px;gap:12px}
+.login-page .selected-login-role>span{font-size:14px}
+.login-page .selected-login-role button{border:1px solid #d6dee7;background:transparent;color:#243347;border-radius:8px;padding:10px 12px;font-size:13px;font-weight:600;min-height:42px}
+.login-page .phone-verification{max-width:none}.login-page .phone-verification>p{margin:0 0 24px}
+.login-page .phone-verification form{width:100%}.login-page .phone-verification label{margin:0 0 20px}
+.login-page .phone-verification .otp-phone{margin-top:8px;overflow:hidden}.login-page .phone-verification .otp-phone input{border:0;margin:0;border-radius:0;min-width:0;box-shadow:none}
+.login-page .otp-phone:focus-within{outline:3px solid #16865b33;border-color:#128454}
+.login-page .otp-icon{margin-bottom:20px}.otp-icon svg{width:26px;height:26px}
+.login-page .login-form .whatsapp-button{background:#128c4a;color:#fff;min-height:54px;margin-top:18px}.login-page .whatsapp-button:hover:not(:disabled){background:#0e753d}.login-page .whatsapp-button svg{width:20px;height:20px;flex-shrink:0}
+.login-page .auth-notice,.login-page .employer-error,.login-page .employer-success{display:flex;align-items:flex-start;gap:9px;padding:14px 16px;border:1px solid #f1b8b3;border-radius:10px;background:#fff2f0;color:#a72c20;font-size:14px;line-height:1.5;margin:16px 0;overflow-wrap:anywhere}
+.login-page .auth-notice.success,.login-page .employer-success{background:#edf9f1;color:#17643d;border-color:#bce4cb}.auth-notice svg{flex-shrink:0;margin-top:2px}
+.otp-digits{border:0;padding:0;margin:0 0 20px;min-width:0}.otp-digits>div{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:10px}
+.login-page .otp-digits input{width:100%;min-width:0;text-align:center;padding:10px 0!important;font-size:24px!important;font-weight:700;height:58px;margin:0;border:1px solid #cbd5e1;background:#fff}
+.otp-actions{display:flex;justify-content:space-between;gap:12px;margin-top:12px}.otp-actions button{background:transparent;border:0;color:#17694d;font-size:13px;font-weight:600;padding:12px 0;min-height:44px}.otp-actions button:disabled{color:#7c8997;cursor:default}
+.login-page .otp-security{font-size:12px;line-height:1.5;margin-top:20px}.login-page .otp-alternative{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0 0}.login-page .otp-alternative .btn.dark{background:#15191f;color:white}.login-page .otp-alternative .btn.ghost{background:transparent;color:#243347}
+.login-page :is(button,a,input):focus-visible{outline:3px solid #16865b66;outline-offset:3px}
+@media(max-width:480px){.login-page main{padding:28px 20px}.login-page .login-form h2{font-size:27px}.login-page .selected-login-role{flex-wrap:wrap}.login-page .otp-alternative{grid-template-columns:1fr}.otp-digits>div{gap:6px}.login-page .otp-digits input{height:52px}}
+@media(max-height:560px){html:has(.login-page),body:has(.login-page),#root:has(.login-page){height:auto;overflow:auto}.login-page{height:auto;min-height:100svh;overflow:visible}.login-page main{overflow:visible}}
