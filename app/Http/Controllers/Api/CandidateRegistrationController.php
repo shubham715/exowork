@@ -16,6 +16,7 @@ class CandidateRegistrationController extends Controller
 {
     public function store(StoreCandidateRequest $request): JsonResponse
     {
+        app(\App\Services\AuthVerification::class)->requireRegistration($request, 'candidate', (string)$request->input('whatsapp'));
         [$validated, $languageIds] = CandidateMasterData::resolve($request->validated());
         $inviteFields = [];
         if ($request->filled('invite_token')) {
@@ -108,6 +109,7 @@ class CandidateRegistrationController extends Controller
                 ->delete();
         }
 
+        app(\App\Services\AuthVerification::class)->consume($request);
         return response()->json([
             'message' => 'Candidate profile created successfully.',
             'candidate' => [

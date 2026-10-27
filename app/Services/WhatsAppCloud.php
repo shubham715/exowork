@@ -175,6 +175,8 @@ class WhatsAppCloud
             $payload['components'] = [['type' => 'body', 'parameters' => array_map(fn ($value) => ['type' => 'text', 'text' => $value], $parameters)]];
         }
 
+        if (!empty($template['authentication'])) { $payload['components'][] = ['type'=>'button','sub_type'=>'url','index'=>'0','parameters'=>[['type'=>'text','text'=>$parameters[0]]]]; }
+
         // Do not automatically retry POST: a timed-out request may already have been sent.
         return $this->client()->post($this->url(config('whatsapp.phone_number_id').'/messages'), [
             'messaging_product' => 'whatsapp', 'recipient_type' => 'individual', 'to' => $recipient, 'type' => 'template', 'template' => $payload,

@@ -1,3 +1,4 @@
+import PhoneVerification from './PhoneVerification.jsx';
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Eye, EyeOff, LockKeyhole, UserRound, Building2, GraduationCap } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -8,6 +9,8 @@ const INITIAL_VALUES = { identifier: "", password: "", remember: true };
 
 export default function LoginForm({ roles, admin = false, onChangeRole }) {
   const navigate = useNavigate();
+  const [authSettings,setAuthSettings]=useState(null),[passwordMode,setPasswordMode]=useState(false),[settingsError,setSettingsError]=useState('');
+  useEffect(()=>{if(!admin)axios.get('/auth/settings').then(({data})=>setAuthSettings(data)).catch(()=>setSettingsError('Unable to load login options. Refresh the page to retry.'))},[admin]);
   const identifierRef = useRef(null);
   const [roleId, setRoleId] = useState(roles[0].id);
   const [values, setValues] = useState(INITIAL_VALUES);
@@ -50,6 +53,8 @@ export default function LoginForm({ roles, admin = false, onChangeRole }) {
     }
   };
 
+  if(!admin&&!authSettings)return <p role="status">{settingsError||'Loading secure login…'}</p>;
+  if(!admin&&authSettings.login_enabled&&!passwordMode)return <div className="login-form"><div className="selected-login-role"><span>{role.label}</span><button type="button" onClick={onChangeRole}>Change account type</button></div><PhoneVerification role={role.id} purpose="login" onVerified={data=>{const meta=document.querySelector('meta[name="csrf-token"]');if(meta&&data.csrf_token)meta.content=data.csrf_token;navigate(data.destination)}}/><div className="login-divider"><span>OR</span></div><button type="button" className="btn ghost block" onClick={()=>setPasswordMode(true)}>Log in with password</button><p className="otp-alternative"><button className="text-link" onClick={onChangeRole}>Change account type</button> · <Link to="/register">Create an account</Link></p></div>;
   return (
     <form className="login-form" onSubmit={submit} noValidate>
       <Link className="login-back" to="/">
@@ -76,7 +81,7 @@ export default function LoginForm({ roles, admin = false, onChangeRole }) {
       )}
 
       <label htmlFor="login-identifier">
-        {role.identifierLabel}
+        {admin?role.identifierLabel:"Mobile number"}
         <input
           ref={identifierRef}
           id="login-identifier"
@@ -85,7 +90,7 @@ export default function LoginForm({ roles, admin = false, onChangeRole }) {
           autoComplete={admin || role.id !== "candidate" ? "username" : "tel"}
           inputMode={role.id === "candidate" ? "email" : "text"}
           value={values.identifier}
-          placeholder={role.identifierPlaceholder}
+          placeholder={admin?role.identifierPlaceholder:"Registered 10-digit mobile number"}
           aria-invalid={Boolean(errors.identifier)}
           aria-describedby={errors.identifier ? "identifier-error" : undefined}
           onChange={(event) => updateValue("identifier", event.target.value)}
@@ -134,6 +139,7 @@ export default function LoginForm({ roles, admin = false, onChangeRole }) {
         {submitting ? "Signing in…" : `Sign in to ${role.label}`}
         {!submitting && <ArrowRight />}
       </button>
+      {!admin && authSettings?.login_enabled && <button type="button" className="otp-resend" onClick={()=>setPasswordMode(false)}>Log in with WhatsApp instead</button>}
       {!admin && <>
         <div className="login-divider"><span>OR</span></div>
         <div className="login-signup">

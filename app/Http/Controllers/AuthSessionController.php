@@ -12,18 +12,18 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthSessionController extends Controller
 {
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, bool $verifiedOtp = false): JsonResponse
     {
         $data = $request->validate([
             'role' => ['required', 'in:candidate,center,employer,admin'],
             'identifier' => ['required', 'string', 'max:255'],
-            'password' => ['required', 'string'],
+            'password' => [$verifiedOtp ? 'nullable' : 'required', 'string'],
             'remember' => ['sometimes', 'boolean'],
         ]);
         $identifier = trim($data['identifier']);
         if ($data['role'] === 'candidate') {
             $candidate = Candidate::query()->where('email', strtolower($identifier))->orWhere('whatsapp', preg_replace('/\D+/', '', $identifier))->first();
-            if (! $candidate || ! $candidate->password || ! Hash::check($data['password'], $candidate->password) || $candidate->profile_status !== 'active') {
+            if (! $candidate || (!$verifiedOtp && (!$candidate->password || ! Hash::check($data['password'], $candidate->password))) || $candidate->profile_status !== 'active') {
                 return response()->json(['message' => 'Invalid credentials.'], 422);
             }
             Auth::guard('web')->logout();
@@ -34,7 +34,7 @@ class AuthSessionController extends Controller
             $roleKeys = $data['role'] === 'center' ? ['training_partner'] : ($data['role'] === 'admin' ? ['admin', 'superadmin', 'agent'] : ['employer']);
             $hasRole = $user && DB::table('user_roles')->join('roles', 'roles.id', '=', 'user_roles.role_id')
                 ->where('user_roles.user_id', $user->id)->whereIn('roles.key', $roleKeys)->exists();
-            if (! $user || $user->status !== 'active' || ! $hasRole || ! Hash::check($data['password'], $user->password)) {
+            if (! $user || $user->status !== 'active' || ! $hasRole || (!$verifiedOtp && ! Hash::check($data['password'], $user->password))) {
                 return response()->json(['message' => 'Invalid credentials.'], 422);
             }
             if ($data['role'] === 'employer' && ! DB::table('organization_memberships as m')->join('employers as e', 'e.id', '=', 'm.employer_id')->where('m.user_id', $user->id)->where('m.status', 'active')->whereNull('e.deleted_at')->where('e.status', '!=', 'inactive')->exists()) {

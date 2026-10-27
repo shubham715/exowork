@@ -8,9 +8,7 @@ const groups = [
   ['Overview', [[LayoutDashboard,'Command center','dashboard']]],
   ['Training network', [[Building2,'Training centers','centers'],[Layers3,'Batches & readiness','batches'],[Users,'Students','candidates']]],
   ['Placement operations', [[BriefcaseBusiness,'Jobs & demand','jobs'],[Waypoints,'Matching pipeline','matching'],[CalendarDays,'Interviews','interviews'],[MessageCircle,'Calls & WhatsApp','crm'],[UserCheck,'Selection & joining','joining'],[HeartHandshake,'Post-placement','retention']]],
-  ['WhatsApp Management', [[Settings,'API settings','whatsapp/api-settings'],[MessageCircle,'Templates','whatsapp/templates'],[Layers3,'Logs','whatsapp/logs']]],
-  ['Website Settings', [[Layers3,'Homepage slides','hero-slides']]],
-  ['Insights & control', [[BarChart3,'Reports & analytics','reports'],[Building2,'Employers','employers'],[Settings,'Masters & settings','settings'],[Layers3,'Data management','data-management']]],
+  ['Insights & control', [[BarChart3,'Reports & analytics','reports'],[Building2,'Employers','employers'],[Settings,'Settings','settings']]],
 ];
 export default function AdminLayout() {
   const [waOpen,setWaOpen]=useState(true);

@@ -20,6 +20,11 @@ Route::post('/auth/employer/password/email', [\App\Http\Controllers\EmployerPass
 Route::post('/auth/employer/password/reset', [\App\Http\Controllers\EmployerPasswordController::class, 'reset'])->middleware('throttle:5,1');
 Route::post('/auth/register/employer', [\App\Http\Controllers\EmployerWorkspaceController::class, 'register'])->middleware('throttle:5,1');
 
+Route::get('/auth/settings', [\App\Http\Controllers\PhoneAuthController::class, 'settings']);
+Route::post('/auth/otp/send', [\App\Http\Controllers\PhoneAuthController::class, 'send'])->middleware('throttle:5,1');
+Route::post('/auth/otp/verify', [\App\Http\Controllers\PhoneAuthController::class, 'verify'])->middleware('throttle:15,1');
+Route::match(['get','put'], '/admin-api/authentication', [\App\Http\Controllers\PhoneAuthController::class, 'admin'])->middleware('auth:web');
+
 Route::post('/auth/login', [AuthSessionController::class, 'store'])->middleware('throttle:10,1');
 Route::post('/auth/register/training-center', [TrainingCenterRegistrationController::class, 'store'])->middleware('throttle:5,1');
 Route::post('/auth/logout', [AuthSessionController::class, 'destroy']);

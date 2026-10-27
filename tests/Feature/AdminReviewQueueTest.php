@@ -12,7 +12,8 @@ class AdminReviewQueueTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void { parent::setUp(); $this->seed(PlatformRolesSeeder::class); }
+    protected function setUp(): void { parent::setUp();
+        app(\App\Services\CommunicationSettings::class)->save('authentication', ['registration_enabled' => false]); $this->seed(PlatformRolesSeeder::class); }
 
     private function admin(string $role = 'admin'): User {
         $user = User::factory()->create();

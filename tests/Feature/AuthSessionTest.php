@@ -40,6 +40,7 @@ class AuthSessionTest extends TestCase
     public function test_candidate_can_login_with_mobile_and_remember_me(): void
     {
         $this->seed(CandidateMasterDataSeeder::class);
+        app(\App\Services\CommunicationSettings::class)->save('authentication', ['registration_enabled'=>false]);
         $this->postJson('/api/candidates', $this->candidatePayload())->assertCreated();
         $candidate = Candidate::firstOrFail();
         $this->postJson('/auth/login', ['role' => 'candidate', 'identifier' => '9876543211', 'password' => 'SecurePass123', 'remember' => true])

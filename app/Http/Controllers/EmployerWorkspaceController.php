@@ -22,6 +22,7 @@ class EmployerWorkspaceController extends Controller
         ];
     }
     public function register(Request $request) {
+        app(\App\Services\AuthVerification::class)->requireRegistration($request, 'employer', (string)$request->input('phone'));
         $request->merge(['email' => strtolower(trim((string)$request->input('email'))), 'gstin' => ($request->filled('gstin') ? strtoupper(trim((string)$request->input('gstin'))) : null)]);
         $data = $request->validate([...$this->profileRules(),
             'industry'=>['nullable','string','max:80'], 'description'=>['nullable','string','max:5000'],
@@ -53,7 +54,8 @@ class EmployerWorkspaceController extends Controller
                 return $userId;
             });
         } catch (\Throwable $e) { if ($path) Storage::disk('local')->delete($path); throw $e; }
-        Auth::guard('candidate')->logout(); Auth::guard('web')->loginUsingId($userId); $request->session()->regenerate();
+        Auth::guard('candidate')->logout(); Auth::guard('web')->loginUsingId($userId); app(\App\Services\AuthVerification::class)->consume($request);
+        $request->session()->regenerate();
         return response()->json(['destination'=>'/employer/dashboard','csrf_token'=>csrf_token()],201);
     }
     public function employer(Request $request): object {

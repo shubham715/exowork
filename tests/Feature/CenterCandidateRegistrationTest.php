@@ -13,6 +13,8 @@ use Tests\TestCase;
 class CenterCandidateRegistrationTest extends TestCase
 {
     use RefreshDatabase;
+ protected function setUp(): void { parent::setUp(); app(\App\Services\CommunicationSettings::class)->save('authentication', ['registration_enabled' => false]); }
+
 
     public function test_center_candidate_is_saved_with_owned_batch_and_consent(): void
     {

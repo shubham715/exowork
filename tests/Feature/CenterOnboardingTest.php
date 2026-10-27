@@ -9,6 +9,8 @@ use Tests\TestCase;
 class CenterOnboardingTest extends TestCase
 {
     use RefreshDatabase;
+ protected function setUp(): void { parent::setUp(); app(\App\Services\CommunicationSettings::class)->save('authentication', ['registration_enabled' => false]); }
+
 
     private function registerCenter(): void
     {

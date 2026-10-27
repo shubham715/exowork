@@ -17,6 +17,7 @@ class CandidateRegistrationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        app(\App\Services\CommunicationSettings::class)->save('authentication', ['registration_enabled' => false]);
         $this->seed(CandidateMasterDataSeeder::class);
     }
 

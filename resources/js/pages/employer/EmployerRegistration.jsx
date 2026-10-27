@@ -1,3 +1,4 @@
+import {VerifiedNumber} from '../../features/auth/components/PhoneVerification.jsx';
 import React, { useEffect, useState, useRef, useId } from "react";
 
 import axios from "axios";
@@ -463,13 +464,13 @@ export function EmployerFields({
     );
 }
 
-export default function EmployerRegistration() {
+export default function EmployerRegistration({verifiedPhone="",verificationToken=""}) {
     const navigate = useNavigate();
     const [data, setData] = useState({
         account_name: "",
         legal_name: "",
         email: "",
-        phone: "",
+        phone: verifiedPhone,
         password: "",
         terms_accepted: false,
         privacy_accepted: false,
@@ -494,7 +495,8 @@ export default function EmployerRegistration() {
             name: data.legal_name.slice(0, 100),
             password_confirmation: data.password,
             contact_name: data.account_name,
-            contact_phone: data.phone,
+            contact_phone: verifiedPhone||data.phone,
+            verification_token:verificationToken,
         };
         try {
             let response;
@@ -545,6 +547,7 @@ export default function EmployerRegistration() {
                 name={key}
                 type={type}
                 placeholder={hint}
+                readOnly={key==="phone"&&!!verifiedPhone}
                 value={data[key]}
                 onChange={(e) => set(key, e.target.value)}
                 required={required}
@@ -642,7 +645,7 @@ export default function EmployerRegistration() {
                         </p>
                     </div>
                 </aside>
-                <section className="reg-form">
+                <section className="reg-form">{verifiedPhone&&<VerifiedNumber phone={verifiedPhone}/>}
                     <div className="reg-form-head">
                         <span>EMPLOYER ACCOUNT</span>
                         <h2>Let’s get your hiring started</h2>
@@ -699,7 +702,7 @@ export default function EmployerRegistration() {
                                 </button>
                             </div>
                         </div>
-                        <details className="employer-signup-optional" open={errors.phone ? true : undefined}>
+                        <details className="employer-signup-optional" open={verifiedPhone||errors.phone ? true : undefined}>
                             <summary>
                                 Add a contact mobile <span>(optional)</span>
                             </summary>

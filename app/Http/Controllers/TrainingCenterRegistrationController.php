@@ -13,6 +13,7 @@ class TrainingCenterRegistrationController extends Controller
 {
     public function store(Request $request): JsonResponse
     {
+        app(\App\Services\AuthVerification::class)->requireRegistration($request, 'center', (string)$request->input('phone'));
         $data = $request->validate([
             'organization_name' => ['nullable', 'string', 'max:255'],
             'center_name' => ['required', 'string', 'max:255'],
@@ -42,6 +43,7 @@ class TrainingCenterRegistrationController extends Controller
         });
         Auth::guard('candidate')->logout();
         Auth::guard('web')->loginUsingId($userId);
+        app(\App\Services\AuthVerification::class)->consume($request);
         $request->session()->regenerate();
         return response()->json(['destination' => '/center/onboarding', 'csrf_token' => csrf_token()], 201);
     }
