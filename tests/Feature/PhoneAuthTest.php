@@ -8,6 +8,14 @@ use App\Models\User;
 use Database\Seeders\PlatformRolesSeeder;
 class PhoneAuthTest extends TestCase {
  use RefreshDatabase;
+ public function test_access_switches_and_template_settings_save_independently(): void {
+  $this->seed(\Database\Seeders\LocalSuperAdminSeeder::class);
+  $this->actingAs(User::where('email','exowork@gmail.com')->firstOrFail());
+  app(CommunicationSettings::class)->save('authentication',['login_enabled'=>false,'registration_enabled'=>true,'template_name'=>'existing_otp','template_language'=>'en_US','gupshup_template_id'=>'existing-id']);
+  $this->putJson('/admin-api/authentication',['template_name'=>'new_otp','template_language'=>'en_US','gupshup_template_id'=>'new-id'])->assertOk()->assertJsonPath('login_enabled',false)->assertJsonPath('registration_enabled',true);
+  $this->putJson('/admin-api/authentication',['login_enabled'=>true,'registration_enabled'=>false])->assertOk()->assertJsonPath('template_name','new_otp')->assertJsonPath('gupshup_template_id','new-id');
+  $this->putJson('/admin-api/authentication',['template_language'=>''])->assertUnprocessable();
+ }
  public function test_defaults_and_registration_cannot_be_bypassed(): void {
   $this->getJson('/auth/settings')->assertOk()->assertExactJson(['login_enabled'=>true,'registration_enabled'=>true]);
   $this->postJson('/auth/register/employer',['phone'=>'9876543211'])->assertUnprocessable()->assertJsonValidationErrors('phone');

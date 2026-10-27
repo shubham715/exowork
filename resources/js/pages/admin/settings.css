@@ -1,0 +1,43 @@
+/* Settings navigation and authentication template management. */
+.settings-cards.settings-tabs{grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;margin-bottom:25px}
+.settings-cards.settings-tabs button{--tile-bg:#eef4ff;--tile-border:#d5e2fc;--tile-ink:#355f9e;background:var(--tile-bg);border:1px solid var(--tile-border);padding:18px 16px;min-height:102px;transition:box-shadow .15s,transform .15s;color:var(--tile-ink)}
+.settings-cards.settings-tabs button[data-section=master-data]{--tile-bg:#f2edfc;--tile-border:#e0d6f5;--tile-ink:#7653a8}
+.settings-cards.settings-tabs button[data-section=communication]{--tile-bg:#fff4e5;--tile-border:#f5dfbb;--tile-ink:#99641c}
+.settings-cards.settings-tabs button[data-section=whatsapp-templates]{--tile-bg:#eaf8f0;--tile-border:#cce8d9;--tile-ink:#16764d}
+.settings-cards.settings-tabs button[data-section=whatsapp-logs]{--tile-bg:#eaf7f8;--tile-border:#c9e6e9;--tile-ink:#237982}
+.settings-cards.settings-tabs button[data-section=homepage]{--tile-bg:#fff0f3;--tile-border:#f1d6df;--tile-ink:#a44e6d}
+.settings-cards.settings-tabs button[data-section=data-management]{--tile-bg:#f1f3f7;--tile-border:#dde2eb;--tile-ink:#53657e}
+.settings-cards.settings-tabs button svg{width:23px;height:23px;color:var(--tile-ink)}
+.settings-cards.settings-tabs button b{font-size:12px;line-height:1.5;margin-top:10px}
+.settings-cards.settings-tabs button:hover{transform:translateY(-1px);box-shadow:0 4px 12px #152b4410}
+.settings-cards.settings-tabs button.active{border-color:var(--tile-ink);box-shadow:0 0 0 2px var(--tile-bg),0 0 0 3px var(--tile-border)}
+.settings-cards.settings-tabs button:focus-visible{outline:3px solid var(--tile-ink);outline-offset:3px}
+.auth-settings .auth-setting-toggle{align-items:flex-start;border:1px solid #d4e4f9;background:#eff5ff;padding:22px}
+.auth-settings .auth-setting-toggle.registration_enabled{background:#f1edfc;border-color:#e2d9f5}
+.auth-setting-toggle>svg{width:24px;height:24px;flex-shrink:0;color:#168455}
+.auth-template-location{display:flex;align-items:flex-start;gap:15px;padding:20px;border:1px solid #cee9db;background:#edf8f1;border-radius:12px;margin:24px 0}
+.auth-template-location>svg{width:25px;height:25px;flex-shrink:0;color:#168455}
+.auth-template-location p{margin:7px 0 0;line-height:1.6;font-size:13px;color:#526b60}
+.auth-template-location a{color:#166b47;text-decoration:underline;text-underline-offset:3px}
+.wa-template-card.wa-auth-template{background:#f2faf6;border-color:#cce7d9}
+.wa-auth-template .wa-template-icon svg,.wa-template-icon svg,.wa-overview-icon svg{width:23px;height:23px}
+.otp-category{display:flex;gap:6px;align-items:center;color:#18734f;background:#e1f2e8;padding:6px 9px;border-radius:7px;font-size:10px;font-weight:600}
+.otp-message-preview{background:#fff;border:1px solid #dcebe3;border-radius:10px;padding:17px;margin:16px 0;color:#31483e;font-size:13px;line-height:1.6}
+.otp-message-preview p{margin:6px 0;font-size:12px}.otp-message-preview small{display:flex;align-items:center;gap:6px;color:#778a80;font-size:11px}
+.otp-copy-preview{display:block;border-top:1px solid #e7eee9;margin-top:14px;padding-top:10px;text-align:center;color:#188655;font-weight:600}
+.otp-template-reference{font-size:10px;overflow-wrap:anywhere;margin-top:18px}.otp-template-reference span{display:block;color:#718679;margin-bottom:5px}.otp-template-reference code{font-size:11px}
+.otp-template-form>p{font-size:13px;line-height:1.7;color:#64748b;margin:0 0 20px}.otp-template-form .field-label{font-size:13px;margin:18px 0}.otp-template-form .field-label input{padding:12px;font-size:14px;min-height:44px}
+.otp-template-form .otp-provider-note{background:#f3f6fb;border:1px solid #e1e8f1;padding:14px;border-radius:9px;font-size:12px}
+@media(max-width:600px){.settings-cards.settings-tabs{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.settings-cards.settings-tabs button{padding:14px;min-height:94px}.auth-settings{padding:20px!important}.auth-setting-toggle{gap:10px}.auth-setting-toggle>svg{width:20px;height:20px}}
+
+.wa-template-grid>.wa-template-card:nth-child(6n+2){background:#f1f6ff;border-color:#dbe6f7}
+.wa-template-grid>.wa-template-card:nth-child(6n+3){background:#f6f2fc;border-color:#e6ddf3}
+.wa-template-grid>.wa-template-card:nth-child(6n+4){background:#fff8ee;border-color:#f1e4cd}
+.wa-template-grid>.wa-template-card:nth-child(6n+5){background:#eff9fa;border-color:#d7ebec}
+.wa-template-grid>.wa-template-card:nth-child(6n+6){background:#fff3f6;border-color:#f0dfe5}
+.wa-template-grid>.wa-template-card:nth-child(6n+7){background:#f3f6f9;border-color:#dfe6ee}
+
+.wa-api-heading-icon svg{width:22px;height:22px}.wa-brand-symbol svg{width:30px;height:30px}
+
+@media(max-width:1150px){.settings-cards.settings-tabs{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:700px){.settings-cards.settings-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}

@@ -13,8 +13,8 @@ class PhoneAuthController extends Controller
     public function admin(Request $request) {
         abort_unless($request->user()?->hasPermission('masters.manage'), 403);
         if ($request->isMethod('put')) {
-            $data = $request->validate(['login_enabled'=>'required|boolean','registration_enabled'=>'required|boolean','template_name'=>'nullable|regex:/^[a-z0-9_]+$/|max:100','template_language'=>'required|string|max:20','gupshup_template_id'=>'nullable|string|max:100']);
-            app(CommunicationSettings::class)->save('authentication', $data);
+            $data = $request->validate(['login_enabled'=>'sometimes|boolean','registration_enabled'=>'sometimes|boolean','template_name'=>'sometimes|nullable|regex:/^[a-z0-9_]+$/|max:100','template_language'=>'sometimes|required|string|max:20','gupshup_template_id'=>'sometimes|nullable|string|max:100']);
+            app(CommunicationSettings::class)->save('authentication', array_replace(app(AuthVerification::class)->settings(), $data));
         }
         return response()->json(app(AuthVerification::class)->settings())->header('Cache-Control', 'no-store');
     }

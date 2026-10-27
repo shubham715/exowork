@@ -1,3 +1,5 @@
+import {useSearchParams} from 'react-router-dom';
+import {WhatsAppIcon} from '../../features/auth/components/PhoneVerification.jsx';
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import {
@@ -297,8 +299,11 @@ const preview = (value) =>
         .replaceAll("{{expiry_minutes}}", "60");
 
 export default function Communication({ initialTab = "Email management", onlyTab = false }) {
-    const [tab, setTab] = useState(initialTab),
-        [config, setConfig] = useState(null),
+    const [params,setParams]=useSearchParams();
+    const channels={'email':'Email management','mail-templates':'Mail templates','smtp':'SMTP settings','whatsapp-api':'WhatsApp API','history':'Send history'};
+    const tab=onlyTab?initialTab:(channels[params.get('channel')]||initialTab);
+    const setTab=name=>{const next=new URLSearchParams(params);next.set('tab','communication');next.set('channel',Object.keys(channels).find(key=>channels[key]===name)||'email');setParams(next)};
+    const [config, setConfig] = useState(null),
         [error, setError] = useState(""),
         [notice, setNotice] = useState(""),
         [busy, setBusy] = useState(false),
@@ -607,7 +612,6 @@ export default function Communication({ initialTab = "Email management", onlyTab
                     "Mail templates",
                     "SMTP settings",
                     "WhatsApp API",
-                    "WhatsApp templates",
                     "Send history",
                 ].map((name) => (
                     <button
@@ -746,7 +750,7 @@ export default function Communication({ initialTab = "Email management", onlyTab
                 <div className="wa-api-layout">
                     <section className="wa-api-main">
                         <div className="wa-api-panel-head">
-                            <span className="wa-api-heading-icon"><MessageCircle size={22}/></span>
+                            <span className="wa-api-heading-icon"><WhatsAppIcon/></span>
                             <div><h3>Business account connection</h3><p>Your sender, credentials and webhook in one place.</p></div>
                             <Help kind="whatsapp"/>
                         </div>
@@ -808,7 +812,7 @@ export default function Communication({ initialTab = "Email management", onlyTab
                         <div className="wa-settings-footer"><span><ShieldCheck size={15}/>Secrets stay encrypted</span>{config.whatsapp.provider==='gupshup' && <button type="button" className="btn" disabled={busy || testingConnection} onClick={testConnection}><RefreshCw size={16}/>{testingConnection?'Testing…':'Test connection'}</button>}<button className="btn wa-button-save" disabled={busy} onClick={()=>saveSettings("whatsapp")}><Save size={16}/>{busy?"Saving…":"Save connection"}</button></div>
                     </section>
                     <aside className="wa-api-aside">
-                        <div className="wa-connection-card"><div className="wa-brand-symbol"><MessageCircle size={30}/></div><span>MESSAGING CHANNEL</span><h3>WhatsApp Business</h3><p>One connected number.<br/>Every step of the employment journey.</p><div className={"wa-connection-state "+(config.whatsapp.enabled?"enabled":"")}><i/>{config.whatsapp.enabled?"Messaging enabled":"Messaging disabled"}</div></div>
+                        <div className="wa-connection-card"><div className="wa-brand-symbol"><WhatsAppIcon/></div><span>MESSAGING CHANNEL</span><h3>WhatsApp Business</h3><p>One connected number.<br/>Every step of the employment journey.</p><div className={"wa-connection-state "+(config.whatsapp.enabled?"enabled":"")}><i/>{config.whatsapp.enabled?"Messaging enabled":"Messaging disabled"}</div></div>
                         <div className="wa-setup-checklist"><h4>Ready to connect?</h4><p>A few essentials before your first message.</p><div><span><CheckCircle2 size={17}/></span><p><b>Business account</b><small>{config.whatsapp.provider==='gupshup'?'Add your Gupshup app and sender details.':'Add your WABA and sender IDs.'}</small></p></div><div><span className="purple"><KeyRound size={17}/></span><p><b>Production access</b><small>{config.whatsapp.provider==='gupshup'?'Save your Customer Secret securely.':'Use a token with messaging and management permissions.'}</small></p></div><div><span className="blue"><Webhook size={17}/></span><p><b>Delivery updates</b><small>Verify your public HTTPS webhook in {config.whatsapp.provider==='gupshup'?'Gupshup':'Meta'}.</small></p></div><a className="wa-meta-link" href={config.whatsapp.provider==='gupshup'?'https://apps.gupshup.io/whatsapp/dashboard':'https://developers.facebook.com/apps/'} target="_blank" rel="noreferrer">Open {config.whatsapp.provider==='gupshup'?'Gupshup':'Meta Developers'}<ExternalLink size={15}/></a></div>
                         <div className="wa-api-note"><ShieldCheck size={18}/><p>Only approved templates are sent. Recipient consent is checked before every message.</p></div>
                     </aside>
