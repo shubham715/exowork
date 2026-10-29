@@ -57,7 +57,11 @@ class PhoneAuthTest extends TestCase {
  public function test_delivery_verification_and_resend_cooldown(): void {
   app(CommunicationSettings::class)->save('authentication',['template_name'=>'exowork_verify','template_language'=>'en_US']);
   $code=null;
+  \Illuminate\Support\Facades\DB::table('whatsapp_templates')->where('system_key','auth_otp')->update(['name'=>'exowork_verify','review_status'=>'approved','meta_status'=>'APPROVED','account_id'=>'test-account']);
   $this->mock(\App\Services\WhatsAppCloud::class, function($mock) use (&$code) {
+   $mock->shouldReceive('accountId')->andReturn('test-account');
+   $spec=\App\Services\WhatsAppTemplateCatalog::get('auth_otp');
+   $mock->shouldReceive('manageTemplates')->andReturn([['id'=>'remote-otp','name'=>$spec['name'],'language'=>$spec['language'],'category'=>'AUTHENTICATION','status'=>'APPROVED','components'=>[['type'=>'BODY','text'=>$spec['body']],['type'=>'BUTTONS','buttons'=>[['type'=>'OTP','otp_type'=>'COPY_CODE']]]]]]);
    $mock->shouldReceive('send')->once()->withArgs(function($phone,$template,$parameters) use (&$code){$code=$parameters[0];return $phone==='919876543211'&&$template['authentication']===true;})->andReturn(new \Illuminate\Http\Client\Response(new \GuzzleHttp\Psr7\Response(200,[],json_encode(['messages'=>[['id'=>'test']]]))));
   });
   $request=\Illuminate\Http\Request::create('/auth/otp/send','POST',['phone'=>'9876543211','role'=>'employer','purpose'=>'registration']);

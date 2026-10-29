@@ -59,7 +59,7 @@ class WhatsAppManagementTest extends TestCase
     public function test_library_is_available_without_meta_credentials_and_requires_admin_role(): void
     {
         config(['whatsapp.enabled' => false]);
-        $this->getJson('/admin-api/whatsapp/templates')->assertOk()->assertJsonCount(13, 'templates')->assertJsonPath('configured', false);
+        $this->getJson('/admin-api/whatsapp/templates')->assertOk()->assertJsonCount(14, 'templates')->assertJsonPath('configured', false);
         Http::assertNothingSent();
         $this->actingAs(User::factory()->create())->getJson('/admin-api/whatsapp/templates')->assertForbidden();
     }

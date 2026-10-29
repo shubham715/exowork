@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 use App\Services\{AuthVerification, CommunicationSettings, WhatsAppCloud};
 use App\Models\{Candidate, User};
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\{Cache, Hash, RateLimiter};
+use Illuminate\Support\Facades\{Cache, DB, Hash, RateLimiter};
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Str;
 
 class PhoneAuthController extends Controller
@@ -30,12 +31,25 @@ class PhoneAuthController extends Controller
         RateLimiter::hit($key, 60);
         $code = (string)random_int(100000, 999999);
         app(CommunicationSettings::class)->apply();
-        abort_if(empty($settings['template_name']) || (config('whatsapp.provider')==='gupshup' && empty($settings['gupshup_template_id'])), 503, 'WhatsApp verification is being set up. Please contact EXOWORK support.');
-        $response = app(WhatsAppCloud::class)->send('91'.$data['phone'], ['name'=>$settings['template_name'],'language'=>$settings['template_language'],'id'=>$settings['gupshup_template_id'],'authentication'=>true], [$code]);
-        abort_unless($response->successful() && !in_array(strtolower((string)$response->json('status')), ['error','failed','failure']), 502, 'We could not send the code. Please try again later.');
+        $messageId = app(\App\Services\WhatsAppOtpSender::class)->send($data['phone'], $data['purpose'], $code);
         $id = Str::random(64);
-        Cache::put('otp:'.$id, [...$data, 'hash'=>Hash::make($code), 'session'=>hash('sha256',$request->session()->getId())], now()->addMinutes(5));
-        return response()->json(['message'=>'Code sent on WhatsApp. Enter it below to continue.','challenge_id'=>$id,'expires_in'=>300,'retry_after'=>60]);
+        Cache::put('otp:'.$id, [...$data, 'hash'=>Hash::make($code), 'session'=>hash('sha256',$request->session()->getId()), 'message_id'=>$messageId, 'issued_at'=>now()->timestamp], now()->addMinutes(5));
+        return response()->json(['message'=>'Verification request accepted. Waiting for WhatsApp delivery.','delivery_status'=>'accepted','challenge_id'=>$id,'expires_in'=>300,'retry_after'=>60]);
+    }
+    public function status(Request $request) {
+        $data = $request->validate(['challenge_id'=>'required|string|size:64']);
+        $challenge = Cache::get('otp:'.$data['challenge_id']);
+        abort_unless($challenge && hash_equals($challenge['session'], hash('sha256',$request->session()->getId())),422,'This code has expired. Request a new code.');
+        $message = isset($challenge['message_id']) ? DB::table('whatsapp_messages')->find($challenge['message_id']) : null;
+        $status = $message?->status ?? 'unknown';
+        $text = match ($status) {
+            'delivered','read' => 'Code delivered to WhatsApp. Enter it below to continue.',
+            'failed' => 'WhatsApp could not deliver your code. Check your number and request a new code. If this continues, contact EXOWORK support.',
+            default => now()->timestamp - ($challenge['issued_at'] ?? 0) >= 30
+                ? 'Delivery has not been confirmed yet. If no code arrived, you can resend it when the timer ends or change your number.'
+                : 'Verification request accepted. Waiting for WhatsApp delivery.',
+        };
+        return response()->json(['delivery_status'=>$status,'message'=>$text])->header('Cache-Control','no-store, private');
     }
     public function verify(Request $request) {
         $data = $request->validate(['challenge_id'=>'required|string|size:64','code'=>'required|digits:6']);

@@ -161,8 +161,9 @@ class GupshupWhatsApp
                 if (! is_array($row) || ! is_string($row['id'] ?? null) || ! is_string($row['elementName'] ?? null) || ! is_string($row['languageCode'] ?? null) || ! is_string($row['status'] ?? null) || ! is_string($row['category'] ?? null)) continue;
                 $meta = is_array($row['containerMeta'] ?? null) ? $row['containerMeta'] : json_decode($row['containerMeta'] ?? '{}', true);
                 // Never infer the body from Gupshup's flattened data (it may include headers/buttons).
-                if (! is_array($meta) || ! is_string($meta['data'] ?? null)) continue;
-                $components = [['type' => 'BODY', 'text' => $meta['data']]];
+                if (!is_array($meta)) $meta = [];
+                if (!is_string($meta['data'] ?? null) && strtoupper($row['status']) === 'APPROVED') continue;
+                $components = [['type' => 'BODY', 'text' => $meta['data'] ?? '']];
                 $supported = ($row['templateType'] ?? 'TEXT') === 'TEXT' && empty($meta['header']) && empty($meta['mediaType']) && empty($meta['cards'])
                     && ! in_array($row['elementName'], ['exowork_welcome', 'exowork_welcome_v1', 'exowork_registration_v2', 'exowork_career_intro', 'exowork_training_reconnect', 'exowork_job_opportunity', 'exowork_interview_availability']);
                 if (! empty($meta['footer'])) $supported = false;
@@ -172,7 +173,8 @@ class GupshupWhatsApp
                     $supported = false;
                     $components[] = ['type' => 'BUTTONS', 'buttons' => $buttons];
                 }
-                $rows[] = ['id' => $row['id'], 'name' => $row['elementName'], 'language' => $row['languageCode'], 'status' => strtoupper($row['status']), 'category' => strtoupper($row['category']), 'parameter_format' => 'POSITIONAL', 'components' => $components, 'supported' => $supported];
+                if (strtoupper($row['category']) === 'AUTHENTICATION') $supported = empty($meta['header']) && empty($meta['mediaType']) && empty($meta['cards']) && WhatsAppAuthenticationTemplate::supported(['category'=>'AUTHENTICATION','components'=>$components]);
+                $rows[] = ['id' => $row['id'], 'name' => $row['elementName'], 'language' => $row['languageCode'], 'status' => strtoupper($row['status']), 'category' => strtoupper($row['category']), 'parameter_format' => 'POSITIONAL', 'components' => $components, 'supported' => $supported, 'authentication'=>strtoupper($row['category']) === 'AUTHENTICATION', 'reason'=>is_string($row['reason'] ?? null) && $row['reason'] !== 'NONE' ? substr($row['reason'],0,1000) : null];
             }
             if (count($batch) < 100) return $rows;
         }
@@ -197,6 +199,10 @@ class GupshupWhatsApp
     public function send(string $recipient, array $template, array $parameters, ?int $messageId)
     {
         abort_if($this->missing(), 503, 'Gupshup is not configured.');
+        if (!empty($template['authentication']) || ($template['category'] ?? '') === 'AUTHENTICATION') {
+            abort_unless(count($parameters) === 1 && preg_match('/^[0-9]{6}$/', (string)$parameters[0]), 422, 'Authentication templates require one six-digit code.');
+            $parameters = [$parameters[0], $parameters[0]]; // Body and copy-code button.
+        }
         $payload = ['channel' => 'whatsapp', 'source' => config('whatsapp.gupshup_source'), 'destination' => $recipient, 'src.name' => config('whatsapp.gupshup_app_name'), 'template' => json_encode(['id' => $template['id'], 'params' => $parameters], JSON_THROW_ON_ERROR)];
         // Never retry a send automatically: a timeout may already have submitted it.
         return $this->client()->asForm()->post('https://api.gupshup.io/wa/api/v1/template/msg', $payload);

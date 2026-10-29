@@ -147,7 +147,9 @@ Please confirm whether you are still employed, need assistance or have left.
 Our EXOWORK team will follow up if you need help.
 Reply STOP to opt out.', ['Candidate name', 'Company name', 'Job role', 'Retention page URL'], ['Asha Sharma', 'Example Industries', 'Machine Operator', 'https://example.com/candidate/retention']];
         }
-        return array_map(fn ($r) => ['key' => $r[0], 'name' => $r[0] === 'welcome' ? 'exowork_registration_v3' : 'exowork_'.$r[0].'_v2', 'title' => $r[1], 'audience' => $r[2], 'usage' => $r[3], 'category' => $r[4], 'language' => $r[5], 'body' => str_replace("\r\n", "\n", $r[6]), 'labels' => $r[7], 'examples' => array_map(fn ($v) => str_replace('https://example.com', 'https://exowork.in', $v), $r[8])], $rows);
+        $auth = app(AuthVerification::class)->settings();
+        $rows[] = ['auth_otp', 'OTP account verification', 'Candidates, employers & training centers', 'Requested login or registration verification', 'AUTHENTICATION', $auth['template_language'] ?: 'en_US', '{{1}} is your verification code. For your security, do not share this code.', ['Verification code'], ['123456']];
+        return array_map(fn ($r) => ['key' => $r[0], 'name' => $r[0] === 'auth_otp' ? ($auth['template_name'] ?: 'exowork_auth_otp_v1') : ($r[0] === 'welcome' ? 'exowork_registration_v3' : 'exowork_'.$r[0].'_v2'), 'authentication' => $r[0] === 'auth_otp', 'title' => $r[1], 'audience' => $r[2], 'usage' => $r[3], 'category' => $r[4], 'language' => $r[5], 'body' => str_replace("\r\n", "\n", $r[6]), 'labels' => $r[7], 'examples' => array_map(fn ($v) => str_replace('https://example.com', 'https://exowork.in', $v), $r[8])], $rows);
     }
 
     public static function get(string $key): array

@@ -46,16 +46,16 @@ class AdminWhatsAppController extends Controller
         $remote = collect($cloud->manageTemplates());
         foreach (WhatsAppTemplateCatalog::all() as $spec) {
             $saved = DB::table('whatsapp_templates')->where('system_key', $spec['key'])->first();
-            if ($saved && ($saved->name !== $spec['name'] || $saved->body !== $spec['body'])) {
+            if ($saved && ($saved->name !== $spec['name'] || $saved->body !== $spec['body'] || $saved->language !== $spec['language'] || $saved->category !== $spec['category'])) {
                 DB::table('whatsapp_templates')->where('id', $saved->id)->update(['name' => $spec['name'], 'body' => $spec['body'], 'language' => $spec['language'], 'category' => $spec['category'], 'review_status' => 'pending', 'updated_at' => now()]);
             }
         }
         foreach (DB::table('whatsapp_templates')->get() as $t) {
             $meta = $remote->first(fn ($r) => $r['name'] === $t->name && $r['language'] === $t->language);
             $body = $meta ? (collect($meta['components'] ?? [])->firstWhere('type', 'BODY')['text'] ?? '') : '';
-            $supported = $meta && ($meta['parameter_format'] ?? 'POSITIONAL') === 'POSITIONAL' && (config('whatsapp.provider') === 'gupshup' ? ($meta['supported'] ?? false) : count($meta['components'] ?? []) === 1);
-            $status = $meta ? ($body === $t->body && $supported ? $meta['status'] : 'CONTENT_MISMATCH') : 'NOT_SUBMITTED';
-            DB::table('whatsapp_templates')->where('id', $t->id)->update(['meta_id' => $meta['id'] ?? null, 'meta_status' => $status, 'category' => $meta['category'] ?? $t->category, 'review_status' => $t->account_id && $t->account_id !== $cloud->accountId() ? 'pending' : $t->review_status, 'account_id' => $cloud->accountId(), 'synced_at' => now(), 'updated_at' => now()]);
+            $supported = $meta && ($meta['parameter_format'] ?? 'POSITIONAL') === 'POSITIONAL' && ($t->category === 'AUTHENTICATION' ? \App\Services\WhatsAppAuthenticationTemplate::supported($meta) : (config('whatsapp.provider') === 'gupshup' ? ($meta['supported'] ?? false) : count($meta['components'] ?? []) === 1));
+            $status = !$meta ? 'NOT_SUBMITTED' : (($meta['status'] ?? '') !== 'APPROVED' ? $meta['status'] : ($body === $t->body && $supported && $meta['category'] === $t->category ? $meta['status'] : 'CONTENT_MISMATCH'));
+            DB::table('whatsapp_templates')->where('id', $t->id)->update(['meta_id' => $meta['id'] ?? null, 'meta_status' => $status, 'meta_error'=>$meta['reason'] ?? null, 'category' => $meta['category'] ?? $t->category, 'review_status' => ($t->account_id && $t->account_id !== $cloud->accountId()) || $status === 'CONTENT_MISMATCH' ? 'pending' : $t->review_status, 'account_id' => $cloud->accountId(), 'synced_at' => now(), 'updated_at' => now()]);
         }
         $this->audit($request, 'templates_synced', 0);
         return $this->templates($request, $cloud);
@@ -105,6 +105,7 @@ class AdminWhatsAppController extends Controller
         $t = DB::table('whatsapp_templates')->find($id);
         abort_unless($t, 404);
         abort_unless($t->review_status === 'approved', 422, 'Approve this template before testing.');
+        if ($t->category === 'AUTHENTICATION') $request->validate(['parameters.0'=>['required','regex:/^[0-9]{6}$/']]);
         $template = collect($cloud->templates())->first(fn ($r) => $r['name'] === $t->name && $r['language'] === $t->language && $r['body'] === $t->body);
         abort_unless($template && $template['parameter_count'] === count($data['parameters']), 422, 'Meta approval or template variables do not match. Sync and try again.');
         $number = $cloud->recipient($data['number']);

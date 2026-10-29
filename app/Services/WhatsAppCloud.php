@@ -76,6 +76,7 @@ class WhatsAppCloud
                         $supported = false;
                     }
                 }
+                if (($template['category'] ?? '') === 'AUTHENTICATION') $supported = WhatsAppAuthenticationTemplate::supported($template);
                 if (! $supported) {
                     continue;
                 }
@@ -85,7 +86,7 @@ class WhatsAppCloud
                 if ($numbers && $numbers !== range(1, count($numbers))) {
                     continue;
                 }
-                $templates[] = ['name' => $template['name'], 'language' => $template['language'], 'category' => $template['category'], 'body' => $body['text'], 'parameter_count' => count($numbers)];
+                $templates[] = ['name' => $template['name'], 'language' => $template['language'], 'category' => $template['category'], 'body' => $body['text'], 'parameter_count' => count($numbers), 'authentication'=>($template['category'] ?? '') === 'AUTHENTICATION'];
             }
             if (! $response->json('paging.next')) {
                 return $templates;
@@ -132,6 +133,7 @@ class WhatsAppCloud
             $body['example'] = ['body_text' => [$data['examples']]];
         }
         $payload = ['category' => $data['category'], 'components' => [$body]];
+        if ($data['category'] === 'AUTHENTICATION') $payload['components'] = [['type'=>'BODY','add_security_recommendation'=>true],['type'=>'FOOTER','code_expiration_minutes'=>5],['type'=>'BUTTONS','buttons'=>[['type'=>'OTP','otp_type'=>'COPY_CODE','text'=>'Copy code']]]];
         if (empty($data['id'])) {
             $payload += ['name' => $data['name'], 'language' => $data['language'], 'parameter_format' => 'POSITIONAL'];
         }
@@ -175,7 +177,7 @@ class WhatsAppCloud
             $payload['components'] = [['type' => 'body', 'parameters' => array_map(fn ($value) => ['type' => 'text', 'text' => $value], $parameters)]];
         }
 
-        if (!empty($template['authentication'])) { $payload['components'][] = ['type'=>'button','sub_type'=>'url','index'=>'0','parameters'=>[['type'=>'text','text'=>$parameters[0]]]]; }
+        if (!empty($template['authentication']) || ($template['category'] ?? '') === 'AUTHENTICATION') { $payload['components'][] = ['type'=>'button','sub_type'=>'url','index'=>'0','parameters'=>[['type'=>'text','text'=>$parameters[0]]]]; }
 
         // Do not automatically retry POST: a timed-out request may already have been sent.
         return $this->client()->post($this->url(config('whatsapp.phone_number_id').'/messages'), [

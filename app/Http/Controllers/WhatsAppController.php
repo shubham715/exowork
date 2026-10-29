@@ -64,7 +64,7 @@ class WhatsAppController extends Controller
         $error = null;
         if (! $missing) {
             try {
-                $templates = $cloud->templates();
+                $templates = array_values(array_filter($cloud->templates(), fn ($t) => ($t['category'] ?? '') !== 'AUTHENTICATION'));
                 $templates = array_values(array_filter($templates, function ($t) {
                     $local = DB::table('whatsapp_templates')->where('name', $t['name'])->where('language', $t['language'])->first();
                     return ! $local || ($local->review_status === 'approved' && $local->account_id === app(WhatsAppCloud::class)->accountId() && $local->body === $t['body']);
@@ -92,7 +92,7 @@ class WhatsAppController extends Controller
             throw ValidationException::withMessages(['candidate' => 'Candidate has not consented to WhatsApp messages.']);
         }
         $recipient = $cloud->recipient($candidate->whatsapp);
-        $template = collect($cloud->templates())->first(fn ($t) => $t['name'] === $data['template_name'] && $t['language'] === $data['language']);
+        $template = collect($cloud->templates())->first(fn ($t) => ($t['category'] ?? '') !== 'AUTHENTICATION' && $t['name'] === $data['template_name'] && $t['language'] === $data['language']);
         if (! $template || $template['parameter_count'] !== count($data['parameters'])) {
             throw ValidationException::withMessages(['template_name' => 'Choose an approved supported template and fill every variable in order.']);
         }

@@ -312,7 +312,7 @@ class GupshupIntegrationTest extends TestCase
     {
         $catalog = \App\Services\WhatsAppTemplateCatalog::all();
         foreach ($catalog as $spec) {
-            $this->assertStringContainsString("\n\n*", $spec['body']);
+            if (!$spec['authentication']) $this->assertStringContainsString("\n\n*", $spec['body']);
             $this->assertStringNotContainsString("\r", $spec['body']);
         }
         $this->assertSame('UTILITY', $catalog[0]['category']);
