@@ -1,5 +1,18 @@
 # OTP template creation permission investigation
 
+## Resolved — 29 October 2026
+
+Meta Security Centre now shows EXOWORK TECHNOLOGIES PRIVATE LIMITED Verified, originally verified 29 October 2026. Gupshup shows a 2K messaging limit. Direct Meta submission of `exowork_auth_otp_v2` succeeded and is Active – Quality pending; Gupshup automatically synchronized it as Approved.
+
+- Approved language: `en` (not the failed `en_US` variant)
+- Meta template ID: `946598521595389`
+- Approved Gupshup template ID: `a570879e-36da-42dc-a5c4-4620c5bb60f7`
+- Copy-code authentication, security recommendation, five-minute expiry and delivery validity.
+- Production admin updated to the approved language and provider ID; login and registration WhatsApp switches confirmed enabled.
+- One real OTP requested through production candidate login to the user-authorized test number. Website advanced to code entry; recipient confirmation and successful verification still required. Do not equate API acceptance with delivery.
+
+The details below record the earlier failure for reference.
+
 Please investigate authentication template creation permission for this account.
 
 - Gupshup customer: 4000386233
