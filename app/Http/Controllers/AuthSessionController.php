@@ -21,6 +21,9 @@ class AuthSessionController extends Controller
             'remember' => ['sometimes', 'boolean'],
         ]);
         $identifier = trim($data['identifier']);
+        if ($verifiedOtp && ($error = app(\App\Services\PhoneLoginAccount::class)->error($identifier, $data['role']))) {
+            return response()->json($error, 422);
+        }
         if ($data['role'] === 'candidate') {
             $candidate = Candidate::query()->where('email', strtolower($identifier))->orWhere('whatsapp', preg_replace('/\D+/', '', $identifier))->first();
             if (! $candidate || (!$verifiedOtp && (!$candidate->password || ! Hash::check($data['password'], $candidate->password))) || $candidate->profile_status !== 'active') {

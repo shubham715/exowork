@@ -13,6 +13,9 @@ class OtpDeliveryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(\Database\Seeders\PlatformRolesSeeder::class);
+        $user=\App\Models\User::factory()->create(['phone'=>'9876543211','status'=>'active']);
+        DB::table('user_roles')->insert(['user_id'=>$user->id,'role_id'=>DB::table('roles')->where('key','training_partner')->value('id')]);
         config([
             'whatsapp.provider'=>'gupshup', 'whatsapp.enabled'=>true,
             'whatsapp.gupshup_app_id'=>'bcd032f4-5e7b-4929-9945-9f731b7a3af0',
@@ -44,7 +47,7 @@ class OtpDeliveryTest extends TestCase
     private function send()
     {
         $response = $this->withSession(['ready'=>true])->postJson('/auth/otp/send',[
-            'phone'=>'9876543211', 'role'=>'candidate', 'purpose'=>'login',
+            'phone'=>'9876543211', 'role'=>'center', 'purpose'=>'login',
         ]);
         $this->withCookie(session()->getName(),session()->getId())->withCredentials();
         return $response;

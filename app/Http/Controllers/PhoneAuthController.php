@@ -29,6 +29,9 @@ class PhoneAuthController extends Controller
             return response()->json(['message'=>'Please wait before requesting another code.', 'retry_after'=>$retry], 429)->header('Retry-After', $retry);
         }
         RateLimiter::hit($key, 60);
+        if ($data['purpose'] === 'login' && ($error = app(\App\Services\PhoneLoginAccount::class)->error($data['phone'], $data['role']))) {
+            return response()->json($error, 422);
+        }
         $code = (string)random_int(100000, 999999);
         app(CommunicationSettings::class)->apply();
         $messageId = app(\App\Services\WhatsAppOtpSender::class)->send($data['phone'], $data['purpose'], $code);

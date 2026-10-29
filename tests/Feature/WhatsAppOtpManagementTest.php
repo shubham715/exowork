@@ -61,8 +61,8 @@ class WhatsAppOtpManagementTest extends TestCase
  }
  public function test_revoked_provider_approval_blocks_sending_and_logs_failure(): void {
   $this->approve(); $this->remote('FAILED');
-  $this->postJson('/auth/otp/send',['phone'=>'9876543211','role'=>'candidate','purpose'=>'login'])->assertStatus(503);
-  $this->assertDatabaseHas('whatsapp_messages',['source'=>'otp_login','status'=>'failed','payload'=>null]);
+  $this->postJson('/auth/otp/send',['phone'=>'9876543211','role'=>'candidate','purpose'=>'registration'])->assertStatus(503);
+  $this->assertDatabaseHas('whatsapp_messages',['source'=>'otp_registration','status'=>'failed','payload'=>null]);
   $this->assertDatabaseHas('whatsapp_templates',['system_key'=>'auth_otp','meta_status'=>'FAILED','review_status'=>'pending']);
   Http::assertNotSent(fn($r)=>str_ends_with($r->url(),'/template/msg'));
  }

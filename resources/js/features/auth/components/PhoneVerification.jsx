@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import axios from 'axios';
+import {Link} from 'react-router-dom';
 import {ArrowRight, ShieldCheck, CheckCircle2, Clock3} from 'lucide-react';
 import './phone-verification.css';
 export const authHeaders = () => ({'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content, Accept: 'application/json'});
@@ -8,6 +9,7 @@ export function VerifiedNumber({phone}){return <div className="verified-number" 
 export default function PhoneVerification({role,purpose,onVerified,initialPhone=''}){
  const [phone,setPhone]=useState(initialPhone),[challenge,setChallenge]=useState(''),[code,setCode]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[wait,setWait]=useState(0);
  const inputs=useRef([]), pending=useRef(false);
+ const [registrationUrl,setRegistrationUrl]=useState('');
  const [delivery,setDelivery]=useState('accepted'),[expiresAt,setExpiresAt]=useState(0);
  useEffect(()=>{if(!wait)return;const t=setTimeout(()=>setWait(v=>Math.max(0,v-1)),1000);return()=>clearTimeout(t)},[wait]);
  useEffect(()=>{if(challenge)inputs.current[0]?.focus()},[challenge]);
@@ -37,9 +39,9 @@ export default function PhoneVerification({role,purpose,onVerified,initialPhone=
  const send=async()=>{
   if(pending.current||wait>0)return;
   if(!/^[6-9][0-9]{9}$/.test(phone)){setError('Enter a valid 10-digit Indian mobile number.');return}
-  pending.current=true;setBusy(true);setError('');setNotice('');
+  pending.current=true;setBusy(true);setError('');setNotice('');setRegistrationUrl('');
   try{const {data}=await axios.post('/auth/otp/send',{phone,role,purpose},{headers:authHeaders()});if(!data.challenge_id)throw new Error('The server did not return a verification session. Please try again.');setChallenge(data.challenge_id);setDelivery(data.delivery_status||'accepted');setExpiresAt(Date.now()+(Number(data.expires_in)||300)*1000);setCode('');setWait(Number(data.retry_after)||60);setNotice(data.message||'Verification request accepted. Waiting for WhatsApp delivery.');inputs.current[0]?.focus()}
-  catch(e){setError(e.response?.data?.message||e.message||'Unable to send a code. Please try again.');if(e.response?.status===429)setWait(Number(e.response.data?.retry_after)||Number(e.response.headers?.['retry-after'])||60)}
+  catch(e){setError(e.response?.data?.message||e.message||'Unable to send a code. Please try again.');if(e.response?.data?.code==='ACCOUNT_NOT_FOUND')setRegistrationUrl(role==='center'?'/register/training-center':`/register/${role}`);if(e.response?.status===429)setWait(Number(e.response.data?.retry_after)||Number(e.response.headers?.['retry-after'])||60)}
   finally{pending.current=false;setBusy(false)}
  };
  const verify=async()=>{if(pending.current||code.length!==6)return;pending.current=true;setBusy(true);setError('');setNotice('');try{const {data}=await axios.post('/auth/otp/verify',{challenge_id:challenge,code},{headers:authHeaders()});onVerified(data)}catch(e){setError(e.response?.data?.message||'Unable to verify your code. Please try again.')}finally{pending.current=false;setBusy(false)}};
@@ -50,7 +52,7 @@ export default function PhoneVerification({role,purpose,onVerified,initialPhone=
   <p>{challenge?`Enter the six-digit WhatsApp code for +91 ${phone}. It expires in 5 minutes.`:'Use your WhatsApp number to receive a secure verification code.'}</p>
   <form onSubmit={e=>{e.preventDefault();challenge?verify():send()}} noValidate>
   {!challenge?<label>WhatsApp mobile number<div className="otp-phone"><span>+91</span><input aria-label="WhatsApp mobile number" autoComplete="tel-national" type="tel" inputMode="numeric" maxLength={10} value={phone} aria-invalid={!!error} onChange={e=>{setPhone(e.target.value.replace(/\D/g,''));setError('')}} placeholder="10-digit mobile number"/></div></label>:<fieldset className="otp-digits"><legend>Verification code</legend><div>{Array.from({length:6},(_,i)=><input key={i} ref={el=>inputs.current[i]=el} aria-label={`Code digit ${i+1}`} aria-describedby={error?'otp-error':undefined} aria-invalid={!!error} autoComplete={i===0?'one-time-code':'off'} inputMode="numeric" type="text" pattern="[0-9]*" value={code[i]||''} onFocus={e=>e.target.select()} onChange={e=>enter(i,e.target.value)} onPaste={e=>{e.preventDefault();enter(i,e.clipboardData.getData('text'))}} onKeyDown={e=>{if(e.key==='Backspace'&&!code[i]&&i>0){setCode(c=>c.slice(0,i-1));inputs.current[i-1]?.focus()}if(e.key==='ArrowLeft')inputs.current[Math.max(0,i-1)]?.focus();if(e.key==='ArrowRight')inputs.current[Math.min(5,i+1)]?.focus()}}/>)}</div></fieldset>}
-  {error&&<div id="otp-error" role="alert" className="auth-notice error">{error}</div>}{notice&&<div role="status" className={`auth-notice ${['delivered','read'].includes(delivery)?'success':'pending'}`}>{['delivered','read'].includes(delivery)?<CheckCircle2 size={18}/>:<Clock3 size={18}/>}{notice}</div>}
+  {error&&<div id="otp-error" role="alert" className="auth-notice error">{error}{registrationUrl&&<Link className="text-link" to={registrationUrl}> Register here <ArrowRight size={16}/></Link>}</div>}{notice&&<div role="status" className={`auth-notice ${['delivered','read'].includes(delivery)?'success':'pending'}`}>{['delivered','read'].includes(delivery)?<CheckCircle2 size={18}/>:<Clock3 size={18}/>}{notice}</div>}
   <button type="submit" className="btn primary block whatsapp-button" disabled={busy||(challenge?(code.length!==6||delivery==='expired'):wait>0)}>{!challenge&&<WhatsAppIcon/>}{busy?'Please wait…':challenge?'Verify & continue':wait?`Try again in ${wait}s`:'Send code on WhatsApp'}{!busy&&<ArrowRight size={18}/>}</button>
   {challenge&&<div className="otp-actions"><button type="button" disabled={busy||wait>0} onClick={send}>{wait?`Resend code in ${wait}s`:'Resend code'}</button><button type="button" disabled={busy} onClick={()=>{setChallenge('');setCode('');setError('');setNotice('')}}>Change number</button></div>}
   </form><small className="otp-security"><ShieldCheck size={16}/>Your number keeps your account secure.</small>
