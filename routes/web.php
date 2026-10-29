@@ -128,6 +128,7 @@ Route::middleware('auth:web')->group(function () {
     Route::patch('/admin-api/training-centers/{id}/review', [AdminTrainingCenterController::class, 'review']);
 });
 Route::middleware('auth:candidate')->group(function () {
+    Route::get('/candidate-api/dashboard', [\App\Http\Controllers\CandidateDashboardController::class, 'show']);
     Route::post('/candidate-api/jobs/{id}/apply', [\App\Http\Controllers\JobEngagementController::class, 'apply'])->whereNumber('id')->middleware('throttle:30,1');
     Route::get('/candidate-api/opportunities', [\App\Http\Controllers\JobEngagementController::class, 'opportunities']);
     Route::post('/candidate-api/jobs/{id}/events', [\App\Http\Controllers\JobEngagementController::class, 'record'])->whereNumber('id')->middleware('throttle:120,1');
