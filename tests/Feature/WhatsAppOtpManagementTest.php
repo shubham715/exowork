@@ -36,6 +36,16 @@ class WhatsAppOtpManagementTest extends TestCase
   $this->assertDatabaseHas('whatsapp_templates',['id'=>$id,'meta_status'=>'FAILED','review_status'=>'pending','meta_error'=>'This WhatsApp Business account does not have permission to create message template']);
   $this->patchJson('/admin-api/whatsapp/templates/'.$id.'/review',['status'=>'approved'])->assertUnprocessable();
  }
+ public function test_meta_generated_bold_code_body_can_be_synced_approved_and_sent(): void {
+  $body='*{{1}}* is your verification code. For your security, do not share this code.';
+  $this->assertSame($body,WhatsAppTemplateCatalog::get('auth_otp')['body']);
+  $this->remote('APPROVED',['data'=>$body,'buttons'=>[['type'=>'URL','text'=>'Copy code','url'=>'https://www.whatsapp.com/otp/code/?otp_type=COPY_CODE&code_expiration_minutes=5&code=otp{{1}}']]]);
+  $id=DB::table('whatsapp_templates')->where('system_key','auth_otp')->value('id');
+  $this->patchJson('/admin-api/whatsapp/templates/'.$id.'/review',['status'=>'approved'])->assertOk();
+  $this->assertDatabaseHas('whatsapp_templates',['id'=>$id,'body'=>$body,'meta_status'=>'APPROVED','review_status'=>'approved']);
+  $messageId=app(WhatsAppOtpSender::class)->send('9876543211','login','654321');
+  $this->assertDatabaseHas('whatsapp_messages',['id'=>$messageId,'status'=>'accepted','source'=>'otp_login']);
+ }
  public function test_real_gupshup_payload_contains_code_for_body_and_button_and_no_logged_secret(): void {
   $this->approve();
   $messageId=app(WhatsAppOtpSender::class)->send('9876543211','registration','654321');
