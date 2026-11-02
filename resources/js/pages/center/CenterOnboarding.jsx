@@ -1,3 +1,4 @@
+import SelectOther from '../../components/SelectOther.jsx';
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -72,9 +73,9 @@ export default function CenterOnboarding() {
     {errors[name] && <small className="reg-error">{errors[name][0]}</small>}
   </label>;
   const select = (name, label, options, placeholder, disabled = false) => <label className={`form-label reg-field ${errors[name] ? 'has-error' : ''}`}>
-    <span>{label}<em>*</em></span><select name={name} value={data[name]} onChange={change} required disabled={disabled}>
+    <span>{label}<em>*</em></span><SelectOther name={name} value={data[name]} onChange={change} required disabled={disabled}>
       <option value="">{placeholder}</option>{options.map(value => <option key={value} value={value}>{value}</option>)}
-    </select>{errors[name] && <small className="reg-error">{errors[name][0]}</small>}
+    </SelectOther>{errors[name] && <small className="reg-error">{errors[name][0]}</small>}
   </label>;
 
   return <div className="candidate-register public-reg center-public-register">
@@ -100,7 +101,7 @@ export default function CenterOnboarding() {
               {field('spoc_phone', 'Contact mobile', '10-digit mobile number', { type: 'tel' })}
               {field('spoc_email', 'Contact email', 'you@example.com', { type: 'email' })}
               {select('state', 'State', states.map(state => state.name), 'Choose a state')}
-              {select('district', 'District', districts.map(district => district.name), 'Choose a district', !data.state || !districts.length)}
+              {select('district', 'District', districts.map(district => district.name), 'Choose a district', !data.state)}
               {field('city_block', 'City or town', 'City or town')}
               {field('pincode', 'PIN code', '6-digit PIN code')}
               {field('address', 'Center address', 'Building, street and area', { wide: true })}

@@ -10,6 +10,13 @@ class AdminEmployerAnalyticsTest extends TestCase {
  private function staff(): User {$this->seed(PlatformRolesSeeder::class);$user=User::factory()->create();DB::table('user_roles')->insert(['user_id'=>$user->id,'role_id'=>DB::table('roles')->where('key','admin')->value('id')]);return $user;}
  private function employer($code,$created='2026-09-01') {return DB::table('employers')->insertGetId(['code'=>$code,'name'=>$code,'legal_name'=>$code.' Ltd','industry'=>'Retail','state'=>'Rajasthan','status'=>'verified','created_at'=>$created,'updated_at'=>$created]);}
  private function candidate() {return DB::table('candidates')->insertGetId(['first_name'=>'Test','last_name'=>'Learner','whatsapp'=>'9876543201','password'=>'unused','gender'=>'Female','age'=>22,'qualification'=>'12th','state'=>'Rajasthan','district'=>'Jaipur','current_location'=>'Jaipur','permanent_location'=>'Jaipur','preferred_locations'=>'[]','relocation_preference'=>'Yes','skills'=>'Training','experience_type'=>'Fresher','expected_monthly_salary'=>10000,'availability'=>'Yes','preferred_industry'=>'Retail','languages'=>'[]','training_status'=>'Completed']);}
+ public function test_custom_locations_are_saved_and_searchable(): void {
+  $user=$this->staff();$id=$this->employer('CUSTOM');
+  $this->actingAs($user)->patchJson("/admin-api/employers/$id",['name'=>'Custom Employer','legal_name'=>'Custom Employer Ltd','state'=>'New Region','district'=>'New District'])->assertOk();
+  $this->assertDatabaseHas('employers',['id'=>$id,'state'=>'New Region','district'=>'New District']);
+  $this->getJson('/admin-api/employers?q=new%20region')->assertOk()->assertJsonCount(1,'employers');
+  $this->getJson('/admin-api/employers?q=new%20district')->assertOk()->assertJsonCount(1,'employers');
+ }
  public function test_month_range_filters_dates_and_distinct_hires_and_excludes_deleted_records(): void {
   $user=$this->staff();$employer=$this->employer('ONE');$this->employer('NEW','2026-10-31 23:59:59');$this->employer('FUTURE','2026-11-01');
   $candidate=$this->candidate();

@@ -13,6 +13,7 @@ import "./pages/center/center-dashboard.css";
 import "./pages/center/center-profile.css";
 import "./brand-logo.css";
 import "./workspace-headers.css";
+import "./pages/candidate/candidate-profile.css";
 import "./modal-forms.css";
 import "./data-tables.css";
 import "./scrollbars.css";

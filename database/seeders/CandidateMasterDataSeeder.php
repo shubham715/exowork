@@ -43,16 +43,8 @@ class CandidateMasterDataSeeder extends Seeder
             ]);
         }
 
-        $districts = [
-            'Rajasthan' => ['Jaipur', 'Jodhpur', 'Udaipur', 'Ajmer', 'Alwar', 'Kota'],
-            'Delhi' => ['Central Delhi', 'New Delhi', 'North Delhi', 'South Delhi'],
-            'Haryana' => ['Gurugram', 'Faridabad', 'Hisar', 'Rohtak'],
-            'Uttar Pradesh' => ['Lucknow', 'Noida', 'Ghaziabad', 'Kanpur Nagar'],
-            'Maharashtra' => ['Mumbai City', 'Pune', 'Nagpur'],
-            'Gujarat' => ['Ahmedabad', 'Surat', 'Vadodara'],
-            'Madhya Pradesh' => ['Bhopal', 'Indore', 'Gwalior'],
-            'Karnataka' => ['Bengaluru Urban', 'Mysuru'],
-        ];
+        $districts = collect(json_decode(file_get_contents(database_path('data/india-locations.json')), true, 512, JSON_THROW_ON_ERROR))
+            ->mapWithKeys(fn ($row) => [$row['state'] => $row['districts']])->all();
         foreach ($districts as $stateName => $names) {
             $stateId = DB::table('states')->where('slug', Str::slug($stateName))->value('id');
             foreach ($names as $index => $name) {

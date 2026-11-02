@@ -9,6 +9,12 @@ class CandidateMasterData
 {
     public static function resolve(array $data): array
     {
+        foreach (['state', 'district'] as $field) {
+            if (isset($data[$field])) $data[$field] = preg_replace('/\s+/u', ' ', trim($data[$field]));
+        }
+        // A custom state has no master ID; never carry an old reference forward.
+        if (empty($data['state_id'])) $data['state_id'] = null;
+        if (empty($data['district_id'])) $data['district_id'] = null;
         $fields = [
             'qualification_option_id' => ['qualification', 'qualification'],
             'experience_level_option_id' => ['experience_level', 'experience_type'],

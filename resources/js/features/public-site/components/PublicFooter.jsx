@@ -4,7 +4,7 @@ import BrandLogo from "../../../components/BrandLogo.jsx";
 const FOOTER_GROUPS = [
   ["Platform", [["How it works", "journey"], ["Who it's for", "audiences"], ["Automation", "automation"], ["Trust & data", "trust"]]],
   ["Roles", [["Employers", "contact"], ["Training partners", "contact"], ["Candidates", "contact"], ["Support teams", "contact"]]],
-  ["Company", [["Contact us", "contact"], ["hello@exowork.in", "mailto:hello@exowork.in"]]],
+  ["Company", [["Contact us", "contact"], ["contact@exowork.in", "mailto:contact@exowork.in"]]],
 ];
 
 export default function PublicFooter() {

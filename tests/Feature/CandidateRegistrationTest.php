@@ -104,6 +104,24 @@ class CandidateRegistrationTest extends TestCase
         $this->getJson("/api/candidate-drafts/{$token}")->assertNotFound();
     }
 
+    public function test_manual_state_and_district_are_saved_as_searchable_names(): void
+    {
+        $payload = $this->validPayload();
+        $payload['state'] = 'New Region';
+        $payload['state_id'] = null;
+        $payload['district'] = '  New   District  ';
+        $payload['district_id'] = null;
+        $payload['district_is_custom'] = true;
+        $this->postJson('/api/candidates', $payload)->assertCreated();
+        $candidate = Candidate::firstOrFail();
+        $this->assertSame('New Region', $candidate->state);
+        $this->assertSame('New District', $candidate->district);
+        $this->assertNull($candidate->state_id);
+        $this->assertNull($candidate->district_id);
+        $this->assertTrue((bool) $candidate->district_is_custom);
+        $this->assertSame(1, Candidate::where('district', 'like', '%District%')->count());
+    }
+
     private function validPayload(): array
     {
         return [

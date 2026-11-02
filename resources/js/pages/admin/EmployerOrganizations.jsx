@@ -1,3 +1,4 @@
+import SelectOther from '../../components/SelectOther.jsx';
 import React, {useEffect, useState, useRef, useId} from 'react';
 
 import axios from 'axios';
@@ -38,7 +39,7 @@ function ProfileEditField({field,draft,setDraft,master,districts}) {
 
     const [key,label,required]=field;
 
-    return <label className={'field-label '+(['address','description'].includes(key)?'wide':'')}><span>{label}{required&&<span className="required-mark"> *</span>}</span>{['state','district','industry'].includes(key)?<select value={draft[key]} onChange={e=>setDraft({...draft,[key]:e.target.value,...(key==='state'?{district:''}:{})})}><option value="">Select {label.toLowerCase()}</option>{[...new Set([draft[key],...(key==='state'?master.states:key==='district'?districts:master.industries).map(v=>v.name)].filter(Boolean))].map(v=><option key={v}>{v}</option>)}</select>:['address','description'].includes(key)?<textarea value={draft[key]} onChange={e=>setDraft({...draft,[key]:e.target.value})} placeholder={`Enter ${label.toLowerCase()}`}/>:<input type={key==='website'?'url':key==='contact_phone'?'tel':'text'} inputMode={key==='pincode'?'numeric':undefined} value={draft[key]} required={required} onChange={e=>setDraft({...draft,[key]:key==='gstin'?e.target.value.toUpperCase():e.target.value})} placeholder={key==='website'?'https://company.example':`Enter ${label.toLowerCase()}`}/>}</label>;
+    return <label className={'field-label '+(['address','description'].includes(key)?'wide':'')}><span>{label}{required&&<span className="required-mark"> *</span>}</span>{['state','district','industry'].includes(key)?<SelectOther value={draft[key]} onChange={e=>setDraft({...draft,[key]:e.target.value,...(key==='state'?{district:''}:{})})}><option value="">Select {label.toLowerCase()}</option>{[...new Set([draft[key],...(key==='state'?master.states:key==='district'?districts:master.industries).map(v=>v.name)].filter(Boolean))].map(v=><option key={v}>{v}</option>)}</SelectOther>:['address','description'].includes(key)?<textarea value={draft[key]} onChange={e=>setDraft({...draft,[key]:e.target.value})} placeholder={`Enter ${label.toLowerCase()}`}/>:<input type={key==='website'?'url':key==='contact_phone'?'tel':'text'} inputMode={key==='pincode'?'numeric':undefined} value={draft[key]} required={required} onChange={e=>setDraft({...draft,[key]:key==='gstin'?e.target.value.toUpperCase():e.target.value})} placeholder={key==='website'?'https://company.example':`Enter ${label.toLowerCase()}`}/>}</label>;
 
 }
 

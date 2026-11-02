@@ -33,7 +33,7 @@ class AdminEmployerAnalyticsController extends Controller
         if(!empty($filters['to'])) $query->where('employers.created_at','<',Carbon::parse($filters['to'])->addDay()->startOfDay());
         if(!empty(trim($filters['search']??''))) {
             $search='%'.str_replace(['!','%','_'],['!!','!%','!_'],mb_strtolower(trim($filters['search']))).'%';
-            $query->where(function($q) use($search){foreach(['name','legal_name','code','email','phone','contact_name','contact_phone','district','industry'] as $column) $q->orWhereRaw("LOWER(employers.$column) LIKE ? ESCAPE '!'",[$search]);});
+            $query->where(function($q) use($search){foreach(['name','legal_name','code','email','phone','contact_name','contact_phone','state','district','industry'] as $column) $q->orWhereRaw("LOWER(employers.$column) LIKE ? ESCAPE '!'",[$search]);});
         }
         return $query->select('employers.*')
             ->selectSub(DB::table('job_posts')->selectRaw('COUNT(*)')->whereColumn('employer_id','employers.id')->whereNull('deleted_at')->whereNotNull('published_at'),'jobs_count')

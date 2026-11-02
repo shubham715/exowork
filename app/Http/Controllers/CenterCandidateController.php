@@ -274,7 +274,7 @@ class CenterCandidateController extends Controller
             'qualification' => ['required', 'string', 'max:60'],
             'qualification_option_id' => ['required', 'integer'],
             'state' => ['required', 'string', 'max:80'], 'district' => ['required', 'string', 'max:80'],
-            'state_id' => ['required', 'integer'], 'district_id' => [Rule::requiredIf(! $request->boolean('district_is_custom')), 'nullable', 'integer'],
+            'state_id' => ['nullable', 'integer'], 'district_id' => [Rule::requiredIf(! $request->boolean('district_is_custom')), 'nullable', 'integer'],
             'district_is_custom' => ['required', 'boolean'],
             'current_location' => ['required', 'string', 'max:255'], 'permanent_location' => ['required', 'string', 'max:255'],
             'preferred_locations' => ['required', 'array', 'min:1'], 'preferred_locations.*' => ['string', 'max:120'],

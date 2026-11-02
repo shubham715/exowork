@@ -1,3 +1,4 @@
+import SelectOther from '../../components/SelectOther.jsx';
 import {VerifiedNumber} from '../../features/auth/components/PhoneVerification.jsx';
 import React,{useEffect,useState}from'react';
 
@@ -127,7 +128,7 @@ const fieldPlaceholders={whatsapp:'10-digit WhatsApp-active mobile',email:'name@
 
 function Field({name,label,value,set,error,type='text',optional=false,wide=false,hint,textarea=false,disabled=false}){return <label className={`form-label reg-field ${wide?'wide ':''}${error?'has-error':''}`}><span>{label}{!optional&&<em>*</em>}</span>{textarea?<textarea rows="3" value={value} placeholder={fieldPlaceholders[name]} onChange={e=>set(name,e.target.value)}/>:<input disabled={disabled} type={type} value={value} placeholder={type==='date'?undefined:fieldPlaceholders[name]} onChange={e=>set(name,e.target.value)}/>} {hint&&<small>{hint}</small>}{error&&<small className="reg-error">{error[0]}</small>}</label>}
 
-function Select({name,label,value,set,error,options,disabled=false}){return <label className={`form-label reg-field ${error?'has-error':''}`}><span>{label}<em>*</em></span><select disabled={disabled} value={value} onChange={e=>set(name,e.target.value)}>{options.map(x=><option key={x} value={x}>{x==='__other__'?'Other — enter manually':x||`Select ${label.toLowerCase()}`}</option>)}</select>{error&&<small className="reg-error">{error[0]}</small>}</label>}
+function Select({name,label,value,set,error,options,disabled=false}){if(name==='state')return <label className={`form-label reg-field ${error?'has-error':''}`}><span>{label}<em>*</em></span><SelectOther name={name} required value={value} onChange={e=>set(name,e.target.value)}>{options.map(x=><option key={x} value={x}>{x||'Select state'}</option>)}</SelectOther>{error&&<small className="reg-error">{error[0]}</small>}</label>;return <label className={`form-label reg-field ${error?'has-error':''}`}><span>{label}<em>*</em></span><select disabled={disabled} value={value} onChange={e=>set(name,e.target.value)}>{options.map(x=><option key={x} value={x}>{x==='__other__'?'Other — enter manually':x||`Select ${label.toLowerCase()}`}</option>)}</select>{error&&<small className="reg-error">{error[0]}</small>}</label>}
 
 function File({name,label,accept,setFiles,hint}){const[fileName,setFileName]=useState('');return <label className="form-label file-box"><Upload/><div><span>{label}</span><small>{fileName||hint}</small></div><b>Browse</b><input type="file" accept={accept} onChange={e=>{const file=e.target.files?.[0];setFileName(file?.name||'');setFiles(current=>({...current,[name]:file}))}}/></label>}
 

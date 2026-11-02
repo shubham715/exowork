@@ -1,3 +1,4 @@
+import SelectOther from '../../components/SelectOther.jsx';
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -23,10 +24,10 @@ function TextField({ label, name, value, onChange, placeholder, required = false
 function SelectField({ label, name, value, onChange, options, placeholder, required = false, disabled = false, error }) {
   return <label className={`center-profile-field${error ? ' has-error' : ''}`}>
     <span>{label}{required && <em aria-label="required">*</em>}</span>
-    <select name={name} value={value ?? ''} onChange={onChange} required={required} disabled={disabled}>
+    <SelectOther allowOther={['state','district'].includes(name)} name={name} value={value ?? ''} onChange={onChange} required={required} disabled={disabled}>
       <option value="">{placeholder}</option>
       {options.map(option => <option key={option} value={option}>{option}</option>)}
-    </select>
+    </SelectOther>
     {error && <small className="center-profile-error">{error}</small>}
   </label>;
 }
@@ -146,7 +147,7 @@ export default function CenterProfile({ onboarding = false }) {
           </Section>
           <Section number="03" title="Center location" description="Select your state and district, then add the center address.">
             <SelectField name="state" label="State" value={profile.state} onChange={change} options={states.map(item => item.name)} placeholder="Choose a state" required error={errors.state?.[0]} />
-            <SelectField name="district" label="District" value={profile.district} onChange={change} options={districts.map(item => item.name)} placeholder={profile.state ? 'Choose a district' : 'Select a state first'} disabled={!profile.state || !districts.length} required error={errors.district?.[0]} />
+            <SelectField name="district" label="District" value={profile.district} onChange={change} options={districts.map(item => item.name)} placeholder={profile.state ? 'Choose a district' : 'Select a state first'} disabled={!profile.state} required error={errors.district?.[0]} />
             {field('city_block', 'City or town', 'Enter city, town, or block', { required: true })}
             {field('pincode', 'PIN code', '6-digit PIN code', { required: true, inputMode: 'numeric' })}
             {field('address', 'Full address', 'Building, street, area, and landmark', { required: true, wide: true })}

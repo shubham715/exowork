@@ -580,7 +580,7 @@ export default function Landing() {
                   candidates, tell us how we can help.
                 </p>
                 <div>
-                  <a className="ex-btn grad" href="mailto:hello@exowork.in">
+                  <a className="ex-btn grad" href="mailto:contact@exowork.in">
                     Email us
                   </a>
                   <a className="ex-btn light" href="#contact">

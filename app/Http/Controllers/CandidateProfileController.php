@@ -33,7 +33,7 @@ class CandidateProfileController extends Controller
             'qualification' => ['required', 'string', 'max:60'],
             'qualification_option_id' => ['required', 'integer'],
             'state' => ['required', 'string', 'max:80'],
-            'state_id' => ['required', 'integer'],
+            'state_id' => ['nullable', 'integer'],
             'district' => ['required', 'string', 'max:80'],
             'district_id' => [Rule::requiredIf(! $request->boolean('district_is_custom')), 'nullable', 'integer'],
             'district_is_custom' => ['required', 'boolean'],

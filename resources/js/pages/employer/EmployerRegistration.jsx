@@ -1,3 +1,4 @@
+import SelectOther from '../../components/SelectOther.jsx';
 import {VerifiedNumber} from '../../features/auth/components/PhoneVerification.jsx';
 import React, { useEffect, useState, useRef, useId } from "react";
 
@@ -381,7 +382,7 @@ export function EmployerFields({
                         </span>
 
                         {options ? (
-                            <select
+                            <SelectOther
                                 {...props}
                                 disabled={key === "district" && !data.state}
                             >
@@ -399,7 +400,7 @@ export function EmployerFields({
                                     !options.some(
                                         (x) => x.name === data[key],
                                     ) && <option>{data[key]}</option>}
-                            </select>
+                            </SelectOther>
                         ) : ["description", "address"].includes(key) ? (
                             <textarea
                                 {...props}
@@ -468,6 +469,8 @@ export default function EmployerRegistration({verifiedPhone="",verificationToken
     const navigate = useNavigate();
     const [data, setData] = useState({
         account_name: "",
+        state: "",
+        district: "",
         legal_name: "",
         email: "",
         phone: verifiedPhone,
@@ -481,8 +484,9 @@ export default function EmployerRegistration({verifiedPhone="",verificationToken
         [busy, setBusy] = useState(false),
         [notice, setNotice] = useState(null),
         [showPassword, setShowPassword] = useState(false);
+    const {master, districts, masterError} = useEmployerMasters(data.state);
     const set = (key, value) => {
-        setData((d) => ({ ...d, [key]: value }));
+        setData((d) => ({ ...d, [key]: value, ...(key === "state" ? {district: ""} : {}) }));
         setErrors((e) => ({ ...e, [key]: undefined }));
     };
     const submit = async (e) => {
@@ -702,6 +706,8 @@ export default function EmployerRegistration({verifiedPhone="",verificationToken
                                 </button>
                             </div>
                         </div>
+                        {masterError && <p className="employer-error" role="alert">{masterError}</p>}
+                        <EmployerFields keys={["state", "district"]} data={data} set={set} errors={errors} master={master} districts={districts}/>
                         <details className="employer-signup-optional" open={verifiedPhone||errors.phone ? true : undefined}>
                             <summary>
                                 Add a contact mobile <span>(optional)</span>

@@ -1,0 +1,87 @@
+/* Candidate profile: dashboard heading scale with readable record and form text. */
+.candidate-profile-page {
+  font: 400 12px/1.5 var(--font-body);
+  min-width: 0;
+}
+.role-shell .candidate-profile-page .candidate-profile-cover {
+  padding: 20px 24px;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+.role-shell .candidate-profile-page .candidate-profile-cover h1 {
+  font: 700 24px/1.3 var(--font-heading);
+  letter-spacing: -.3px;
+  margin: 4px 0 6px;
+  overflow-wrap: anywhere;
+}
+.role-shell .candidate-profile-page .candidate-profile-cover p,
+.role-shell .candidate-profile-page .candidate-profile-cover > div:nth-child(2) > span {
+  font: 400 13px/1.45 var(--font-body);
+  overflow-wrap: anywhere;
+}
+.role-shell .candidate-profile-page .cover-score b { font-size: 22px; line-height: 1.2; }
+.role-shell .candidate-profile-page .cover-score span { font-size: 10px; line-height: 1.45; }
+.candidate-profile-page .panel > header h3 { font: 700 14px/1.35 var(--font-heading); }
+.candidate-profile-page .panel > header p { font: 400 12px/1.5 var(--font-body); margin-top: 4px; }
+.candidate-profile-page .panel > header > svg { width: 18px; height: 18px; flex-shrink: 0; }
+.candidate-profile-page .profile-sections { gap: 18px; margin-top: 18px; }
+.candidate-profile-page .profile-control-strip { gap: 12px; margin: 16px 0; }
+.candidate-profile-page .profile-control-strip > div { min-width: 0; padding: 14px; flex-wrap: wrap; }
+.candidate-profile-page .profile-control-strip > div > div { min-width: 140px; }
+.candidate-profile-page .profile-control-strip b { font-size: 12px; line-height: 1.45; }
+.candidate-profile-page .profile-control-strip small { font-size: 11px; line-height: 1.5; margin-top: 3px; }
+.candidate-profile-page .status { font-size: 10px; line-height: 1.45; }
+.candidate-profile-page .profile-field-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.candidate-profile-page .profile-field-grid > label {
+  min-width: 0;
+  padding: 14px 12px;
+  font: 500 11px/1.45 var(--font-body);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.candidate-profile-page .profile-field-grid b {
+  margin-top: 6px;
+  font: 500 13px/1.5 var(--font-body);
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.candidate-profile-page .profile-field-grid input:not([type=checkbox]),
+.candidate-profile-page .profile-field-grid select,
+.candidate-profile-page .profile-field-grid textarea {
+  margin-top: 7px;
+  min-height: 44px;
+  padding: 10px 12px;
+  font: 400 13px/1.45 var(--font-body);
+}
+.candidate-profile-page .profile-field-grid textarea { resize: vertical; min-height: 90px; }
+.candidate-profile-page .profile-field-grid input:focus-visible,
+.candidate-profile-page .profile-field-grid select:focus-visible,
+.candidate-profile-page .profile-field-grid textarea:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+.candidate-profile-page .profile-field-grid small { font-size: 11px; line-height: 1.45; margin-top: 6px; }
+.candidate-profile-page .profile-field-grid .text-link { font-size: 11px; margin-top: 6px; }
+.candidate-profile-page .profile-field-grid > .wide { padding: 14px 12px; }
+.candidate-profile-page .profile-field-grid > .wide > span { font-size: 12px; }
+.candidate-profile-page .consent-profile-grid > label { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.candidate-profile-page .consent-profile-grid label span { float: none; }
+.candidate-profile-page .consent-profile-grid b { margin-top: 0; font-size: 12px; }
+.candidate-profile-page .consent-profile-grid input[type=checkbox] { width: 18px; height: 18px; padding: 0; margin: 0; }
+@media (max-width: 1100px) {
+  .candidate-profile-page .profile-field-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .candidate-profile-page .profile-control-strip { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  .role-shell .candidate-profile-page .candidate-profile-cover { flex-wrap: wrap; padding: 18px; gap: 14px; }
+  .role-shell .candidate-profile-page .candidate-profile-cover h1 { font-size: 22px; }
+  .candidate-profile-page .candidate-profile-cover > div:nth-child(2) { min-width: 0; flex-basis: 50%; }
+  .role-shell .candidate-profile-page .cover-score { min-width: 0; text-align: left; }
+}
+@media (max-width: 600px) {
+  .candidate-profile-page .profile-field-grid { grid-template-columns: minmax(0,1fr); }
+  .candidate-profile-page .profile-field-grid input:not([type=checkbox]),
+  .candidate-profile-page .profile-field-grid select,
+  .candidate-profile-page .profile-field-grid textarea { font-size: 16px; }
+}

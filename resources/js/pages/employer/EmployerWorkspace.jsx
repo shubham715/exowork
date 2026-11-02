@@ -1,3 +1,4 @@
+import SelectOther from '../../components/SelectOther.jsx';
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -514,7 +515,7 @@ function JobEditor({ data, setData, setError, job, onClose }) {
                 ) : options && ["job_type", "workplace_type", "salary_type"].includes(key) ? (
                     <div className="employer-choice-group" role="group" aria-label={jobLabels[key]} id={`job-${key}`} tabIndex={-1}>{options.map(option=><button type="button" key={option} disabled={busy} aria-pressed={form[key]===option} className={form[key]===option?"selected":""} onClick={()=>set(key,option)}>{form[key]===option && <Check aria-hidden="true"/>}{option}</button>)}</div>
                 ) : options ? (
-                    <select
+                    <SelectOther allowOther={["state", "district", "industry"].includes(key)}
                         id={`job-${key}`}
                         disabled={busy || (key === "district" && !form.state)}
                         aria-invalid={!!errors[key]}
@@ -528,7 +529,7 @@ function JobEditor({ data, setData, setError, job, onClose }) {
                         {form[key] && !options.includes(form[key]) && (
                             <option>{form[key]}</option>
                         )}
-                    </select>
+                    </SelectOther>
                 ) : [
                       "description",
                       "responsibilities",
