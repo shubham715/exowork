@@ -93,6 +93,7 @@ class CandidateRegistrationController extends Controller
                     ]);
                 }
 
+                app(\App\Services\AdminEmail::class)->send('New candidate registered', trim($candidate->first_name.' '.$candidate->last_name), '/admin/candidates/'.$candidate->candidate_code, ['Candidate ID' => $candidate->candidate_code]);
                 return $candidate;
             });
         } catch (\Throwable $exception) {

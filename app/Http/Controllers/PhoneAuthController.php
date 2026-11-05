@@ -23,6 +23,12 @@ class PhoneAuthController extends Controller
         $data = $request->validate(['phone'=>['required','regex:/^[6-9][0-9]{9}$/'],'role'=>'required|in:candidate,center,employer','purpose'=>'required|in:login,registration']);
         $settings = app(AuthVerification::class)->settings();
         abort_unless($settings[$data['purpose']==='login'?'login_enabled':'registration_enabled'], 403, 'WhatsApp verification is disabled.');
+        if ($data['purpose'] === 'registration' && app(AuthVerification::class)->phoneIsRegistered($data['phone'])) {
+            return response()->json(['message'=>AuthVerification::REGISTERED_PHONE, 'code'=>'PHONE_ALREADY_REGISTERED'], 422);
+        }
+        if ($data['purpose'] === 'login' && ($error = app(\App\Services\PhoneLoginAccount::class)->error($data['phone'], $data['role']))) {
+            return response()->json($error, 422);
+        }
         $key = 'phone-otp:'.hash('sha256', $data['phone']);
         if (RateLimiter::tooManyAttempts($key, 1)) {
             $retry = RateLimiter::availableIn($key);
@@ -68,6 +74,9 @@ class PhoneAuthController extends Controller
             abort_unless(Hash::check($data['code'],$challenge['hash']),422,'Incorrect verification code.');
             Cache::forget($key);
             if ($challenge['purpose']==='registration') {
+                if (app(AuthVerification::class)->phoneIsRegistered($challenge['phone'])) {
+                    return response()->json(['message'=>AuthVerification::REGISTERED_PHONE, 'code'=>'PHONE_ALREADY_REGISTERED'], 422);
+                }
                 $token = Str::random(64);
                 Cache::put('registration-proof:'.hash('sha256',$token), ['phone'=>$challenge['phone'],'role'=>$challenge['role']], now()->addHours(2));
                 return response()->json(['verification_token'=>$token,'phone'=>$challenge['phone']]);

@@ -38,6 +38,15 @@ class PhoneAuthTest extends TestCase {
   $this->postJson('/auth/register/training-center',['phone'=>'9876543211'])->assertJsonValidationErrors('center_name');
   $this->postJson('/auth/otp/send',['phone'=>'9876543211','role'=>'center','purpose'=>'login'])->assertForbidden();
  }
+ public function test_registered_user_number_cannot_request_registration_otp_for_any_role(): void {
+  User::factory()->create(['phone'=>'9876543211']);
+  $this->mock(\App\Services\WhatsAppOtpSender::class)->shouldNotReceive('send');
+
+  foreach (['candidate', 'employer', 'center'] as $role) {
+   $this->postJson('/auth/otp/send', ['phone'=>'9876543211','role'=>$role,'purpose'=>'registration'])
+    ->assertUnprocessable()->assertJsonPath('code', 'PHONE_ALREADY_REGISTERED')->assertJsonMissingPath('challenge_id');
+  }
+ }
  public function test_otp_is_single_use_and_logs_in_only_with_assigned_role(): void {
   $this->seed(PlatformRolesSeeder::class);
   $user=User::factory()->create(['phone'=>'9876543211','status'=>'active']);

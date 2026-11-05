@@ -1,7 +1,8 @@
+import ConsentPreferences from './ConsentPreferences.jsx';
 import React,{useEffect,useState} from 'react';
 import axios from 'axios';
 import {Link} from 'react-router-dom';
-import {MessageCircle,CalendarDays,CheckCircle2,BriefcaseBusiness,HeartHandshake,RefreshCw} from 'lucide-react';
+import {CalendarDays,CheckCircle2,BriefcaseBusiness,HeartHandshake,RefreshCw} from 'lucide-react';
 import {PageHead,Status} from '../../components/UI';
 import '../admin/whatsapp-management.css';
 
@@ -9,13 +10,17 @@ const titles={consent:'Job interest & communication',interests:'My job interests
 const headers=()=>({'X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]')?.content});
 const format=v=>v?new Date(v.includes('T')?v:v.replace(' ','T')+'Z').toLocaleString('en-IN',{timeZone:'Asia/Kolkata'}):'To be confirmed';
 export default function EmploymentJourney({page}){
+ if(page==='consent')return <ConsentPreferences/>;
+ return <JourneyRecords page={page}/>;
+}
+function JourneyRecords({page}){
  const [data,setData]=useState(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false);
  const load=async()=>{const {data}=await axios.get('/candidate-api/employment');setData(data);};
  useEffect(()=>{load().catch(e=>setError(e.response?.data?.message||'Could not load your employment journey. Please sign in.'));},[page]);
  const respond=async payload=>{if(busy)return;setBusy(true);setError('');try{const {data}=await axios.post('/candidate-api/employment/respond',payload,{headers:headers()});setNotice(data.message);await load();}catch(e){setError(e.response?.data?.message||'Could not save your response.');}finally{setBusy(false);}};
  const rows=!data?[]:page==='interests'?data.applications:page==='interviews'?data.interviews:data.placements;
  return <div className="wa-workspace"><PageHead kicker="YOUR EMPLOYMENT JOURNEY" title={titles[page]} sub="Review confirmed information and share your response with EXOWORK."><button className="btn ghost" onClick={()=>load().catch(()=>setError('Could not refresh.'))}><RefreshCw size={16}/>Refresh</button></PageHead>{error&&<p className="wa-alert error" role="alert">{error}</p>}{notice&&<p className="wa-alert success" role="status">{notice}</p>}{!data&&!error&&<p role="status">Loading your records…</p>}
- {data&&page==='consent'?<section className="data-card" style={{padding:28}}><MessageCircle color="#138259"/><h2>Hello {data.candidate.first_name}, are you interested in a job?</h2><p>Your response helps our team send relevant opportunities and plan your next steps.</p><Status>{data.candidate.job_interest_status.replaceAll('_',' ')}</Status><div className="modal-actions"><button className="btn primary" disabled={busy} onClick={()=>respond({kind:'interest',status:'interested'})}>Yes, interested</button><button className="btn ghost" disabled={busy} onClick={()=>respond({kind:'interest',status:'not_interested'})}>No, not interested</button></div><p>WhatsApp messaging: {data.candidate.whatsapp_consent?'Enabled with consent':'Disabled'}. <Link to="/candidate/profile">Update communication preferences</Link>. You can also reply STOP to any WhatsApp message.</p></section>:data&&<div className="wa-template-grid">{rows.map(r=><section className="wa-template-card" key={r.id}><span className="wa-template-icon">{page==='interviews'?<CalendarDays/>:page==='retention'?<HeartHandshake/>:<BriefcaseBusiness/>}</span><h3>{r.title}</h3>{r.employer_name&&<p>{r.employer_name}</p>}<Status>{r.status.replaceAll('_',' ')}</Status>
+ {data&&<div className="wa-template-grid">{rows.map(r=><section className="wa-template-card" key={r.id}><span className="wa-template-icon">{page==='interviews'?<CalendarDays/>:page==='retention'?<HeartHandshake/>:<BriefcaseBusiness/>}</span><h3>{r.title}</h3>{r.employer_name&&<p>{r.employer_name}</p>}<Status>{r.status.replaceAll('_',' ')}</Status>
  {page==='interests'&&<><p>{r.district}</p><label className="wa-field" style={{marginTop:20}}>Interview availability<select disabled={busy} value={r.interview_availability||''} onChange={e=>respond({kind:'availability',id:r.id,status:e.target.value})}><option value="">Choose when you are available</option><option value="within_3_days">Within 3 days</option><option value="within_7_days">Within 7 days</option><option value="later">Later</option></select></label><p className="wa-muted">Your coordinator will call to finalise the schedule.</p></>}
  {page==='interviews'&&<><p><b>{format(r.scheduled_at)} IST</b><br/>{r.location} · {r.mode}</p><p>Representative: {r.contact_name||'EXOWORK coordinator'}{r.contact_phone&&<> · {r.contact_phone}</>}</p><label className="wa-field">Can you attend?<select value={r.attendance_response||''} disabled={busy||!['scheduled','confirmed'].includes(r.status)||new Date(r.scheduled_at.replace(' ','T')+'Z')<new Date()} onChange={e=>respond({kind:'attendance',id:r.id,status:e.target.value})}><option value="">Choose your response</option><option value="confirmed">Yes, I can attend</option><option value="needs_help">I have a question / need help</option><option value="cannot_attend">I cannot attend</option></select></label></>}
  {page==='joining'&&<><p>Expected joining: {r.expected_joining_on||'To be confirmed'}<br/>Actual joining: {r.joined_on||'Not yet recorded'}</p><p className="wa-muted">Your placement team confirms the selection and actual joining. Contact your coordinator if you need assistance.</p></>}

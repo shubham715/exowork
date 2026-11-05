@@ -25,6 +25,9 @@ axios.interceptors.response.use((response) => {
     if (isLocal(response.config)) setToken(response.data?.csrf_token);
     return response;
 }, async (error) => {
+    if (error.response?.status === 409 && error.response?.data?.support_destination?.startsWith('/admin/')) {
+        window.location.assign(error.response.data.support_destination);
+    }
     const config = error.config;
     if (error.response?.status !== 419 || !config || !isLocal(config) || !isMutation(config) || config._csrfRetried) {
         throw error;

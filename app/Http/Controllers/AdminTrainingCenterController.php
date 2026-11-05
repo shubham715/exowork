@@ -68,6 +68,7 @@ class AdminTrainingCenterController extends Controller
         ]);
         $id = DB::table('training_partners')->insertGetId([...$data, 'code' => $this->nextCode('training_partners', 'EXO-TP-'), 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
         $this->audit($request, 'training_partner.created', 'training_partner', $id, $data);
+        app(\App\Services\AdminEmail::class)->send('New training partner added', $data['name'], '/admin/centers?partner='.$id);
         return response()->json(['partner' => DB::table('training_partners')->find($id)], 201);
     }
 
@@ -77,6 +78,7 @@ class AdminTrainingCenterController extends Controller
         $data = $this->validatedCenter($request);
         $id = DB::table('training_centers')->insertGetId([...$data, 'code' => $this->nextCode('training_centers', 'EXO-CTR-'), 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
         $this->audit($request, 'training_center.created', 'training_center', $id, $data);
+        app(\App\Services\AdminEmail::class)->send('New training center added', $data['name'], '/admin/centers?review='.$id, review: true);
         return response()->json(['center' => DB::table('training_centers')->find($id)], 201);
     }
 

@@ -26,6 +26,18 @@ class AuthSessionTest extends TestCase
         $this->assertTrue(User::where('email', 'exowork@gmail.com')->firstOrFail()->hasPermission('permissions.manage'));
     }
 
+    public function test_admin_sign_in_returns_to_the_emailed_profile(): void
+    {
+        $this->seed(LocalSuperAdminSeeder::class);
+        $this->get('/admin/employers?review=42')->assertRedirect('/admin225');
+
+        $this->postJson('/auth/login', [
+            'role' => 'admin',
+            'identifier' => 'exowork@gmail.com',
+            'password' => '123456789',
+        ])->assertOk()->assertJsonPath('destination', '/admin/employers?review=42');
+    }
+
     public function test_user_login_requires_assigned_role(): void
     {
         $this->seed(PlatformRolesSeeder::class);

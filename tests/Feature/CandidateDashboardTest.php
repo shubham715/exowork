@@ -60,5 +60,29 @@ class CandidateDashboardTest extends TestCase
         $candidate->update(['profile_status'=>'inactive']);
         $this->getJson('/candidate-api/dashboard')->assertForbidden();
     }
+
+    public function test_career_milestones_follow_training_joining_and_latest_retention(): void
+    {
+        $this->travelTo(\Carbon\Carbon::parse('2026-11-05 10:00:00', 'UTC'));
+        $candidate = $this->candidate();
+        $this->actingAs($candidate, 'candidate')->getJson('/candidate-api/dashboard')->assertOk()
+            ->assertJsonPath('journey.steps', [true, true, false, false, false, false])
+            ->assertJsonPath('journey.training_state', 'not_required')->assertJsonPath('journey.total_steps', 5);
+        $center = DB::table('training_centers')->insertGetId(['code' => 'JOURNEY', 'name' => 'Training center', 'status' => 'verified', 'state' => 'Maharashtra', 'district' => 'Pune']);
+        $batch = DB::table('training_batches')->insertGetId(['training_center_id' => $center, 'code' => 'JOURNEY-01', 'job_role' => 'Operator', 'status' => 'active', 'starts_on' => '2026-10-01', 'ends_on' => '2026-11-15']);
+        $candidate->update(['training_center_id' => $center, 'training_batch_id' => $batch, 'training_status' => 'Ongoing']);
+        $this->getJson('/candidate-api/dashboard')->assertJsonPath('journey.training_state', 'finishing_soon')->assertJsonPath('journey.total_steps', 6)->assertJsonPath('journey.batch_code', 'JOURNEY-01');
+        $application = DB::table('applications')->insertGetId(['candidate_id' => $candidate->id, 'job_post_id' => $this->job()]);
+        $placement = DB::table('placement_outcomes')->insertGetId(['application_id' => $application, 'status' => 'selected']);
+        $this->getJson('/candidate-api/dashboard')->assertJsonPath('journey.steps.3', true)->assertJsonPath('journey.hired', true)->assertJsonPath('journey.working', false);
+        DB::table('placement_outcomes')->where('id', $placement)->update(['status' => 'joined', 'joined_on' => '2026-11-01']);
+        $candidate->update(['training_status' => 'Completed']);
+        $this->getJson('/candidate-api/dashboard')->assertJsonPath('journey.steps', [true, true, true, true, true, true])->assertJsonPath('journey.completed_steps', 6);
+        DB::table('retention_responses')->insert(['placement_outcome_id' => $placement, 'day' => 3, 'status' => 'still_employed']);
+        DB::table('retention_responses')->insert(['placement_outcome_id' => $placement, 'day' => 7, 'status' => 'left']);
+        $this->getJson('/candidate-api/dashboard')->assertJsonPath('journey.hired', true)->assertJsonPath('journey.working', false)->assertJsonPath('journey.completed_steps', 5);
+        $candidate->update(['skills' => '']);
+        $this->getJson('/candidate-api/dashboard')->assertJsonPath('journey.steps.1', false)->assertJsonPath('journey.completed_steps', 4);
+    }
 }
 

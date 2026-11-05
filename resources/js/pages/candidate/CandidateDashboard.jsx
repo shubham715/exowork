@@ -1,3 +1,4 @@
+import CandidateMilestones from './CandidateMilestones.jsx';
 import React,{useEffect,useState} from 'react';
 import axios from 'axios';
 import {Link,useNavigate} from 'react-router-dom';
@@ -24,6 +25,7 @@ export default function CandidateDashboard(){
  return <div className="candidate-dashboard" aria-busy={loading}>
   <div className="dashboard-toolbar"><span>Updated {new Date(data.updated_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kolkata'})} IST</span><button className="btn ghost" disabled={loading} onClick={()=>setRefresh(x=>x+1)}><RefreshCw size={15}/>{loading?'Refreshing…':'Refresh'}</button></div>
   <section className="candidate-welcome"><div className="candidate-avatar">{(c.first_name?.[0]||'')+(c.last_name?.[0]||'')}</div><div><span>WELCOME BACK, {c.first_name?.toLocaleUpperCase()}</span><h1>Your next step starts here.</h1><p>{c.candidate_code}{c.candidate_code?' · ':''}{data.training_center?'Training center: '+data.training_center:'Your candidate workspace'}</p></div><div className="profile-completion"><b>{p.completion}%</b><span>Core profile complete</span><i><em style={{width:p.completion+'%'}}/></i></div></section>
+  <CandidateMilestones journey={data.journey} profile={p} summary={s}/>
   <div className="dashboard-stats"><Stat icon={BriefcaseBusiness} label="Applications" value={s.applications} meta="Submitted job interests"/><Stat icon={CalendarDays} label="Upcoming interviews" value={s.upcoming_interviews} meta="Scheduled or confirmed"/><Stat icon={UserCheck} label="Awaiting joining" value={s.joining_pending} meta="Selected / joining pending"/><Stat icon={CheckCircle2} label="Joined" value={s.joined} meta="Recorded placements"/></div>
   {interview&&<section className="candidate-alert"><CalendarDays/><div><span>NEXT INTERVIEW · {interview.status.toUpperCase()}</span><h2>{interview.title}</h2><p>{interview.employer_name} · {date(interview.scheduled_at)} · {new Date(interview.scheduled_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kolkata'})} IST</p><p>{interview.mode}{interview.location?' · '+interview.location:''} · Attendance: {label(interview.attendance_response)}</p></div>{action('interviews','Review interview')}</section>}
   <div className="candidate-grid"><main>

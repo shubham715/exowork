@@ -5,7 +5,7 @@ import BrandLogo from "../../../components/BrandLogo.jsx";
 
 const NAVIGATION = [
   ["pipeline", "Candidate journey"],
-  ["journey", "How it works"],
+  ["/how-it-works", "How it works"],
   ["audiences", "Who it's for"],
   ["automation", "Automation"],
   ["trust", "Trust & data"],
@@ -26,7 +26,7 @@ export default function PublicHeader() {
   return (
     <header className="ex-nav">
       <div className="ex-wrap ex-nav-inner">
-        <a className="ex-brand" href="#top" aria-label="EXOWORK home">
+        <a className="ex-brand" href="/#top" aria-label="EXOWORK home">
           <BrandLogo />
         </a>
         <button
@@ -44,10 +44,10 @@ export default function PublicHeader() {
             </button>
           </div>
           <p className="ex-drawer-label">Explore EXOWORK</p>
-          {NAVIGATION.map(([id, label]) => (
-            <a href={`#${id}`} onClick={() => setMenuOpen(false)} key={id}>
-              {label}
-            </a>
+          {NAVIGATION.map(([id, label]) => id.startsWith("/") ? (
+            <Link to={id} key={id} aria-current={location.pathname === id ? "page" : undefined} onClick={() => setMenuOpen(false)}>{label}</Link>
+          ) : (
+            <a href={location.pathname === "/" ? `#${id}` : `/#${id}`} onClick={() => setMenuOpen(false)} key={id}>{label}</a>
           ))}
           <div className="ex-drawer-actions">
             <Link className="ex-btn ghost" to="/login">Sign in</Link>

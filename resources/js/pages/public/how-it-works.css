@@ -1,0 +1,70 @@
+.ex-guide-hero {
+  background: radial-gradient(ellipse at 80% 10%, #d8f3ed 0%, transparent 52%), radial-gradient(ellipse at 13% 70%, #e4edff 0%, transparent 55%), #f7fbfa;
+  border-bottom: 1px solid var(--ex-line);
+}
+.ex-guide .ex-guide-hero { padding: clamp(45px, 7vw, 94px) 0 35px; }
+.ex-guide-intro { max-width: 750px; }
+.ex-guide-kicker { display: flex; gap: 8px; align-items: center; color: #265e60; font-size: 12px; font-weight: 800; letter-spacing: .12em; }
+.ex-guide-intro h1 { margin: 14px 0 16px; font-size: clamp(43px, 8vw, 96px); line-height: .98; letter-spacing: -.06em; }
+.ex-guide-intro h1 em { color: #136c61; font-style: normal; }
+.ex-guide-intro p { max-width: 53ch; font-size: clamp(15px, 2vw, 19px); }
+.ex-guide-jump { display: inline-flex; align-items: center; gap: 8px; color: #174d87; font-weight: 700; margin-top: 14px; }
+.ex-guide-roles { margin-top: 44px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.ex-guide-roles button, .ex-guide-steps button { text-align: left; display: flex; align-items: center; gap: 12px; background: white; color: var(--ex-ink); border: 1px solid #d5e2e5; border-radius: 14px; cursor: pointer; }
+.ex-guide-roles button { min-width: 0; min-height: 84px; padding: 12px 15px; }
+.ex-guide-roles button:hover, .ex-guide-steps button:hover { border-color: #58988f; }
+.ex-guide-roles button[aria-pressed="true"] { border-color: #214e87; background: #12355d; color: white; box-shadow: 0 10px 24px #143c6a22; }
+.ex-guide-role-icon, .ex-guide-steps button > span:first-child { display: grid; place-items: center; width: 42px; height: 42px; flex: none; background: #e9f3f5; color: #176477; border-radius: 11px; }
+.ex-guide-roles strong, .ex-guide-roles small, .ex-guide-steps strong, .ex-guide-steps small { display: block; }
+.ex-guide-roles strong { font-size: 15px; }
+.ex-guide-roles small { color: inherit; opacity: .85; margin-top: 3px; line-height: 1.35; }
+.ex-guide-role-arrow { margin-left: auto; flex: none; }
+.ex-guide .ex-guide-main { padding: 58px 0 66px; }
+.ex-guide-section-head, .ex-guide-close-card { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+.ex-guide-section-head h2, .ex-guide-faq h2, .ex-guide-close h2 { font-size: clamp(27px, 4vw, 44px); line-height: 1.1; margin: 8px 0; }
+.ex-guide-section-head p { max-width: 65ch; }
+.ex-guide-board { display: grid; grid-template-columns: minmax(205px, 1fr) minmax(0, 3.2fr); margin-top: 26px; border: 1px solid var(--ex-line); border-radius: 24px; overflow: hidden; box-shadow: 0 15px 50px #1026470d; background: white; }
+.ex-guide-steps { list-style: none; margin: 0; padding: 18px; background: #eff6f7; display: grid; align-content: start; gap: 8px; }
+.ex-guide-steps button { width: 100%; min-height: 62px; padding: 8px; background: transparent; border-color: transparent; }
+.ex-guide-steps button[aria-current="step"] { background: white; border-color: #91b9bb; }
+.ex-guide-steps small, .ex-guide-stage-copy small, .ex-guide-preview header { font-size: 10px; letter-spacing: .12em; font-weight: 800; color: #356267; }
+.ex-guide-steps strong { font-size: 13px; margin-top: 3px; }
+.ex-guide-detail { padding: clamp(15px, 3vw, 32px); display: grid; gap: 23px; }
+.ex-guide-progress { display: flex; gap: 6px; }
+.ex-guide-progress span { flex: 1; height: 5px; border-radius: 5px; background: #e4edf0; }
+.ex-guide-progress .filled { background: #258477; }
+.ex-guide-stage { display: grid; align-items: center; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; min-height: 218px; animation: ex-guide-enter .23s ease both; }
+@keyframes ex-guide-enter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+.ex-guide-stage h3 { margin: 6px 0 10px; font-size: clamp(23px, 3vw, 34px); line-height: 1.1; }
+.ex-guide-stage p { margin: 0; }
+.ex-guide-preview { padding: 17px; min-width: 0; border: 1px solid #d8e6e6; border-radius: 15px; background: linear-gradient(145deg, #f9fdfc, #ecf6f8); }
+.ex-guide-preview header { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.ex-guide-preview h4 { margin: 12px 0 5px; font-size: 16px; }
+.ex-guide-status { display: inline-block; border-radius: 99px; background: #d7efe8; color: #245b52; padding: 4px 9px; font-size: 11px; font-weight: 700; }
+.ex-guide-preview ul { list-style: none; padding: 0; margin: 13px 0 0; display: grid; gap: 7px; }
+.ex-guide-preview li { display: flex; gap: 7px; align-items: flex-start; font-size: 12px; }
+.ex-guide-preview li svg { color: #147a67; flex: none; }
+.ex-guide-controls { border-top: 1px solid var(--ex-line); padding-top: 16px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.ex-guide-controls button:disabled, .ex-enquiry button:disabled { opacity: .55; cursor: default; }
+.ex-guide button:focus-visible, .ex-guide a:focus-visible, .ex-guide summary:focus-visible { outline: 2px solid #1657c5; outline-offset: 3px; }
+.ex-guide .ex-guide-faq { padding: 48px 0; background: white; border-block: 1px solid var(--ex-line); }
+.ex-guide-faq-grid { display: grid; grid-template-columns: 1fr 1.55fr; gap: 28px; align-items: start; }
+.ex-guide-faq a { color: #1657a5; text-decoration: underline; }
+.ex-guide-faq details { border-bottom: 1px solid var(--ex-line); }
+.ex-guide-faq summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 0; cursor: pointer; font-weight: 700; list-style: none; }
+.ex-guide-faq summary::-webkit-details-marker { display: none; }
+.ex-guide-faq details[open] svg { transform: rotate(180deg); }
+.ex-guide-faq details p { margin-bottom: 17px; }
+.ex-guide .ex-guide-close { padding: 45px 0; }
+.ex-guide-close-card { color: white; background: linear-gradient(115deg, #123058, #136b67); padding: clamp(23px, 4vw, 45px); border-radius: 22px; }
+.ex-guide-close-card h2, .ex-guide-close-card p { color: white; }
+@media (max-width: 900px) { .ex-guide-stage { grid-template-columns: 1fr; } }
+@media (max-width: 650px) {
+  .ex-guide-roles, .ex-guide-board, .ex-guide-faq-grid { grid-template-columns: 1fr; }
+  .ex-guide-roles { margin-top: 26px; gap: 7px; }
+  .ex-guide-roles button { min-height: 62px; }
+  .ex-guide-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 10px; }
+  .ex-guide-steps button { gap: 6px; }
+  .ex-guide-steps button > span:first-child { width: 28px; height: 28px; }
+}
+@media (prefers-reduced-motion: reduce) { .ex-guide-stage { animation: none; } }

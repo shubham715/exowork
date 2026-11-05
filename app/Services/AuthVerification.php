@@ -2,7 +2,7 @@
 namespace App\Services;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\{Cache, DB};
 use Illuminate\Validation\ValidationException;
 
 class AuthVerification
@@ -12,8 +12,20 @@ class AuthVerification
         return array_replace(['login_enabled' => true, 'registration_enabled' => true, 'template_name' => '', 'template_language' => 'en_US', 'gupshup_template_id' => ''], app(CommunicationSettings::class)->get('authentication'));
     }
 
+    public const REGISTERED_PHONE = 'This mobile number is already registered. Log in or use a different number.';
+
+    public function phoneIsRegistered(string $phone): bool
+    {
+        return DB::table('candidates')->where('whatsapp', $phone)->exists()
+            || DB::table('users')->where('phone', $phone)->exists();
+    }
+
     public function requireRegistration(Request $request, string $role, string $phone): void
     {
+        if ($phone !== '' && $this->phoneIsRegistered($phone)) {
+            throw ValidationException::withMessages([$role === 'candidate' ? 'whatsapp' : 'phone' => self::REGISTERED_PHONE]);
+        }
+
         if (!$this->settings()['registration_enabled']) return;
         $proof = Cache::get('registration-proof:'.hash('sha256', (string)$request->input('verification_token')));
         if (!$proof || $proof['role'] !== $role || $proof['phone'] !== $phone) {

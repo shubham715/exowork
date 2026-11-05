@@ -10,6 +10,10 @@ use App\Http\Controllers\AdminTrainingCenterController;
 use App\Http\Controllers\TrainingCenterRegistrationController;
 use App\Http\Controllers\CenterDashboardController;
 
+Route::get('/auth/impersonation', [\App\Http\Controllers\ImpersonationController::class, 'status']);
+Route::post('/auth/impersonation/start', [\App\Http\Controllers\ImpersonationController::class, 'start'])->middleware(['auth:web', 'throttle:10,1'])->block();
+Route::post('/auth/impersonation/stop', [\App\Http\Controllers\ImpersonationController::class, 'stop'])->middleware('throttle:20,1')->block();
+
 Route::get('/auth/csrf-token', function () {
     return response()->json(['csrf_token' => csrf_token()])
         ->header('Cache-Control', 'no-store, private');
@@ -105,6 +109,8 @@ Route::middleware('auth:web')->group(function () {
     Route::get('/center-api/dashboard', [CenterDashboardController::class, 'show']);
     Route::get('/center-api/onboarding', [TrainingCenterRegistrationController::class, 'show']);
     Route::put('/center-api/onboarding', [TrainingCenterRegistrationController::class, 'update']);
+    Route::get('/admin-api/batch-stats', [\App\Http\Controllers\CenterBatchStatsController::class, 'adminIndex']);
+    Route::get('/center-api/batch-stats', [\App\Http\Controllers\CenterBatchStatsController::class, 'index']);
     Route::get('/center-api/batches', [\App\Http\Controllers\CenterBatchController::class, 'batches']);
     Route::post('/center-api/batches', [\App\Http\Controllers\CenterBatchController::class, 'saveBatch']);
     Route::put('/center-api/batches/{id}', [\App\Http\Controllers\CenterBatchController::class, 'saveBatch']);
@@ -151,8 +157,22 @@ Route::middleware('auth:candidate')->group(function () {
     Route::post('/candidate-api/employment/respond', [\App\Http\Controllers\EmploymentWorkflowController::class, 'respond'])->middleware('throttle:30,1');
 });
 
+Route::post('/public-api/enquiries', [\App\Http\Controllers\WebsiteEnquiryController::class, 'store'])->middleware('throttle:5,1');
+Route::get('/admin-api/enquiries', [\App\Http\Controllers\WebsiteEnquiryController::class, 'index'])->middleware('auth:web');
+
 Route::get('/public-api/hero-slides', [\App\Http\Controllers\HeroSlideController::class, 'index']);
 Route::get('/public-api/hero-slides/{id}/image', [\App\Http\Controllers\HeroSlideController::class, 'image'])->whereNumber('id')->name('hero-slide.image');
+
+Route::get('/admin/{path?}', function (\Illuminate\Http\Request $request) {
+    if (!\Illuminate\Support\Facades\Auth::guard('web')->check()) {
+        $query = $request->getQueryString();
+        $request->session()->put('admin.destination', '/'.$request->path().($query ? '?'.$query : ''));
+
+        return redirect('/admin225');
+    }
+
+    return view('app');
+})->where('path', '.*');
 
 Route::view('/{path?}', 'app')
     ->where('path', '^(?!api(?:/|$)|webhooks(?:/|$)).*');

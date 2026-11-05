@@ -1,3 +1,4 @@
+import {ImpersonationProvider} from './components/Impersonation.jsx';
 import "./bootstrap.js";
 import React from "react";
 import { createRoot } from "react-dom/client";
@@ -26,7 +27,7 @@ createRoot(document.getElementById("root")).render(
       v7_startTransition: true,
     }}
   >
-    <App />
+    <ImpersonationProvider><App /></ImpersonationProvider>
   </BrowserRouter>,
 );
 import "./pages/center/center-workspace-pages.css";

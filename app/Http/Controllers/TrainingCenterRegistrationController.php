@@ -39,6 +39,7 @@ class TrainingCenterRegistrationController extends Controller
             $roleId = DB::table('roles')->where('key', 'training_partner')->value('id');
             DB::table('user_roles')->insert(['user_id' => $userId, 'role_id' => $roleId]);
             DB::table('organization_memberships')->insert(['user_id' => $userId, 'training_partner_id' => null, 'training_center_id' => $centerId, 'membership_role' => 'owner', 'status' => 'active', 'created_at' => now(), 'updated_at' => now()]);
+            app(\App\Services\AdminEmail::class)->send('New training center registered', $data['center_name'], '/admin/centers?review='.$centerId, ['New user account' => $data['email']], review: true);
             return $userId;
         });
         Auth::guard('candidate')->logout();
@@ -103,6 +104,9 @@ class TrainingCenterRegistrationController extends Controller
                 $data = [...$data, 'status' => 'pending', 'verified_at' => null, 'verified_by_user_id' => null, 'review_remarks' => null];
             }
             DB::table('training_centers')->where('id', $center->id)->update([...$data, ...$partnerLocation, 'updated_at' => now()]);
+            if (($data['status'] ?? null) === 'pending' || ($center->onboarding_step < 3 && $data['onboarding_step'] === 3)) {
+                app(\App\Services\AdminEmail::class)->send('Training center profile ready for review', $center->name, '/admin/centers?review='.$center->id, review: true);
+            }
         });
         return response()->json(['step' => max($center->onboarding_step, $step), 'saved' => true]);
     }

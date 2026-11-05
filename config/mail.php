@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'admin_notification_email' => env('ADMIN_NOTI_EMAIL'),
+
 
     /*
     |--------------------------------------------------------------------------

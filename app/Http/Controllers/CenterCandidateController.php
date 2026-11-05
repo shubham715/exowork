@@ -172,6 +172,7 @@ class CenterCandidateController extends Controller
                 else {
                     $candidate = Candidate::create($data + ['registration_source' => 'center_csv', 'created_by_user_id' => $request->user()->id]);
                     $candidate->forceFill(['candidate_code' => 'EXO-CAN-'.str_pad((string) $candidate->id, 6, '0', STR_PAD_LEFT)])->save();
+                    app(\App\Services\AdminEmail::class)->send('New candidate registered', trim($candidate->first_name.' '.$candidate->last_name), '/admin/candidates/'.$candidate->candidate_code, ['Candidate ID' => $candidate->candidate_code]);
                 }
                 DB::table('candidate_languages')->where('candidate_id', $candidate->id)->delete();
                 CandidateMasterData::saveLanguages($candidate->id, $languages);
@@ -341,6 +342,7 @@ class CenterCandidateController extends Controller
                     'registration_ip' => $request->ip(),
                 ]);
                 $candidate->forceFill(['candidate_code' => 'EXO-CAN-'.str_pad((string) $candidate->id, 6, '0', STR_PAD_LEFT)])->save();
+                app(\App\Services\AdminEmail::class)->send('New candidate registered', trim($candidate->first_name.' '.$candidate->last_name), '/admin/candidates/'.$candidate->candidate_code, ['Candidate ID' => $candidate->candidate_code]);
                 CandidateMasterData::saveLanguages($candidate->id, $languageIds);
                 foreach (['call', 'sms', 'whatsapp', 'email', 'terms', 'privacy'] as $purpose) {
                     $key = $purpose.(in_array($purpose, ['terms', 'privacy']) ? '_accepted' : '_consent');

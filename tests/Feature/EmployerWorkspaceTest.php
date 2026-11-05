@@ -55,6 +55,12 @@ class EmployerWorkspaceTest extends TestCase {
   $this->postJson('/auth/logout')->assertOk();$this->postJson('/auth/login',['role'=>'employer','identifier'=>'owner@example.com','password'=>'SecurePass123'])->assertOk()->assertJsonPath('destination','/employer/dashboard');
   $this->postJson('/auth/logout');$this->postJson('/auth/login',['role'=>'employer','identifier'=>'9876543210','password'=>'SecurePass123'])->assertOk();
  }
+ public function test_registered_employer_is_visible_to_admin_and_has_a_review_notification(): void {
+  $this->register(); $e=DB::table('employers')->first();
+  $admin=User::factory()->create(); DB::table('user_roles')->insert(['user_id'=>$admin->id,'role_id'=>DB::table('roles')->where('key','admin')->value('id')]);
+  $this->actingAs($admin)->getJson('/admin-api/employers')->assertOk()->assertJsonPath('employers.0.id',$e->id)->assertJsonPath('counts.pending',1);
+  $this->getJson('/admin-api/review-notifications')->assertOk()->assertJsonPath('counts.employers',1)->assertJsonPath('unread_count',1)->assertJsonPath('items.0.kind','employers');
+ }
  public function test_registration_requires_consent_and_rejects_honeypot_submissions(): void {
   $this->seed(PlatformRolesSeeder::class);Storage::fake('local');$p=$this->payload();unset($p['document']);$p['terms_accepted']=false;$this->postJson('/auth/register/employer',$p)->assertUnprocessable()->assertJsonValidationErrors(['terms_accepted']);
   $spam=$this->payload();$spam['website_check']='spam';$this->post('/auth/register/employer',$spam,['Accept'=>'application/json'])->assertUnprocessable()->assertJsonValidationErrors('website_check');$this->assertDatabaseCount('employers',0);

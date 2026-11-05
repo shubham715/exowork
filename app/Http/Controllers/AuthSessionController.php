@@ -48,6 +48,10 @@ class AuthSessionController extends Controller
             $user->forceFill(['last_login_at' => now()])->save();
             $destination = $data['role'] === 'center' ? (DB::table('organization_memberships')->join('training_centers', 'training_centers.id', '=', 'organization_memberships.training_center_id')->where('organization_memberships.user_id', $user->id)->where('organization_memberships.status', 'active')->where('training_centers.onboarding_step', '<', 3)->exists() ? '/center/onboarding' : '/center/dashboard') : ($data['role'] === 'employer' ? '/employer/dashboard' : '/admin/dashboard');
         }
+        if ($data['role'] === 'admin') {
+            $request->session()->put('admin.authenticated_at', now()->timestamp);
+            $destination = $request->session()->pull('admin.destination', $destination);
+        }
         $request->session()->regenerate();
 
         return response()->json(['destination' => $destination, 'csrf_token' => csrf_token()]);

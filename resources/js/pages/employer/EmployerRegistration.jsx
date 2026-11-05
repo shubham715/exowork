@@ -1,3 +1,4 @@
+import {useValidationFocus, revealNativeError} from '../../features/auth/useValidationFocus.js';
 import SelectOther from '../../components/SelectOther.jsx';
 import {VerifiedNumber} from '../../features/auth/components/PhoneVerification.jsx';
 import React, { useEffect, useState, useRef, useId } from "react";
@@ -485,6 +486,7 @@ export default function EmployerRegistration({verifiedPhone="",verificationToken
         [notice, setNotice] = useState(null),
         [showPassword, setShowPassword] = useState(false);
     const {master, districts, masterError} = useEmployerMasters(data.state);
+    const validationRef = useValidationFocus(errors, message);
     const set = (key, value) => {
         setData((d) => ({ ...d, [key]: value, ...(key === "state" ? {district: ""} : {}) }));
         setErrors((e) => ({ ...e, [key]: undefined }));
@@ -659,6 +661,8 @@ export default function EmployerRegistration({verifiedPhone="",verificationToken
                         </p>
                     </div>
                     <form
+                        ref={validationRef}
+                        onInvalid={revealNativeError}
                         onSubmit={submit}
                         className="employer-registration-form"
                     >
@@ -726,7 +730,7 @@ export default function EmployerRegistration({verifiedPhone="",verificationToken
                                 )}
                             </div>
                         </details>
-                        <label className="employer-consent">
+                        <label className="employer-consent" data-invalid={!!(errors.terms_accepted || errors.privacy_accepted)}>
                             <input
                                 type="checkbox"
                                 checked={
@@ -759,7 +763,7 @@ export default function EmployerRegistration({verifiedPhone="",verificationToken
                             </span>
                         </label>
                         {(errors.terms_accepted || errors.privacy_accepted) && (
-                            <p className="field-error">
+                            <p className="field-error" role="alert">
                                 Please accept the terms and privacy policy.
                             </p>
                         )}

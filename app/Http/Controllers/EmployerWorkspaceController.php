@@ -51,6 +51,7 @@ class EmployerWorkspaceController extends Controller
                 DB::table('user_roles')->insert(['user_id'=>$userId,'role_id'=>$role]);
                 DB::table('organization_memberships')->insert(['user_id'=>$userId,'employer_id'=>$employerId,'membership_role'=>'owner','status'=>'active','created_at'=>now(),'updated_at'=>now()]);
                 $this->audit($request,'employer.registered','employer',$employerId,['status'=>'pending'],$userId);
+                app(\App\Services\AdminEmail::class)->send('New employer registered', $data['name'], '/admin/employers?review='.$employerId, ['New user account' => $data['email']], review: true);
                 return $userId;
             });
         } catch (\Throwable $e) { if ($path) Storage::disk('local')->delete($path); throw $e; }
@@ -103,6 +104,9 @@ class EmployerWorkspaceController extends Controller
                 DB::table('employers')->where('id',$e->id)->update([...$data,'updated_at'=>now()]);
                 if(isset($data['status'])) DB::table('job_posts')->where('employer_id',$e->id)->whereIn('status',['active','published'])->update(['status'=>'draft','updated_at'=>now()]);
                 $this->audit($request,'employer.profile_updated','employer',$e->id,['status'=>$data['status']??$e->status]);
+                if (($data['status'] ?? null) === 'pending') {
+                    app(\App\Services\AdminEmail::class)->send('Employer profile updated for review', $data['name'] ?? $e->name, '/admin/employers?review='.$e->id, review: true);
+                }
             });
         } catch (\Throwable $error) {
             if(isset($data['document_path'])) Storage::disk('local')->delete($data['document_path']);
@@ -143,6 +147,9 @@ class EmployerWorkspaceController extends Controller
             if($id) DB::table('job_posts')->where('id',$id)->update($row);
             else $id=DB::table('job_posts')->insertGetId([...$row,'employer_id'=>$e->id,'created_by_user_id'=>$request->user()->id,'created_at'=>now()]);
             $this->audit($request,'employer.job_saved','job_post',$id,['status'=>$data['status']]);
+            if ($data['status'] === 'active' && !$old?->published_at) {
+                app(\App\Services\AdminEmail::class)->send('New job published', $data['title'], '/admin/employers?review='.$e->id, ['Employer' => $e->name, 'Job ID' => $id]);
+            }
         });
         return $this->workspace($request);
     }

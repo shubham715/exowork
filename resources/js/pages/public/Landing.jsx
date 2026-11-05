@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   ArrowUpRight,
   CalendarCheck,
@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import EnquiryForm from "./EnquiryForm.jsx";
 import HeroSlider from "../../components/HeroSlider.jsx";
 import PublicHeader from "../../features/public-site/components/PublicHeader.jsx";
 import PublicFooter from "../../features/public-site/components/PublicFooter.jsx";
@@ -326,7 +327,6 @@ function CareerProgression() {
   );
 }
 export default function Landing() {
-  const [sent, setSent] = useState(false);
   useEffect(() => {
     const io = new IntersectionObserver(
       (es) =>
@@ -442,7 +442,8 @@ export default function Landing() {
                     "View your jobs, candidates and hiring history in one place",
                     "See which roles are open, filled or closed",
                   ],
-                  "Start hiring",
+                  "Employer guide",
+                  "employer",
                 ],
                 [
                   "light",
@@ -453,7 +454,8 @@ export default function Landing() {
                     "Follow each candidate from training to joining",
                     "See placement progress for every center and batch",
                   ],
-                  "Register a center",
+                  "Training partner guide",
+                  "training-center",
                 ],
                 [
                   "soft",
@@ -464,9 +466,10 @@ export default function Landing() {
                     "Get clear WhatsApp updates at every step",
                     "Stay in control of your information and messages",
                   ],
-                  "Find a role",
+                  "Candidate guide",
+                  "candidate",
                 ],
-              ].map(([c, tag, t, d, list, go]) => (
+              ].map(([c, tag, t, d, list, go, role]) => (
                 <article className={c} key={tag}>
                   <label>{tag}</label>
                   <h3>{t}</h3>
@@ -476,7 +479,7 @@ export default function Landing() {
                       <li key={x}>{x}</li>
                     ))}
                   </ul>
-                  <a href="#contact">
+                  <a href={`/how-it-works?role=${role}`}>
                     {go}
                     <ArrowUpRight />
                   </a>
@@ -583,29 +586,12 @@ export default function Landing() {
                   <a className="ex-btn grad" href="mailto:contact@exowork.in">
                     Email us
                   </a>
-                  <a className="ex-btn light" href="#contact">
+                  <a className="ex-btn light" href="#enquiry-name">
                     Request a walkthrough
                   </a>
                 </div>
               </div>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  setSent(true);
-                }}
-              >
-                <label>Get in touch</label>
-                <input placeholder="Full name" required />
-                <input placeholder="Organisation (employer / center)" />
-                <input type="tel" placeholder="Mobile number" required />
-                <textarea placeholder="What are you looking to do on EXOWORK?" />
-                <button className="ex-btn grad">Send enquiry</button>
-                <p>
-                  {sent
-                    ? "Thanks — our team will reach out shortly."
-                    : "We reply within one working day."}
-                </p>
-              </form>
+              <EnquiryForm />
             </div>
           </div>
         </section>

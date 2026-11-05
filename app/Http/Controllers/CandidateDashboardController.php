@@ -54,9 +54,36 @@ class CandidateDashboardController extends Controller
         if ($next) $next->scheduled_at = Carbon::parse($next->scheduled_at, 'UTC')->toIso8601String();
         $center = $candidate->training_center_id ? DB::table('training_centers')->where('id', $candidate->training_center_id)->whereNull('deleted_at')->value('name') : null;
 
+        $batch = $candidate->training_batch_id ? DB::table('training_batches')->where('id', $candidate->training_batch_id)->where('training_center_id', $candidate->training_center_id)->first() : null;
+        $today = now('Asia/Kolkata')->toDateString();
+        $end = $batch?->ends_on ?? $candidate->batch_end_date?->format('Y-m-d');
+        $training = match (true) {
+            $batch?->status === 'cancelled' => 'cancelled',
+            $batch?->starts_on && $batch->starts_on > $today => 'upcoming',
+            $candidate->training_status === 'Completed' || $batch?->status === 'completed' => 'completed',
+            !$batch && $candidate->training_status === 'Not enrolled' => 'not_required',
+            $end && $end < $today => 'awaiting_confirmation',
+            $end && $end <= now('Asia/Kolkata')->addDays(15)->toDateString() => 'finishing_soon',
+            default => 'in_progress',
+        };
+        $outcomes = (clone $placements)->get(['p.id', 'p.status', 'p.joined_on']);
+        $retention = DB::table('retention_responses')->whereIn('placement_outcome_id', $outcomes->pluck('id'))->orderByDesc('day')->orderByDesc('id')->get()->groupBy('placement_outcome_id');
+        $hired = $outcomes->contains(fn ($p) => $p->joined_on || in_array($p->status, ['selected', 'offered', 'joining_pending', 'joined', 'still_employed']));
+        $working = $outcomes->contains(function ($p) use ($retention, $today) {
+            if (!$p->joined_on || $p->joined_on > $today) return false;
+            $latest = $retention->get($p->id, collect())->first();
+            return $latest ? in_array($latest->status, ['still_employed', 'needs_help']) : in_array($p->status, ['joined', 'still_employed']);
+        });
+        $completion = (int) round(collect($checks)->where('complete', true)->count() / count($checks) * 100);
+        $applicationCount = (clone $applications)->count();
+        $milestones = [true, $completion === 100, $training === 'completed', $applicationCount > 0, $hired, $working];
+
         return response()->json([
             'candidate' => $candidate->only(['first_name', 'last_name', 'candidate_code', 'availability', 'job_interest_status', 'batch_code', 'batch_end_date', 'training_status']),
             'training_center' => $center,
+            'journey' => ['steps' => $milestones, 'completed_steps' => count(array_filter($milestones)), 'total_steps' => $training === 'not_required' ? 5 : 6,
+                'training_state' => $training, 'batch_code' => $batch?->code ?? $candidate->batch_code, 'starts_on' => $batch?->starts_on, 'ends_on' => $end,
+                'working' => $working, 'hired' => $hired],
             'profile' => ['checks' => $checks, 'completion' => (int) round(collect($checks)->where('complete', true)->count() / count($checks) * 100),
                 'resume_available' => filled($candidate->resume_path) && Storage::exists($candidate->resume_path),
                 'communication_channels' => collect(['call', 'sms', 'whatsapp', 'email'])->filter(fn ($channel) => $candidate->{$channel.'_consent'})->values()],

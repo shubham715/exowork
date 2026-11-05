@@ -2,8 +2,8 @@ import React from "react";
 import BrandLogo from "../../../components/BrandLogo.jsx";
 
 const FOOTER_GROUPS = [
-  ["Platform", [["How it works", "journey"], ["Who it's for", "audiences"], ["Automation", "automation"], ["Trust & data", "trust"]]],
-  ["Roles", [["Employers", "contact"], ["Training partners", "contact"], ["Candidates", "contact"], ["Support teams", "contact"]]],
+  ["Platform", [["How it works", "/how-it-works"], ["Who it's for", "audiences"], ["Automation", "automation"], ["Trust & data", "trust"]]],
+  ["Roles", [["Employers", "/how-it-works?role=employer"], ["Training partners", "/how-it-works?role=training-center"], ["Candidates", "/how-it-works?role=candidate"], ["Support teams", "contact"]]],
   ["Company", [["Contact us", "contact"], ["contact@exowork.in", "mailto:contact@exowork.in"]]],
 ];
 
@@ -23,7 +23,7 @@ export default function PublicFooter() {
             <div className="ex-foot-col" key={heading}>
               <b>{heading}</b>
               {links.map(([label, target]) => (
-                <a href={target.startsWith("mailto:") ? target : `#${target}`} key={label}>
+                <a href={target.startsWith("mailto:") || target.startsWith("/") ? target : `/#${target}`} key={label}>
                   {label}
                 </a>
               ))}

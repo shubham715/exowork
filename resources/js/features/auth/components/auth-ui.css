@@ -76,3 +76,51 @@
 .login-page aside .public-brand{background:#fff;padding:8px 12px;width:132px;border-radius:12px}
 .login-page aside .public-brand .exowork-logo{width:108px;height:auto}
 .candidate-register.auth-registration .btn{min-height:54px!important;height:auto;line-height:1.5;padding:13px 18px;border-radius:10px}
+
+/* Keep icons in their own space and allow auth copy to wrap on narrow screens. */
+.login-page :is(.login-role-cards button, .selected-login-role, .auth-notice, .otp-security) > svg,
+.auth-registration .btn > svg,
+.login-page .btn > svg { flex-shrink: 0; }
+.login-page .login-role-cards button > span:nth-child(2),
+.login-page .auth-notice > span { min-width: 0; overflow-wrap: anywhere; }
+.login-page main .login-form .password input { min-width: 0; flex: 1; }
+.login-page main .login-form .password button { flex: 0 0 44px; }
+.login-page .auth-notice .text-link { display: inline; }
+.login-page .auth-notice .text-link svg { display: inline-block; vertical-align: middle; }
+
+@media (max-width: 480px) {
+  .login-page .login-role-icon { width: 42px; height: 42px; }
+  .login-page .otp-alternative { grid-template-columns: minmax(0, 1fr); }
+  .auth-registration .btn { min-width: 0; white-space: normal; }
+  .auth-registration .reg-top > a { min-width: 0; white-space: normal; }
+  .auth-registration .reg-top > a > svg { flex-shrink: 0; }
+}
+
+.auth-settings-status {
+  padding: clamp(16px, 4vw, 24px);
+  border: 1px solid var(--auth-border);
+  border-radius: 16px;
+  background: #f4faf6;
+}
+.auth-settings-status-copy {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+.auth-settings-status-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  color: #128454;
+  background: #e3f2e9;
+}
+.auth-settings-status h3 { margin: 0; font-size: 16px; color: var(--auth-ink); }
+.login-page .auth-settings-status p { margin: 4px 0 0; font-size: 14px; color: var(--auth-muted); }
+.auth-settings-status .btn { margin-top: 16px; }
+@media (prefers-reduced-motion: no-preference) {
+  .auth-settings-spinner { animation: auth-settings-spin 1s linear infinite; }
+}
+@keyframes auth-settings-spin { to { transform: rotate(360deg); } }

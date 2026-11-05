@@ -15,19 +15,41 @@ class EmploymentWorkflowController extends Controller
 
     public function candidate(Request $request)
     {
-        $c = $request->user('candidate');
+        $c = $request->user('candidate')?->fresh();
         abort_unless($c && $c->profile_status === 'active' && ! $c->deleted_at, 403);
         $applications = DB::table('applications as a')->join('job_posts as j', 'j.id', '=', 'a.job_post_id')->where('a.candidate_id', $c->id)->select('a.id', 'a.status', 'a.interview_availability', 'j.title', 'j.district', 'j.salary_min', 'j.salary_max')->get();
         $interviews = DB::table('interviews as i')->join('applications as a', 'a.id', '=', 'i.application_id')->join('job_posts as j', 'j.id', '=', 'a.job_post_id')->join('employers as e', 'e.id', '=', 'j.employer_id')->where('a.candidate_id', $c->id)->select('i.*', 'j.title', 'e.name as employer_name', 'e.contact_name', 'e.contact_phone')->get();
         $placements = DB::table('placement_outcomes as p')->join('applications as a', 'a.id', '=', 'p.application_id')->join('job_posts as j', 'j.id', '=', 'a.job_post_id')->join('employers as e', 'e.id', '=', 'j.employer_id')->where('a.candidate_id', $c->id)->select('p.*', 'j.title', 'e.name as employer_name')->get();
         $responses = DB::table('retention_responses')->whereIn('placement_outcome_id', $placements->pluck('id'))->get();
-        return response()->json(['candidate' => $c->only(['first_name', 'job_interest_status', 'whatsapp_consent']), 'applications' => $applications, 'interviews' => $interviews, 'placements' => $placements, 'responses' => $responses])->header('Cache-Control', 'no-store');
+        return response()->json(['candidate' => $c->only(['first_name', 'job_interest_status', 'whatsapp_consent', 'call_consent', 'sms_consent', 'email_consent']), 'applications' => $applications, 'interviews' => $interviews, 'placements' => $placements, 'responses' => $responses])->header('Cache-Control', 'no-store');
     }
 
     public function respond(Request $request)
     {
-        $c = $request->user('candidate');
+        $c = $request->user('candidate')?->fresh();
         abort_unless($c && $c->profile_status === 'active' && ! $c->deleted_at, 403);
+        if ($request->input('kind') === 'preferences') {
+            $values = $request->validate([
+                'call_consent' => 'required|boolean', 'sms_consent' => 'required|boolean',
+                'whatsapp_consent' => 'required|boolean', 'email_consent' => 'required|boolean',
+            ]);
+            DB::transaction(function () use ($c, $values, $request) {
+                $current = \App\Models\Candidate::whereKey($c->id)->lockForUpdate()->firstOrFail();
+                foreach ($values as $field => $granted) {
+                    if ((bool) $current->{$field} === (bool) $granted) continue;
+                    DB::table('candidate_consents')->insert([
+                        'candidate_id' => $c->id, 'purpose' => str_replace('_consent', '', $field),
+                        'granted' => $granted, 'notice_version' => '1.0', 'source' => 'candidate_preferences',
+                        'ip_address' => $request->ip(), 'recorded_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+                    ]);
+                    if ($field === 'whatsapp_consent' && $granted) {
+                        DB::table('whatsapp_opt_outs')->where('recipient', app(\App\Services\WhatsAppCloud::class)->recipient($current->whatsapp))->delete();
+                    }
+                }
+                DB::table('candidates')->where('id', $c->id)->update([...$values, 'updated_at' => now()]);
+            });
+            return response()->json(['message' => 'Communication preferences saved.']);
+        }
         $data = $request->validate(['kind' => ['required', Rule::in(['interest', 'availability', 'attendance', 'retention'])], 'id' => 'nullable|integer|min:1', 'status' => 'required|string|max:30', 'day' => ['nullable', Rule::in([3, 7, 15, 30, 90])], 'notes' => 'nullable|string|max:2000']);
         DB::transaction(function () use ($c, $data) {
             if ($data['kind'] === 'interest') {
