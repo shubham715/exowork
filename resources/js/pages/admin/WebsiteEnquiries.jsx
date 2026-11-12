@@ -1,50 +1,49 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { Link, useSearchParams } from "react-router-dom";
-import { PageHead } from "../../components/UI";
+import React, {useEffect, useState} from 'react';
+import axios from 'axios';
+import {useSearchParams} from 'react-router-dom';
+import {Inbox, UsersRound, Building2, GraduationCap, MessageSquare, RefreshCw, Search, RotateCcw, Phone, Eye, ChevronLeft, ChevronRight, ArrowUpRight, CalendarDays, X, AlertCircle} from 'lucide-react';
+import {PageHead, Modal} from '../../components/UI.jsx';
+import useAdminDirectoryRefresh from '../../hooks/useAdminDirectoryRefresh.js';
+import '../../data-tables.css';
+import './employer-admin.css';
+import './website-enquiries.css';
 
-const audiences = { candidate: "Candidate", employer: "Employer", "training-center": "Training center", other: "Other" };
+const audiences = {candidate:'Candidate',employer:'Employer','training-center':'Training partner',other:'Other'};
+const cards = [['All enquiries','all',Inbox,'all'],['Candidates','candidate',UsersRound,'all'],['Employers','employer',Building2,'verified'],['Training partners','training-center',GraduationCap,'pending'],['Other enquiries','other',MessageSquare,'inactive']];
+const timestamp = value => value ? new Date(value.includes('T')?value:value.replace(' ','T')+'Z') : null;
+const date = value => timestamp(value)?.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'}) || 'Not recorded';
+const time = value => timestamp(value)?.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kolkata'}) || '';
 
 export default function WebsiteEnquiries() {
-  const [search, setSearch] = useSearchParams();
-  const id = search.get("enquiry");
-  const page = search.get("page") || "1";
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    const controller = new AbortController();
-    setResult(null);
-    setError("");
-    axios.get("/admin-api/enquiries", { params: id ? { enquiry: id } : { page }, signal: controller.signal })
-      .then(({ data }) => setResult(data))
-      .catch(failure => {
-        if (failure.code === "ERR_CANCELED") return;
-        setError(failure.response?.status === 403 ? "Your account cannot view website enquiries." : "Could not load enquiries. Please refresh and try again.");
-      });
-    return () => controller.abort();
-  }, [id, page]);
+    const [params,setParams] = useSearchParams();
+    const id=params.get('enquiry')||'', audience=params.get('audience')||'', search=params.get('search')||'', page=Number(params.get('page')||1), size=Number(params.get('per_page')||25);
+    const [query,setQuery]=useState(search), [result,setResult]=useState(null), [loading,setLoading]=useState(true), [error,setError]=useState(''), [refresh,setRefresh]=useState(0);
+    const update = values => {const next=new URLSearchParams(params);Object.entries(values).forEach(([key,value])=>value?next.set(key,String(value)):next.delete(key));setParams(next);};
+    useAdminDirectoryRefresh(()=>setRefresh(n=>n+1));
+    useEffect(()=>setQuery(search),[search]);
+    useEffect(()=>{
+        const controller=new AbortController();setLoading(true);setError('');
+        axios.get('/admin-api/enquiries',{params:{enquiry:id||undefined,audience:audience||undefined,search:search||undefined,page,per_page:size},signal:controller.signal})
+            .then(({data})=>{if(!controller.signal.aborted)setResult(data);})
+            .catch(e=>{if(!controller.signal.aborted)setError(e.response?.status===403?'Your account does not have permission to view website enquiries.':'Enquiries could not be loaded. Please try again.');})
+            .finally(()=>{if(!controller.signal.aborted)setLoading(false);});
+        return()=>controller.abort();
+    },[id,audience,search,page,size,refresh]);
+    const rows=result?.data||[], counts=result?.counts||{}, total=result?.total||0, current=result?.current_page||1, pages=result?.last_page||1;
+    const selected=!loading&&id?rows.find(item=>String(item.id)===id):null;
+    const filtered=!!(audience||search||id), reset=()=>{setQuery('');setParams({});};
+    return <div className="employer-admin enquiries-admin">
+        <PageHead title="Website enquiries" sub="Review incoming requests and connect with candidates, employers and training partners."><button className="btn ghost" disabled={loading} onClick={()=>setRefresh(n=>n+1)}><RefreshCw size={16}/>{loading?'Refreshing…':'Refresh'}</button><a className="btn primary" href="/#contact" target="_blank" rel="noopener noreferrer">View enquiry form<ArrowUpRight size={16}/></a></PageHead>
+        <div className="ea-summary">{cards.map(([label,key,Icon,tone])=><button key={key} aria-pressed={key==='all'?!audience:audience===key} className={`ea-summary-${tone} ${(key==='all'?!audience:audience===key)?'active':''}`} onClick={()=>update({audience:key==='all'?'':key,page:'',enquiry:''})}><span className="ea-summary-icon"><Icon size={18}/></span><span className="ea-summary-label">{label}</span><strong>{!result?'—':Number(counts[key]||0).toLocaleString('en-IN')}</strong></button>)}</div>
+        <section className="ea-surface" aria-label="Website enquiry inbox" aria-busy={loading}>
 
-  return <>
-    <PageHead title={id ? `Website enquiry #${id}` : "Website enquiries"} sub="Callback requests from the EXOWORK homepage.">
-      {id && <Link className="btn ghost" to="/admin/enquiries">All enquiries</Link>}
-    </PageHead>
-    {error ? <p role="alert">{error}</p> : !result ? <p role="status">Loading enquiries…</p> : <>
-      {!result.data.length && <p>{id ? "This enquiry could not be found." : "No enquiries received yet."}</p>}
-      <div className="website-enquiries">
-        {result.data.map(item => <article key={item.id}>
-          <header><div><small>#{item.id} · {audiences[item.audience]}</small><h2>{item.name}</h2></div>
-            <a className="btn ghost" href={`tel:+91${item.phone}`}>{item.phone}</a>
-          </header>
-          {item.organization && <p>{item.organization}</p>}
-          {item.message && <p className="website-enquiry-message">{item.message}</p>}
-          <small>{item.created_at} · Server time</small>
-        </article>)}
-      </div>
-      {result.last_page > 1 && <div className="website-enquiry-pagination">
-        <button className="btn ghost" disabled={result.current_page <= 1} onClick={() => setSearch({ page: result.current_page - 1 })}>Previous</button>
-        <span>Page {result.current_page} of {result.last_page}</span>
-        <button className="btn ghost" disabled={result.current_page >= result.last_page} onClick={() => setSearch({ page: result.current_page + 1 })}>Next</button>
-      </div>}
-    </>}
-  </>;
+            <form className="ea-filters ea-toolbar" onSubmit={e=>{e.preventDefault();update({search:query.trim(),page:'',enquiry:''});}}><label className="ea-search">Search enquiries<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Name, phone, organization or message" maxLength={160}/></label><label>Enquiry from<select value={audience} onChange={e=>update({audience:e.target.value,page:'',enquiry:''})}><option value="">Everyone</option>{Object.entries(audiences).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label><button className="btn ghost" type="submit"><Search size={16}/>Search</button><button className="btn ghost" type="button" onClick={reset}><RotateCcw size={16}/>Reset</button></form>
+            {filtered&&<div className="we-filter-chips">{search&&<button onClick={()=>update({search:'',page:'',enquiry:''})}>Search: {search}<X size={12}/></button>}{audience&&<button onClick={()=>update({audience:'',page:'',enquiry:''})}>{audiences[audience]||audience}<X size={12}/></button>}{id&&<button onClick={()=>update({enquiry:'',page:''})}>Enquiry #{id}<X size={12}/></button>}</div>}
+            <div className="ea-table-caption"><span><b>{total.toLocaleString('en-IN')}</b> {filtered?'matching':'total'} enquiries<span className="ea-muted"> · Most recent first</span></span><label>Rows per page<select aria-label="Rows per page" value={size} onChange={e=>update({per_page:e.target.value,page:'',enquiry:''})}>{[25,50,100].map(n=><option key={n} value={n}>{n}</option>)}</select></label></div>
+            <div className="data-table ea-table we-table"><table><thead><tr><th>Contact</th><th>Enquiry from</th><th>Organization</th><th>Message</th><th>Received</th><th>Actions</th></tr></thead>{!loading&&!error&&rows.length>0&&<tbody>{rows.map(item=><tr key={item.id}><td><div className="we-contact"><span className="we-avatar">{item.name.split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase()}</span><div><button className="table-record-link" onClick={()=>update({enquiry:item.id})}>{item.name}</button><small><a href={`tel:+91${item.phone}`}>{item.phone}</a></small></div></div></td><td><span className={'we-audience '+item.audience}>{audiences[item.audience]||'Other'}</span><small>#{String(item.id).padStart(4,'0')}</small></td><td>{item.organization||<span className="ea-muted">Not provided</span>}</td><td><p className="we-message-preview">{item.message||'No message included'}</p></td><td className="ea-date">{date(item.created_at)}<small>{time(item.created_at)} IST</small></td><td><div className="ea-row-actions"><button className="table-row-action" aria-label={`View enquiry from ${item.name}`} title="View enquiry" onClick={()=>update({enquiry:item.id})}><Eye/></button><a className="table-row-action" href={`tel:+91${item.phone}`} aria-label={`Call ${item.name}`} title="Call contact"><Phone/></a></div></td></tr>)}</tbody>}</table></div>
+            {error?<div className="we-state we-state-error" role="alert"><span className="we-empty-icon"><AlertCircle size={29}/></span><h3>We could not load your inbox</h3><p>{error}</p><button className="btn ghost" onClick={()=>setRefresh(n=>n+1)}><RefreshCw size={16}/>Try again</button></div>:loading?<div className="we-loading" role="status" aria-label="Loading enquiries">{[1,2,3,4].map(n=><div key={n}><i/><span/><span/><span/></div>)}<span className="we-sr-only">Loading enquiries…</span></div>:!rows.length?<div className="we-state"><span className="we-empty-icon"><Inbox size={32}/><span>0</span></span><h3>{filtered?'No enquiries match your filters':'Your enquiry inbox is ready'}</h3><p>{filtered?'Try a different search or clear the filters to see all enquiries.':'New callback requests will appear here when someone submits the website enquiry form.'}</p>{filtered?<button className="btn ghost" onClick={reset}><RotateCcw size={16}/>Clear filters</button>:<a className="btn ghost" href="/#contact" target="_blank" rel="noopener noreferrer">Open website form<ArrowUpRight size={16}/></a>}<small>{!filtered&&'Contact details, messages and enquiry dates will be organized here.'}</small></div>:null}
+            <footer className="ea-pagination"><span>{total?`${result?.from||0}–${result?.to||0} of ${total.toLocaleString('en-IN')} enquiries`:'0 enquiries'}</span><div><button className="btn ghost" disabled={loading||current<=1} onClick={()=>update({page:current-1})} aria-label="Previous page"><ChevronLeft size={16}/></button><span>Page {current} of {pages}</span><button className="btn ghost" disabled={loading||current>=pages} onClick={()=>update({page:current+1})} aria-label="Next page"><ChevronRight size={16}/></button></div></footer>
+        </section>
+        <Modal open={!!selected} onClose={()=>update({enquiry:''})} title={selected?.name||'Website enquiry'} sub={`Website enquiry #${id}`} className="we-detail-dialog" footer={<><button className="btn ghost" onClick={()=>update({enquiry:''})}>Close</button>{selected&&<a className="btn primary" href={`tel:+91${selected.phone}`}><Phone size={16}/>Call {selected.phone}</a>}</>}>{selected&&<><div className="we-detail-meta"><span className={'we-audience '+selected.audience}>{audiences[selected.audience]}</span><span><CalendarDays size={14}/>{date(selected.created_at)} · {time(selected.created_at)} IST</span></div><dl className="we-detail-grid"><div><dt>Phone number</dt><dd><a href={`tel:+91${selected.phone}`}>+91 {selected.phone}</a></dd></div><div><dt>Organization</dt><dd>{selected.organization||'Not provided'}</dd></div></dl><div className="we-detail-message"><h3>Message</h3><p>{selected.message||'No message was included with this enquiry.'}</p></div></>}</Modal>
+    </div>;
 }

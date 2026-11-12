@@ -30,13 +30,25 @@ class WebsiteEnquiryController extends Controller
     {
         abort_unless($request->user()->hasPermission('permissions.manage'), 403);
 
-        $filters = $request->validate(['enquiry' => ['nullable', 'integer', 'min:1']]);
+        $filters = $request->validate([
+            'enquiry' => ['nullable', 'integer', 'min:1'],
+            'search' => ['nullable', 'string', 'max:160'],
+            'audience' => ['nullable', Rule::in(['candidate', 'employer', 'training-center', 'other'])],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', Rule::in([25, 50, 100])],
+        ]);
         $enquiries = DB::table('website_enquiries');
-        if (isset($filters['enquiry'])) {
-            $enquiries->where('id', $filters['enquiry']);
+        if (isset($filters['enquiry'])) $enquiries->where('id', $filters['enquiry']);
+        if (!empty($filters['audience'])) $enquiries->where('audience', $filters['audience']);
+        if ($search = trim($filters['search'] ?? '')) {
+            $search = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], mb_strtolower($search)).'%';
+            $enquiries->where(function ($query) use ($search) {
+                foreach (['name', 'organization', 'phone', 'message'] as $field) $query->orWhereRaw("LOWER($field) LIKE ? ESCAPE '!'", [$search]);
+            });
         }
-
-        return response()->json($enquiries->orderByDesc('id')->paginate(25))
+        $counts = DB::table('website_enquiries')->selectRaw('audience, COUNT(*) as total')->groupBy('audience')->pluck('total', 'audience')->all();
+        $page = $enquiries->orderByDesc('id')->paginate((int) ($filters['per_page'] ?? 25));
+        return response()->json([...$page->toArray(), 'counts' => ['all' => array_sum($counts), ...$counts]])
             ->header('Cache-Control', 'no-store, private');
     }
 }
