@@ -54,6 +54,9 @@ Route::middleware('auth:web')->group(function () {
     Route::get('/admin-api/whatsapp/logs/{id}', [\App\Http\Controllers\AdminWhatsAppController::class, 'show'])->whereNumber('id');
     Route::post('/admin-api/whatsapp/resend', [\App\Http\Controllers\AdminWhatsAppController::class, 'resend'])->middleware('throttle:10,1');
 
+    Route::get('/admin-api/jobs', [\App\Http\Controllers\AdminJobController::class, 'index']);
+    Route::patch('/admin-api/jobs/{id}/status', [\App\Http\Controllers\AdminJobController::class, 'status'])->whereNumber('id');
+    Route::delete('/admin-api/jobs/{id}', [\App\Http\Controllers\AdminJobController::class, 'destroy'])->whereNumber('id');
     Route::get('/admin-api/data-management/network', [\App\Http\Controllers\AdminDataManagementController::class, 'network']);
     Route::get('/admin-api/data-management', [\App\Http\Controllers\AdminDataManagementController::class, 'index']);
     Route::get('/admin-api/data-management/credentials', [\App\Http\Controllers\AdminDataManagementController::class, 'export']);
