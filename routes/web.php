@@ -54,6 +54,9 @@ Route::middleware('auth:web')->group(function () {
     Route::get('/admin-api/whatsapp/logs/{id}', [\App\Http\Controllers\AdminWhatsAppController::class, 'show'])->whereNumber('id');
     Route::post('/admin-api/whatsapp/resend', [\App\Http\Controllers\AdminWhatsAppController::class, 'resend'])->middleware('throttle:10,1');
 
+    Route::get('/admin-api/hiring-settings', [\App\Http\Controllers\AdminJobController::class, 'hiringSettings']);
+    Route::put('/admin-api/hiring-settings', [\App\Http\Controllers\AdminJobController::class, 'saveHiringSettings']);
+    Route::patch('/admin-api/jobs/{id}/credits', [\App\Http\Controllers\AdminJobController::class, 'credits'])->whereNumber('id');
     Route::get('/admin-api/jobs', [\App\Http\Controllers\AdminJobController::class, 'index']);
     Route::patch('/admin-api/jobs/{id}/status', [\App\Http\Controllers\AdminJobController::class, 'status'])->whereNumber('id');
     Route::delete('/admin-api/jobs/{id}', [\App\Http\Controllers\AdminJobController::class, 'destroy'])->whereNumber('id');
@@ -78,9 +81,13 @@ Route::middleware('auth:web')->group(function () {
     Route::delete('/admin-api/communication/whatsapp-templates', [\App\Http\Controllers\AdminCommunicationController::class, 'deleteWhatsappTemplate'])->middleware('throttle:10,1');
     Route::get('/admin-api/candidates', [\App\Http\Controllers\AdminCandidateController::class, 'index']);
     Route::get('/admin-api/candidates/export', [\App\Http\Controllers\AdminCandidateController::class, 'export']);
+    Route::get('/admin-api/candidates/sample', [\App\Http\Controllers\AdminCandidateImportController::class, 'sample']);
+    Route::post('/admin-api/candidates/import/upload', [\App\Http\Controllers\AdminCandidateImportController::class, 'upload'])->middleware('throttle:10,1');
+    Route::post('/admin-api/candidates/import/preview', [\App\Http\Controllers\AdminCandidateImportController::class, 'preview']);
+    Route::post('/admin-api/candidates/import/confirm', [\App\Http\Controllers\AdminCandidateImportController::class, 'confirm']);
     Route::post('/admin-api/candidates/actions', [\App\Http\Controllers\AdminCandidateController::class, 'actions']);
     Route::patch('/admin-api/candidates/{code}', [\App\Http\Controllers\AdminCandidateController::class, 'update']);
-    Route::get('/admin-api/candidates/{code}', [\App\Http\Controllers\WhatsAppController::class, 'show']);
+    Route::get('/admin-api/candidates/{code}', [\App\Http\Controllers\AdminCandidateController::class, 'show']);
     Route::get('/admin-api/candidates/{code}/photo', [\App\Http\Controllers\AdminCandidateController::class, 'photo']);
     foreach (['admin-api', 'employer-api'] as $prefix) {
         Route::get("/$prefix/candidates/{code}/whatsapp", [\App\Http\Controllers\WhatsAppController::class, 'context'])->middleware('throttle:30,1');
@@ -95,8 +102,13 @@ Route::middleware('auth:web')->group(function () {
     Route::post('/employer-api/jobs', [\App\Http\Controllers\EmployerWorkspaceController::class, 'saveJob']);
     Route::put('/employer-api/jobs/{id}', [\App\Http\Controllers\EmployerWorkspaceController::class, 'saveJob']);
     Route::get('/employer-api/jobs/{id}/stats', [\App\Http\Controllers\JobEngagementController::class, 'stats'])->whereNumber('id');
-    Route::get('/employer-api/jobs/{id}/candidates', [\App\Http\Controllers\JobEngagementController::class, 'candidates'])->whereNumber('id');
-    Route::post('/employer-api/jobs/{id}/candidates/{candidate}/skip', [\App\Http\Controllers\JobEngagementController::class, 'skip'])->whereNumber(['id', 'candidate']);
+    Route::get('/employer-api/jobs/{id}/candidates', [\App\Http\Controllers\JobCandidateController::class, 'index'])->whereNumber('id');
+    Route::post('/employer-api/jobs/{id}/candidates/unlock', [\App\Http\Controllers\JobCandidateController::class, 'unlock'])->whereNumber('id');
+    Route::post('/employer-api/jobs/{id}/candidates/export', [\App\Http\Controllers\JobCandidateController::class, 'export'])->whereNumber('id');
+    Route::post('/employer-api/jobs/{id}/candidates/{candidate}/skip', [\App\Http\Controllers\JobCandidateController::class, 'reject'])->whereNumber(['id', 'candidate']);
+    Route::post('/employer-api/jobs/{id}/candidates/{candidate}/shortlist', [\App\Http\Controllers\JobCandidateController::class, 'shortlist'])->whereNumber(['id', 'candidate']);
+    Route::get('/employer-api/jobs/{id}/candidates/{candidate}/resume', [\App\Http\Controllers\JobCandidateController::class, 'resume'])->whereNumber(['id', 'candidate']);
+    Route::post('/employer-api/jobs/{id}/candidates/{candidate}/invite', [\App\Http\Controllers\JobCandidateController::class, 'invite'])->whereNumber(['id', 'candidate'])->middleware('throttle:10,1');
     Route::get('/admin-api/employers', [\App\Http\Controllers\EmployerWorkspaceController::class, 'adminIndex']);
     Route::get('/admin-api/employers/stats', [\App\Http\Controllers\AdminEmployerAnalyticsController::class, 'stats']);
     Route::get('/admin-api/employers/export', [\App\Http\Controllers\AdminEmployerAnalyticsController::class, 'export']);

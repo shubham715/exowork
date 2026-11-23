@@ -17,6 +17,44 @@ class AdminJobController extends Controller
         abort_unless($staff && ($user->hasPermission('jobs.manage') || (!$manage && $user->hasPermission('jobs.view'))), 403);
     }
 
+    private function authorizeSettings(Request $request): void
+    {
+        abort_unless($request->user()?->hasPermission('masters.manage'), 403);
+    }
+
+    public function hiringSettings(Request $request)
+    {
+        $this->authorizeSettings($request);
+        return response()->json(['default_profile_credits' => \App\Services\HiringCredits::defaultAllocation()]);
+    }
+
+    public function saveHiringSettings(Request $request)
+    {
+        $this->authorizeSettings($request);
+        $data = $request->validate(['default_profile_credits' => 'required|integer|min:0|max:1000000']);
+        DB::table('hiring_settings')->upsert(['id' => 1, ...$data], ['id'], ['default_profile_credits']);
+        return $this->hiringSettings($request);
+    }
+
+    public function credits(Request $request, int $id)
+    {
+        $this->authorizeJobs($request, true);
+        $data = $request->validate(['profile_credits' => 'required|integer|min:0|max:1000000', 'expected_credits' => 'required|integer|min:0']);
+        DB::transaction(function () use ($request, $id, $data) {
+            $job = DB::table('job_posts')->whereNull('deleted_at')->lockForUpdate()->find($id);
+            abort_unless($job, 404);
+            abort_if((int) $job->profile_credits !== (int) $data['expected_credits'], 409, 'The credit limit changed. Refresh the job and try again.');
+            abort_if($data['profile_credits'] < $job->profile_credits_used, 422, 'The credit limit cannot be lower than credits already used.');
+            DB::table('job_posts')->where('id', $id)->update(['profile_credits' => $data['profile_credits']]);
+            DB::table('audit_logs')->insert([
+                'actor_user_id' => $request->user()->id, 'action' => 'admin.job_credits_changed',
+                'subject_type' => 'job_post', 'subject_id' => $id, 'ip_address' => $request->ip(),
+                'changes' => json_encode(['before' => $job->profile_credits, 'after' => $data['profile_credits']]), 'created_at' => now(),
+            ]);
+        }, 3);
+        return response()->json(['message' => 'Job credit limit updated.']);
+    }
+
     public function index(Request $request)
     {
         $this->authorizeJobs($request);

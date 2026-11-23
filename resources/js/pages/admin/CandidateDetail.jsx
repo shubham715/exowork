@@ -31,8 +31,17 @@ export default function CandidateDetail() {
                 <Panel title="Work preferences" sub="Skills and readiness for employment"><Details fields={[
                     ['Preferred industry', candidate.preferred_industry], ['Skills', candidate.skills], ['Experience', candidate.experience_type], ['Availability', availability(candidate.availability)], ['Expected monthly salary', candidate.expected_monthly_salary != null ? `₹${Number(candidate.expected_monthly_salary).toLocaleString('en-IN')}` : null], ['Preferred locations', candidate.preferred_locations], ['Willing to relocate', candidate.relocation_preference], ['Languages', candidate.languages],
                 ]} /></Panel>
+                <Panel title="Personal details"><Details fields={[
+                    ['Date of birth', candidate.date_of_birth ? new Date(candidate.date_of_birth).toLocaleDateString('en-GB', {timeZone: 'UTC'}) : null], ['Father name', candidate.father_name], ['Mother name', candidate.mother_name], ['Employment type', candidate.employment_type],
+                ]} /></Panel>
+                {['permanent', 'communication'].map(prefix => <Panel key={prefix} title={prefix === 'permanent' ? 'Permanent address' : 'Communication address'}><Details fields={[
+                    ['Full address', prefix === 'permanent' ? candidate.permanent_location : candidate.current_location],
+                    ...[['city_village', 'City / village'], ['district', 'District'], ['block', 'Block'], ['tehsil', 'Tehsil'], ['municipality', 'Municipality'], ['pincode', 'Pincode']].map(([field, label]) => [label, candidate[`${prefix}_${field}`]]),
+                ]} /></Panel>)}
+                <Panel title="Import and ownership"><Details fields={[['Added by user ID', candidate.created_by_user_id], ['Source file / sheet', candidate.import_source]]} /></Panel>
+                {Object.keys(candidate.source_fields || {}).length > 0 && <Panel title="Original imported data"><Details fields={Object.entries(candidate.source_fields)} /></Panel>}
                 <Panel title="Education and training" sub="Qualification and training enrollment"><Details fields={[
-                    ['Qualification', candidate.qualification], ['Training center', candidate.training_center || 'Public registration'], ['Training status', candidate.training_status], ['Batch code', candidate.batch_code],
+                    ['Qualification', candidate.qualification], ['Training course', candidate.training_course], ['Training center', candidate.training_center || 'Public registration'], ['Training status', candidate.training_status], ['Batch code', candidate.batch_code],
                 ]} /></Panel>
             </div><aside className="cd-side"><Panel title="Contact details"><Details fields={[
                 ['WhatsApp number', candidate.whatsapp], ['Email address', candidate.email], ['Registered', candidate.created_at ? new Date(candidate.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null],

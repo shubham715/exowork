@@ -153,12 +153,61 @@ class EmployerWorkspaceTest extends TestCase {
  public function test_pausing_removes_opportunity_and_skips_are_specific_to_job(): void {
   $this->register();$owner=User::firstOrFail();DB::table('employers')->update(['status'=>'verified']);$job=$this->job();$job['status']='active';$this->postJson('/employer-api/jobs',$job)->assertOk();$this->postJson('/employer-api/jobs',$job)->assertOk();$ids=DB::table('job_posts')->pluck('id');$candidate=$this->eligibleCandidate();
   $this->getJson("/employer-api/jobs/{$ids[0]}/candidates")->assertOk()->assertJsonCount(1,'candidates')->assertJsonMissingPath('candidates.0.whatsapp')->assertJsonMissingPath('candidates.0.aadhaar_number');
-  $this->getJson("/employer-api/jobs/{$ids[0]}/candidates?search=unrelated")->assertOk()->assertJsonCount(0,'candidates');$this->getJson("/employer-api/jobs/{$ids[0]}/candidates?search=asha&sort=salary")->assertOk()->assertJsonCount(1,'candidates');$this->getJson("/employer-api/jobs/{$ids[0]}/candidates?sort=password")->assertUnprocessable();
+  $this->getJson("/employer-api/jobs/{$ids[0]}/candidates?search=unrelated")->assertOk()->assertJsonCount(0,'candidates');$this->getJson("/employer-api/jobs/{$ids[0]}/candidates?search=asha&sort=name")->assertOk()->assertJsonCount(1,'candidates');$this->getJson("/employer-api/jobs/{$ids[0]}/candidates?sort=password")->assertUnprocessable();
+  $base="/employer-api/jobs/{$ids[0]}/candidates";
+  $selection=['candidate_ids'=>[$candidate->id]];
+  $second=$candidate->replicate();
+  $second->forceFill(['candidate_code'=>'EXO-CAN-SECOND','whatsapp'=>'9876543223'])->save();
+  DB::table('job_posts')->where('id',$ids[0])->update(['profile_credits'=>1]);
+  $this->postJson("$base/export",$selection)->assertUnprocessable();
+  $this->get("$base/{$candidate->id}/resume")->assertNotFound();
+  $this->postJson("$base/unlock",['candidate_ids'=>[$candidate->id,$second->id]])->assertUnprocessable();
+  $this->assertDatabaseCount('job_candidate_profiles',0);
+  \Illuminate\Support\Facades\Storage::fake();
+  \Illuminate\Support\Facades\Storage::put('application-resumes/candidate.pdf','resume');
+  DB::table('applications')->insert(['job_post_id'=>$ids[0],'candidate_id'=>$candidate->id,'status'=>'interested','resume_path'=>'application-resumes/candidate.pdf','resume_name'=>'Candidate CV.pdf']);
+  $this->postJson("$base/unlock",$selection)->assertOk()->assertJsonPath('balance',0)
+      ->assertJsonPath('candidates.0.unlocked',true)->assertJsonPath('candidates.0.has_resume',true)
+      ->assertJsonMissingPath('candidates.0.resume_path');
+  $this->get("$base/{$candidate->id}/resume")->assertDownload('Candidate CV.pdf');
+  $this->get("/employer-api/jobs/{$ids[1]}/candidates/{$candidate->id}/resume")->assertNotFound();
+  $this->postJson("$base/unlock",$selection)->assertOk()->assertJsonPath('unlocked',0);
+  $this->postJson("$base/{$candidate->id}/shortlist",['shortlisted'=>true])->assertOk();
+  $this->getJson($base)->assertOk()->assertJsonPath('candidates.0.id',$candidate->id)
+      ->assertJsonPath('candidates.0.whatsapp','9876543222')->assertJsonMissingPath('candidates.0.expected_monthly_salary');
+  $this->assertStringContainsString('9876543222',$this->postJson("$base/export",$selection)->assertDownload("job-{$ids[0]}-candidates.csv")->streamedContent());
+  $this->getJson("/employer-api/jobs/{$ids[1]}/candidates?search=asha")->assertJsonPath('candidates.0.unlocked',false);
+  $second->delete();
   $this->postJson("/employer-api/jobs/{$ids[0]}/candidates/{$candidate->id}/skip")->assertOk();$this->postJson("/employer-api/jobs/{$ids[0]}/candidates/{$candidate->id}/skip")->assertOk();$this->assertDatabaseCount('job_candidate_skips',1);
   $this->getJson("/employer-api/jobs/{$ids[0]}/candidates")->assertJsonCount(0,'candidates');$this->getJson("/employer-api/jobs/{$ids[1]}/candidates")->assertJsonCount(1,'candidates');
   $candidate->forceFill(['skills'=>'Unrelated'])->save();$this->getJson("/employer-api/jobs/{$ids[1]}/candidates")->assertJsonCount(0,'candidates');
   $job['status']='paused';$this->putJson("/employer-api/jobs/{$ids[0]}",$job)->assertOk();$this->actingAs($candidate,'candidate')->getJson('/candidate-api/opportunities')->assertJsonCount(1,'jobs');
   $this->postJson("/candidate-api/jobs/{$ids[0]}/events",['event_id'=>(string)\Illuminate\Support\Str::uuid(),'type'=>'click'])->assertNotFound();
   $this->actingAs($owner,'web');$job['status']='active';$this->putJson("/employer-api/jobs/{$ids[0]}",$job)->assertOk();
+ }
+
+ public function test_admin_imported_candidates_are_browsable_without_fabricated_acceptance(): void {
+  $this->register();DB::table('employers')->update(['status'=>'verified']);$this->postJson('/employer-api/jobs',$this->job())->assertOk();
+  $id=DB::table('job_posts')->value('id');$candidate=$this->eligibleCandidate();
+  $candidate->update(['terms_accepted_at'=>null,'privacy_accepted_at'=>null,'whatsapp_consent'=>false]);
+  $base="/employer-api/jobs/$id/candidates";
+  $this->getJson($base)->assertOk()->assertJsonCount(0,'candidates');
+  $candidate->update(['registration_source'=>'admin_import','created_by_user_id'=>User::first()->id,'import_data'=>['row'=>2,'values'=>['Qualification'=>'ITI']]]);
+  $this->getJson($base)->assertOk()->assertJsonCount(1,'candidates')->assertJsonMissingPath('candidates.0.whatsapp')->assertJsonMissingPath('candidates.0.date_of_birth');
+  $this->assertNull($candidate->fresh()->terms_accepted_at);
+  $this->assertFalse($candidate->fresh()->whatsapp_consent);
+  $candidate->update(['qualification'=>'12th']);DB::table('job_posts')->where('id',$id)->update(['education'=>'12th pass']);
+  $this->getJson($base)->assertOk()->assertJsonCount(1,'candidates');
+  $candidate->update(['skills'=>'Unrelated']);
+  $this->getJson($base)->assertOk()->assertJsonCount(0,'candidates');
+  $this->getJson($base.'?scope=all')->assertOk()->assertJsonCount(1,'candidates')->assertJsonPath('candidates.0.job_match',false)->assertJsonPath('pool_total',1)->assertJsonPath('matching_total',0)->assertJsonMissingPath('candidates.0.whatsapp');
+  $this->getJson($base.'?scope=matching')->assertOk()->assertJsonCount(0,'candidates');
+  $this->getJson($base.'?scope=all&qualification=Graduate')->assertOk()->assertJsonCount(0,'candidates');
+  $this->getJson($base.'?scope=invalid')->assertUnprocessable();
+  DB::table('job_posts')->where('id',$id)->update(['profile_credits'=>1]);
+  $this->postJson($base.'/unlock',['candidate_ids'=>[$candidate->id]])->assertOk()->assertJsonPath('unlocked',1);
+  $this->getJson($base.'?scope=all')->assertOk()->assertJsonPath('candidates.0.unlocked',true);
+  $this->postJson($base.'/'.$candidate->id.'/shortlist',['shortlisted'=>true])->assertOk();
+
  }
 }

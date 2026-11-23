@@ -30,17 +30,17 @@ class ImpersonationTest extends TestCase
         DB::table('organization_memberships')->insert(['user_id'=>$user->id,($type==='employer'?'employer_id':'training_center_id')=>$id,'status'=>'active','membership_role'=>'owner']);
         return $id;
     }
-    public function test_candidate_support_session_is_view_only_and_restores_original_admin(): void {
+    public function test_candidate_support_session_allows_workspace_actions_and_restores_original_admin(): void {
         $admin=$this->user('admin');$candidate=$this->candidate();$this->login($admin);
         $this->getJson('/auth/impersonation')->assertJsonPath('can_impersonate',true);
         $oldSession=session()->getId();
         $this->postJson('/auth/impersonation/start',['type'=>'candidate','id'=>$candidate->id])->assertOk()->assertJsonPath('destination','/candidate/dashboard');
         $this->assertNotSame($oldSession,session()->getId());$this->assertAuthenticatedAs($candidate,'candidate');$this->assertGuest('web');
         $this->getJson('/candidate-api/profile')->assertOk()->assertJsonPath('candidate.first_name','Asha');
-        $this->getJson('/auth/impersonation')->assertJsonPath('active',true)->assertJsonPath('session.read_only',true)->assertJsonMissingPath('session.actor_id')->assertJsonMissingPath('session.actor_password');
+        $this->getJson('/auth/impersonation')->assertJsonPath('active',true)->assertJsonPath('session.read_only',false)->assertJsonMissingPath('session.actor_id')->assertJsonMissingPath('session.actor_password');
         $this->getJson('/admin-api/candidates')->assertForbidden();
         $this->postJson('/auth/impersonation/start',['type'=>'candidate','id'=>$candidate->id])->assertForbidden();
-        $this->patchJson('/candidate-api/profile',['first_name'=>'Changed'])->assertForbidden();
+        $this->patchJson('/candidate-api/profile',['first_name'=>'Changed'])->assertUnprocessable()->assertJsonValidationErrors('last_name');
         $this->postJson('/auth/login',['role'=>'admin'])->assertForbidden();
         $this->postJson('/auth/employer/password/email',['email'=>'test@example.test'])->assertForbidden();
         $this->assertDatabaseHas('candidates',['id'=>$candidate->id,'first_name'=>'Asha']);
@@ -70,6 +70,17 @@ class ImpersonationTest extends TestCase
             $this->postJson('/auth/impersonation/start',['type'=>$type,'id'=>$id])->assertOk()->assertJsonPath('destination','/'.$type.'/dashboard');
             $this->assertAuthenticatedAs($user,'web');
             $this->getJson('/'.$type.'-api/identity')->assertOk();
+            if ($type === 'employer') {
+                DB::table('employers')->where('id', $id)->update(['status' => 'verified']);
+                $job = DB::table('job_posts')->insertGetId(['employer_id' => $id, 'title' => 'Support test job', 'workplace_type' => 'Remote', 'openings' => 1, 'status' => 'active']);
+                $path = "/employer-api/jobs/$job/candidates";
+                $candidate = $this->candidate();
+                $candidate->forceFill(['terms_accepted_at' => now(), 'privacy_accepted_at' => now()])->save();
+                $this->getJson($path)->assertOk()->assertJsonPath('candidates.0.unlocked', false);
+                $this->postJson("$path/unlock", ['candidate_ids' => [$candidate->id]])->assertOk()->assertJsonPath('balance', 99);
+                $this->getJson($path)->assertJsonPath('candidates.0.unlocked', true);
+                $this->assertDatabaseHas('audit_logs', ['actor_user_id' => $admin->id, 'action' => 'impersonation.acted']);
+            }
             $this->getJson('/admin-api/review-notifications')->assertForbidden();
             $this->getJson('/'.($type==='employer'?'center':'employer').'-api/identity')->assertForbidden();
             $this->postJson('/auth/impersonation/stop')->assertOk();$this->assertAuthenticatedAs($admin,'web');

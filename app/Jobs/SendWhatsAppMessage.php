@@ -32,7 +32,7 @@ class SendWhatsAppMessage implements ShouldQueue
             if ($record->provider !== config('whatsapp.provider', 'meta') || ($record->provider_account_id && $record->provider_account_id !== $cloud->accountId())) {
                 $this->finish(['status' => 'skipped', 'error_code' => 'PROVIDER_CHANGED', 'error_message' => 'The sender account changed after this message was queued.']); return;
             }
-            if ($record->provider === 'gupshup' && ! config('whatsapp.gupshup_automation_enabled') && ! in_array($record->source, ['test', 'manual'])) {
+            if ($record->provider === 'gupshup' && ! config('whatsapp.gupshup_automation_enabled') && ! in_array($record->source, ['test', 'manual', 'employer_invite'])) {
                 $this->finish(['status' => 'skipped', 'error_code' => 'AUTOMATION_PAUSED', 'error_message' => 'Automatic stage messages are paused.']); return;
             }
             if (DB::table('whatsapp_opt_outs')->where('recipient', $record->recipient)->exists()) {
@@ -49,6 +49,17 @@ class SendWhatsAppMessage implements ShouldQueue
             }
             if ($record->candidate_id && in_array($record->source, ['career_intro', 'job_opportunity']) && (! in_array($candidate->availability, ['Yes', 'Available after training']) || ($candidate->training_status === 'Ongoing' && (! $candidate->batch_end_date || $candidate->batch_end_date > now('Asia/Kolkata')->addDays(15)->toDateString())))) {
                 $this->finish(['status' => 'skipped', 'error_code' => 'READINESS_CHANGED', 'error_message' => 'Candidate is not currently ready for placement outreach.']); return;
+            }
+            if ($record->source === 'employer_invite') {
+                $jobId = explode(':', $this->original($record)->event_key ?? '')[2] ?? null;
+                $job = $jobId ? DB::table('job_posts')->whereNull('deleted_at')->whereIn('status', ['active', 'published'])->find($jobId) : null;
+                if (!$job || $job->employer_id !== $record->employer_id || !$candidate->terms_accepted_at || !$candidate->privacy_accepted_at
+                    || ($job->application_deadline && $job->application_deadline < now('Asia/Kolkata')->toDateString())
+                    || !DB::table('employers')->where('id', $job->employer_id)->whereNull('deleted_at')->where('status', 'verified')->exists()
+                    || !DB::table('job_candidate_profiles')->where('job_post_id', $jobId)->where('candidate_id', $candidate->id)->whereNotNull('unlocked_at')->exists()
+                    || DB::table('job_candidate_skips')->where('job_post_id', $jobId)->where('candidate_id', $candidate->id)->exists()) {
+                    $this->finish(['status' => 'skipped', 'error_code' => 'JOB_UNAVAILABLE', 'error_message' => 'This job or candidate is no longer available for outreach.']); return;
+                }
             }
             if ($record->source === 'job_opportunity' && $record->candidate_id) {
                 $original = $this->original($record);

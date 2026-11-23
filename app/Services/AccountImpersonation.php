@@ -135,6 +135,6 @@ class AccountImpersonation
     public function audit(Request $request, array $state, string $event, array $details = []): void
     {
         DB::table('audit_logs')->insert(['actor_user_id' => User::whereKey($state['actor_id'])->exists() ? $state['actor_id'] : null, 'action' => $event, 'subject_type' => $state['type'], 'subject_id' => $state['subject_id'],
-            'changes' => json_encode(['support_session' => $state['id'], 'original_admin_id' => $state['actor_id'], 'target_user_id' => $state['target_id'], 'mode' => 'read_only', ...$details]), 'ip_address' => $request->ip(), 'created_at' => now()]);
+            'changes' => json_encode(['support_session' => $state['id'], 'original_admin_id' => $state['actor_id'], 'target_user_id' => $state['target_id'], 'mode' => 'act_as_user', ...$details]), 'ip_address' => $request->ip(), 'created_at' => now()]);
     }
 }

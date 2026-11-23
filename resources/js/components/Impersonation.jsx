@@ -16,7 +16,7 @@ export function ImpersonationProvider({children}) {
                 const prefix=data.session?.type==='candidate'?'/candidate':data.session?.type==='center'?'/center':'/employer';
                 if(data.active && !window.location.pathname.startsWith(prefix+'/')) {window.location.assign(prefix+'/dashboard');return;}
                 if(previous.current && !data.active){window.location.assign(data.can_impersonate?'/admin/dashboard':'/admin225');return;}
-                previous.current=data.active;setStatus(data);
+                previous.current=data.active;setStatus(current => JSON.stringify(current) === JSON.stringify(data) ? current : data);
             }catch(e){if(alive && previous.current && e.response?.status===401)window.location.assign('/admin225');}
             finally{pending=false;}
         };
@@ -26,12 +26,12 @@ export function ImpersonationProvider({children}) {
     },[]);
     const stop=async()=>{if(busy)return;setBusy(true);setError('');try{const {data}=await axios.post('/auth/impersonation/stop');window.location.assign(data.destination);}catch(e){setError(e.response?.data?.message||'Could not return to admin. Try again.');if(e.response?.status===401)window.location.assign('/admin225');setBusy(false);}};
     const session=status?.session;
-    return <SupportContext.Provider value={status}><div className={status?.active?'impersonation-active':''}>{status?.active&&<div className="impersonation-bar" role="region" aria-label="Admin support session"><ShieldCheck size={12}/><span>You are logged in as <b>{session.name}</b><span className="impersonation-organization">{session.organization?' · '+session.organization:''}</span></span><small>{session.expired?'Session expired':'View only'}</small><button disabled={busy} onClick={stop}><ArrowLeft size={12}/>{busy?'Returning…':'Back to admin panel'}</button></div>}{error&&<div className="impersonation-error" role="alert">{error}<button onClick={stop}>Retry</button></div>}{children}</div></SupportContext.Provider>;
+    return <SupportContext.Provider value={status}><div className={status?.active?'impersonation-active':''}>{status?.active&&<div className="impersonation-bar" role="region" aria-label="Admin support session"><ShieldCheck size={12}/><span>You are logged in as <b>{session.name}</b><span className="impersonation-organization">{session.organization?' · '+session.organization:''}</span></span><small>{session.expired?'Session expired':'Acting as user'}</small><button disabled={busy} onClick={stop}><ArrowLeft size={12}/>{busy?'Returning…':'Back to admin panel'}</button></div>}{error&&<div className="impersonation-error" role="alert">{error}<button onClick={stop}>Retry</button></div>}{children}</div></SupportContext.Provider>;
 }
 
 export function ImpersonateButton({type,id,name,disabled=false}) {
     const status=useContext(SupportContext), [busy,setBusy]=useState(false), [error,setError]=useState('');
     if(!status?.can_impersonate || status.active)return null;
     const start=async()=>{if(busy)return;setBusy(true);setError('');try{const {data}=await axios.post('/auth/impersonation/start',{type,id});window.location.assign(data.destination);}catch(e){setError(e.response?.data?.message||'Could not open this account.');setBusy(false);}};
-    return <span className="impersonate-action"><button type="button" className="impersonate-button" onClick={start} disabled={disabled||busy} aria-label={`Log in as ${name}`} title="Open a view-only support session"><LogIn size={13}/>{busy?'Opening…':'Log in as'}</button>{error&&<span role="alert" className="impersonate-action-error">{error}<button onClick={()=>setError('')} aria-label="Dismiss login error">×</button></span>}</span>;
+    return <span className="impersonate-action"><button type="button" className="impersonate-button" onClick={start} disabled={disabled||busy} aria-label={`Log in as ${name}`} title="Act as this user"><LogIn size={13}/>{busy?'Opening…':'Log in as'}</button>{error&&<span role="alert" className="impersonate-action-error">{error}<button onClick={()=>setError('')} aria-label="Dismiss login error">×</button></span>}</span>;
 }

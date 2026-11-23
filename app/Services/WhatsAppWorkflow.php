@@ -96,6 +96,25 @@ class WhatsAppWorkflow
         });
     }
 
+    public function employerInvitation(object $job, Candidate $candidate, int $actor): ?object
+    {
+        $event = 'employer-invite:'.$candidate->id.':'.$job->id;
+        $recipient = app(WhatsAppCloud::class)->recipient($candidate->whatsapp);
+        abort_if(DB::table('whatsapp_opt_outs')->where('recipient', $recipient)->exists(), 422, 'This candidate opted out of WhatsApp messages.');
+        $existing = DB::table('whatsapp_messages')->where('event_key', $event)->first();
+        if ($existing) {
+            return $existing;
+        }
+        $employer = DB::table('employers')->find($job->employer_id);
+        $parameters = [$candidate->first_name, $this->anonymousRole($job->title, $employer->name),
+            $job->district ?: $job->state ?: 'See your account', $this->salary($job), url('/candidate/opportunities')];
+        return app(WhatsAppOutbox::class)->system('job_opportunity', $recipient,
+            array_map(fn ($value) => preg_replace('/[\r\n\t]+/', ' ', $value), $parameters), [
+                'source' => 'employer_invite', 'event_key' => $event, 'candidate_id' => $candidate->id,
+                'employer_id' => $job->employer_id, 'actor_user_id' => $actor,
+            ]);
+    }
+
     private function anonymousRole(string $title, string $employer): string
     {
         $role = str_ireplace($employer, '', $title);

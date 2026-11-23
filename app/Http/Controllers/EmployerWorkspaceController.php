@@ -145,7 +145,7 @@ class EmployerWorkspaceController extends Controller
             $row=[...$data,'updated_at'=>now()];
             if($data['status']==='active')$row['published_at']=$old?->published_at??now();
             if($id) DB::table('job_posts')->where('id',$id)->update($row);
-            else $id=DB::table('job_posts')->insertGetId([...$row,'employer_id'=>$e->id,'created_by_user_id'=>$request->user()->id,'created_at'=>now()]);
+            else $id=DB::table('job_posts')->insertGetId([...$row,'employer_id'=>$e->id,'created_by_user_id'=>$request->user()->id,'profile_credits'=>\App\Services\HiringCredits::defaultAllocation(),'created_at'=>now()]);
             $this->audit($request,'employer.job_saved','job_post',$id,['status'=>$data['status']]);
             if ($data['status'] === 'active' && !$old?->published_at) {
                 app(\App\Services\AdminEmail::class)->send('New job published', $data['title'], '/admin/employers?review='.$e->id, ['Employer' => $e->name, 'Job ID' => $id]);

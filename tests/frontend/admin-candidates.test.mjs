@@ -45,3 +45,11 @@ test('filtered empty state and request parameters preserve filter meaning', () =
     const params = candidateListParams({ ...emptyCandidateFilters(), states: ['Rajasthan'], consent: 'no', from: '2026-10-01' }, 'Asha', 'first_name', 'asc', 2, 50);
     assert.deepEqual(params, { states: ['Rajasthan'], consent: 'no', from: '2026-10-01', search: 'Asha', sort: 'first_name', direction: 'asc', page: 2, per_page: 50 });
 });
+
+ test('candidate import and sample downloads require create permission and ownership is visible', () => {
+    const html = render({ ...fixture, can_import: true, data: [{ ...fixture.data[0], created_by_user_id: 42 }] });
+    assert.match(html, /Import candidates/);
+    assert.match(html, /Download sample/);
+    assert.match(html, /Added by user: 42/);
+    assert.doesNotMatch(render({ ...fixture, can_import: false }), /Import candidates|Download sample/);
+});

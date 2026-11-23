@@ -52,6 +52,6 @@ class WhatsAppOutbox
         // A retired welcome template must never consume the new profile-review parameters.
         $spec = WhatsAppTemplateCatalog::get($key);
         if ($template->name !== $spec['name'] || $template->body !== $spec['body']) return null;
-        return $this->enqueue($recipient, (array) $template, $parameters, [...$context, 'source' => $key]);
+        return $this->enqueue($recipient, (array) $template, $parameters, [...$context, 'source' => $context['source'] ?? $key]);
     }
 }

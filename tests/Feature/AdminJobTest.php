@@ -43,6 +43,17 @@ class AdminJobTest extends TestCase
   $this->patchJson("/admin-api/jobs/$id/status",['status'=>'active','expected_status'=>'closed'])->assertNotFound();
   $this->assertDatabaseHas('audit_logs',['action'=>'admin.job_deleted','subject_id'=>$id]);
  }
+ public function test_hiring_default_and_per_job_credit_adjustments_are_independent(): void {
+  $this->actingAs($this->staff());
+  $job=$this->job(['profile_credits_used'=>3]);
+  $this->getJson('/admin-api/hiring-settings')->assertOk()->assertJsonPath('default_profile_credits',100);
+  $this->putJson('/admin-api/hiring-settings',['default_profile_credits'=>25])->assertOk()->assertJsonPath('default_profile_credits',25);
+  $this->getJson('/admin-api/jobs')->assertJsonPath('jobs.0.profile_credits',100)->assertJsonPath('jobs.0.profile_credits_used',3);
+  $this->patchJson("/admin-api/jobs/$job/credits",['profile_credits'=>2,'expected_credits'=>100])->assertUnprocessable();
+  $this->patchJson("/admin-api/jobs/$job/credits",['profile_credits'=>20,'expected_credits'=>100])->assertOk();
+  $this->patchJson("/admin-api/jobs/$job/credits",['profile_credits'=>200,'expected_credits'=>100])->assertConflict();
+  $this->assertDatabaseHas('job_posts',['id'=>$job,'profile_credits'=>20,'profile_credits_used'=>3]);
+ }
  public function test_employers_cannot_manage_global_jobs_and_view_only_staff_cannot_mutate(): void {
   $employer=$this->staff('employer');$id=$this->job();$this->actingAs($employer);
   $this->getJson('/admin-api/jobs')->assertForbidden();

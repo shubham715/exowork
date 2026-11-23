@@ -61,7 +61,7 @@ class AdminCandidateController extends Controller
         }
 
         // Keep list/export fields explicit: identity documents and login data must never enter the directory response.
-        return $query->select(['candidates.id', 'candidate_code', 'first_name', 'last_name', 'whatsapp', 'email', 'whatsapp_consent', 'qualification', 'state', 'district', 'preferred_industry', 'availability', 'profile_status', 'training_center', 'training_status', 'batch_code', 'experience_type', 'skills', 'expected_monthly_salary', 'created_at', 'updated_at'])
+        return $query->select(['candidates.id', 'created_by_user_id', 'candidate_code', 'first_name', 'last_name', 'whatsapp', 'email', 'whatsapp_consent', 'qualification', 'state', 'district', 'preferred_industry', 'availability', 'profile_status', 'training_center', 'training_status', 'batch_code', 'experience_type', 'skills', 'expected_monthly_salary', 'created_at', 'updated_at'])
             ->selectSub(DB::table('applications')->selectRaw('COUNT(*)')->whereColumn('candidate_id', 'candidates.id'), 'applications_count')
             ->selectSub(DB::table('whatsapp_messages')->selectRaw('COUNT(*)')->whereColumn('candidate_id', 'candidates.id'), 'whatsapp_count')
             ->orderBy($filters['sort'] ?? 'created_at', $filters['direction'] ?? 'desc')->orderByDesc('candidates.id');
@@ -81,11 +81,22 @@ class AdminCandidateController extends Controller
             $options[$key] = (clone $base)->whereNotNull($column)->where($column, '!=', '')->distinct()->orderBy($column)->pluck($column);
         }
 
-        return response()->json([...$page->toArray(), 'can_manage' => $request->user()->hasPermission('candidates.update'), 'counts' => [
+        return response()->json([...$page->toArray(), 'can_import' => $request->user()->hasPermission('candidates.create'), 'can_manage' => $request->user()->hasPermission('candidates.update'), 'counts' => [
             'all' => (clone $base)->count(), 'available' => (clone $base)->where('availability', 'Yes')->count(),
             'training' => (clone $base)->where('training_status', 'Ongoing')->count(), 'consented' => (clone $base)->where('whatsapp_consent', true)->count(),
             'inactive' => (clone $base)->where('profile_status', 'inactive')->count(),
         ], 'filters' => $options]);
+    }
+
+    public function show(Request $request, string $code)
+    {
+        $this->authorize($request);
+        $candidate = Candidate::whereNull('deleted_at')->where('candidate_code', $code)->firstOrFail();
+        $data = $candidate->only(['candidate_code', 'first_name', 'last_name', 'whatsapp', 'whatsapp_consent', 'qualification', 'district', 'state', 'skills', 'experience_type', 'availability', 'preferred_industry', 'training_center', 'created_at', 'email', 'profile_status', 'expected_monthly_salary', 'training_status', 'batch_code', 'languages', 'preferred_locations', 'relocation_preference', 'created_by_user_id', 'import_source', 'date_of_birth', 'father_name', 'mother_name', 'training_course', 'employment_type', 'permanent_location', 'current_location', 'permanent_city_village', 'permanent_district', 'permanent_block', 'permanent_tehsil', 'permanent_municipality', 'permanent_pincode', 'communication_city_village', 'communication_district', 'communication_block', 'communication_tehsil', 'communication_municipality', 'communication_pincode']);
+        $data['source_fields'] = $candidate->import_data['values'] ?? [];
+        $data['photo_url'] = $candidate->photo_path ? '/admin-api/candidates/'.rawurlencode($candidate->candidate_code).'/photo' : null;
+
+        return response()->json(['candidate' => $data]);
     }
 
     public function photo(Request $request, string $code)
@@ -95,6 +106,7 @@ class AdminCandidateController extends Controller
         abort_unless($candidate->photo_path, 404);
         $disk = str_starts_with($candidate->photo_path, 'demo-profiles/') ? Storage::disk('public') : Storage::disk();
         abort_unless($disk->exists($candidate->photo_path), 404);
+
         return $disk->response($candidate->photo_path, null, ['Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff']);
     }
 
@@ -103,12 +115,46 @@ class AdminCandidateController extends Controller
         $this->authorize($request);
         $query = $this->query($request);
 
-        return response()->streamDownload(function () use ($query) {
+        if (! $request->boolean('full')) {
+            return response()->streamDownload(function () use ($query) {
+                $file = fopen('php://output', 'w');
+                fwrite($file, "\xEF\xBB\xBF");
+                fputcsv($file, ['Candidate', 'Code', 'WhatsApp', 'Email', 'Qualification', 'Industry', 'District', 'State', 'Training center', 'Training status', 'Availability', 'Profile status', 'WhatsApp consent', 'Applications', 'Registered']);
+                foreach ($query->lazy(500) as $c) {
+                    fputcsv($file, array_map(fn ($v) => preg_match('/^\s*[=+@\-]/', (string) $v) ? "'".$v : $v, [$c->first_name.' '.$c->last_name, $c->candidate_code, $c->whatsapp, $c->email, $c->qualification, $c->preferred_industry, $c->district, $c->state, $c->training_center, $c->training_status, $c->availability, $c->profile_status, $c->whatsapp_consent ? 'Yes' : 'No', $c->applications_count, $c->created_at]));
+                }
+                fclose($file);
+            }, 'exowork-candidates.csv', ['Content-Type' => 'text/csv; charset=UTF-8', 'Cache-Control' => 'no-store, private']);
+        }
+        abort_unless($request->user()->hasPermission('candidates.create'), 403);
+
+        // Source data is only loaded for this explicit admin download, never for directory listings.
+        $ids = (clone $query)->reorder()->select('candidates.id');
+        $base = Candidate::whereIn('id', $ids);
+        $extra = [];
+        foreach ((clone $base)->lazyById(200) as $candidate) {
+            foreach (array_keys($candidate->import_data['values'] ?? []) as $header) {
+                $extra[$header] = true;
+            }
+        }
+        $headers = array_keys($extra);
+        $fields = array_merge(array_values(array_diff(AdminCandidateImportController::FIELDS, ['full_name', 'aadhaar_number'])), ['profile_status', 'whatsapp_consent', 'updated_at']);
+
+        return response()->streamDownload(function () use ($base, $headers, $fields) {
             $file = fopen('php://output', 'w');
             fwrite($file, "\xEF\xBB\xBF");
-            fputcsv($file, ['Candidate', 'Code', 'WhatsApp', 'Email', 'Qualification', 'Industry', 'District', 'State', 'Training center', 'Training status', 'Availability', 'Profile status', 'WhatsApp consent', 'Applications', 'Registered']);
-            foreach ($query->lazy(500) as $c) {
-                fputcsv($file, array_map(fn ($v) => preg_match('/^\s*[=+@\-]/', (string) $v) ? "'".$v : $v, [$c->first_name.' '.$c->last_name, $c->candidate_code, $c->whatsapp, $c->email, $c->qualification, $c->preferred_industry, $c->district, $c->state, $c->training_center, $c->training_status, $c->availability, $c->profile_status, $c->whatsapp_consent ? 'Yes' : 'No', $c->applications_count, $c->created_at]));
+            fputcsv($file, array_merge(['candidate_code', 'created_by_user_id', 'registration_source', 'import_source', 'source_row', 'created_at'], $fields, array_map(fn ($h) => 'Source: '.$h, $headers)));
+            foreach ($base->lazyById(200) as $c) {
+                $source = $c->import_data ?? [];
+                $values = [$c->candidate_code, $c->created_by_user_id, $c->registration_source, $c->import_source, $source['row'] ?? '', $c->created_at];
+                foreach ($fields as $field) {
+                    $value = $c->$field;
+                    $values[] = is_array($value) ? implode(';', $value) : ($value instanceof \DateTimeInterface ? $value->format('Y-m-d') : $value);
+                }
+                foreach ($headers as $header) {
+                    $values[] = $source['values'][$header] ?? '';
+                }
+                fputcsv($file, array_map(fn ($v) => preg_match('/^\s*[=+@\-]/u', (string) $v) ? "'".$v : $v, $values));
             }
             fclose($file);
         }, 'exowork-candidates.csv', ['Content-Type' => 'text/csv; charset=UTF-8', 'Cache-Control' => 'no-store, private']);

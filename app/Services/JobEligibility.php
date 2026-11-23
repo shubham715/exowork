@@ -10,8 +10,8 @@ class JobEligibility
     public function matches(object $job, Candidate $candidate): bool
     {
         $normal = fn ($value) => mb_strtolower(trim((string) $value));
-        $education = $normal($job->education);
-        $qualification = $normal($candidate->qualification);
+        $education = $normal(CandidateImportNormalizer::qualification((string)$job->education));
+        $qualification = $normal(CandidateImportNormalizer::qualification((string)$candidate->qualification));
         if ($education && $education !== 'any' && (!$qualification || !str_contains($education, $qualification))) return false;
         $experience = $normal($job->experience);
         if ($experience && !str_contains($experience, $normal($candidate->experience_type))) return false;

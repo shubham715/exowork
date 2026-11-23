@@ -23,7 +23,12 @@ class AdminReviewQueueController extends Controller
         $table = match ($kind) { 'centers' => 'training_centers', 'candidates' => 'candidates', default => 'employers' };
         return DB::table("$table as p")->whereNull('p.deleted_at')
             ->where(function ($query) use ($kind) {
-                if ($kind === 'candidates') return $query->whereNotNull('p.candidate_code');
+                if ($kind === 'candidates') {
+                    // Bulk imports are confirmed by their uploader, not individual registration alerts.
+                    return $query->whereNotNull('p.candidate_code')->where(fn ($q) => $q
+                        ->whereNull('p.registration_source')
+                        ->orWhereNotIn('p.registration_source', ['admin_import', 'center_csv']));
+                }
                 $query->where('p.status', 'pending');
                 // Older center signups were active without a verification decision.
                 if ($kind === 'centers') $query->orWhere(fn ($q) => $q->where('p.status', 'active')->whereNull('p.verified_at'));

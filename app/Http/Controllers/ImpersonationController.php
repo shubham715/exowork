@@ -12,7 +12,7 @@ class ImpersonationController extends Controller
     {
         $state = $request->session()->get(AccountImpersonation::KEY);
         return response()->json(['can_impersonate' => !$state && $support->authorized(Auth::guard('web')->user()),
-            'active' => (bool) $state, 'session' => $state ? ['name' => $state['name'], 'organization' => $state['organization'], 'type' => $state['type'], 'expires_at' => $state['expires_at'], 'expired' => now()->timestamp >= $state['expires_at'], 'read_only' => true] : null])->header('Cache-Control', 'no-store, private');
+            'active' => (bool) $state, 'session' => $state ? ['name' => $state['name'], 'organization' => $state['organization'], 'type' => $state['type'], 'expires_at' => $state['expires_at'], 'expired' => now()->timestamp >= $state['expires_at'], 'read_only' => false] : null])->header('Cache-Control', 'no-store, private');
     }
 
     public function start(Request $request, AccountImpersonation $support)

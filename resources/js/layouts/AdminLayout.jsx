@@ -40,9 +40,8 @@ export default function AdminLayout() {
   useEffect(()=>{
     mounted.current=true;load();
     const refresh=()=>{if(document.visibilityState==='visible')load();};
-    const timer=setInterval(refresh,30000);
-    window.addEventListener('focus',refresh);document.addEventListener('visibilitychange',refresh);window.addEventListener('admin-review-updated',refresh);
-    return()=>{mounted.current=false;clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);window.removeEventListener('admin-review-updated',refresh);};
+    window.addEventListener('admin-review-updated',refresh);
+    return()=>{mounted.current=false;window.removeEventListener('admin-review-updated',refresh);};
   },[]);
   useEffect(()=>{setNotifications(false);setProfile(false);load();},[loc.pathname]);
   useEffect(()=>{

@@ -1,5 +1,5 @@
+import CandidateImport from './CandidateImport.jsx';
 import {ImpersonateButton} from '../../components/Impersonation.jsx';
-import useAdminDirectoryRefresh from '../../hooks/useAdminDirectoryRefresh.js';
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
@@ -43,8 +43,8 @@ export default function Candidates() {
     const [query, setQuery] = useState(''), [search, setSearch] = useState(''), [filters, setFilters] = useState(emptyCandidateFilters), [draftFilters, setDraftFilters] = useState(emptyCandidateFilters), [filtersOpen, setFiltersOpen] = useState(false);
     const [page, setPage] = useState(1), [size, setSize] = useState(25), [sort, setSort] = useState('created_at'), [direction, setDirection] = useState('desc'), [refresh, setRefresh] = useState(0), [checked, setChecked] = useState([]);
     const [editing, setEditing] = useState(null), [draft, setDraft] = useState({}), [action, setAction] = useState(null), [busy, setBusy] = useState(false), [dialogError, setDialogError] = useState(''), [notice, setNotice] = useState('');
+    const [importOpen, setImportOpen] = useState(false);
     const submitting = useRef(false);
-    useAdminDirectoryRefresh(() => setRefresh(n => n + 1));
     const params = candidateListParams(filters, search, sort, direction, page, size);
     const { data, loading, error } = useCandidateDirectory(params, refresh);
     const rows = data?.data || [], counts = data?.counts || {}, options = data?.filters || {}, canManage = data?.can_manage;
@@ -64,7 +64,7 @@ export default function Candidates() {
         setQuery(''); setSearch(''); apply(next);
     };
     const summaryActive = key => key === 'all' ? !filterCount && !search : key === 'available' ? filters.availability.includes('Yes') : key === 'training' ? filters.training.includes('Ongoing') : key === 'consented' ? filters.consent === 'yes' : filters.statuses.includes('inactive');
-    const exportUrl = ids => '/admin-api/candidates/export?' + queryString({ ...params, ...(ids?.length ? { ids } : {}) });
+    const exportUrl = ids => '/admin-api/candidates/export?' + queryString({ ...params, ...(data?.can_import ? { full: 1 } : {}), ...(ids?.length ? { ids } : {}) });
     const beginAction = (kind, ids) => { setDialogError(''); setAction({ kind, ids }); };
     const edit = c => { setEditing(c); setDraft({ availability: c.availability, skills: c.skills, expected_monthly_salary: c.expected_monthly_salary }); setDialogError(''); };
     const mutate = async (url, payload, method = 'post') => {
@@ -78,7 +78,8 @@ export default function Candidates() {
         finally { submitting.current = false; setBusy(false); }
     };
     return <div className="employer-admin candidate-admin">
-        <PageHead title="Candidates" sub="Manage candidate profiles, explore work readiness and keep every follow-up in view."><button className="btn ghost" disabled={loading} onClick={() => setRefresh(n => n + 1)}><RefreshCw />Refresh</button><a className="btn ghost" href={exportUrl()} aria-disabled={loading || !!error || !total} onClick={e => { if (loading || error || !total) e.preventDefault(); }}><Download />Export CSV</a></PageHead>
+        <PageHead title="Candidates" sub="Manage candidate profiles, explore work readiness and keep every follow-up in view."><button className="btn ghost" disabled={loading} onClick={() => setRefresh(n => n + 1)}><RefreshCw />Refresh</button>{data?.can_import && <><button className="btn ghost" onClick={() => setImportOpen(true)}>Import candidates</button><a className="btn ghost" href="/admin-api/candidates/sample"><Download />Download sample</a></>}<a className="btn ghost" href={exportUrl()} aria-disabled={loading || !!error || !total} onClick={e => { if (loading || error || !total) e.preventDefault(); }}><Download />Export CSV</a></PageHead>
+        {importOpen && <CandidateImport onClose={() => setImportOpen(false)} onSaved={message => { setImportOpen(false); setNotice(message); setRefresh(n => n + 1); }} />}
         <div className="ea-summary">{summaryCards.map(([label, key, Icon, tone]) => <button key={key} aria-pressed={summaryActive(key)} className={`ea-summary-${tone} ${summaryActive(key) ? 'active' : ''}`} onClick={() => chooseSummary(key)}><span className="ea-summary-icon"><Icon size={18} /></span><span className="ea-summary-label">{label}</span><strong>{loading ? '—' : Number(counts[key] || 0).toLocaleString('en-IN')}</strong></button>)}</div>
         {notice && <div className="ea-notice" role="status"><span><CheckCircle2 size={16} />{notice}</span><button aria-label="Dismiss notification" onClick={() => setNotice('')}><X size={16} /></button></div>}
         <section className="ea-surface">
@@ -93,7 +94,7 @@ export default function Candidates() {
                 <td><b>{c.preferred_industry}</b><small>{c.experience_type} · ₹{currency(c.expected_monthly_salary)}/month</small><small className="ca-skills" title={c.skills}>{c.skills || 'Skills not provided'}</small></td>
                 <td><Badge tone={c.availability === 'Yes' ? 'verified' : c.availability === 'Available after training' ? 'pending' : 'inactive'} icon={c.availability === 'Yes' ? UserCheck : GraduationCap}>{availabilityLabel(c.availability)}</Badge><small><span className={`ca-account ${c.profile_status === 'active' ? 'active' : ''}`}>{c.profile_status === 'active' ? 'Active profile' : 'Inactive profile'}</span></small></td>
                 <td><div className="ca-contact"><Phone size={12} /><span>{c.whatsapp}</span></div>{c.email && <div className="ca-contact ca-email" title={c.email}><Mail size={12} /><span>{c.email}</span></div>}<small><Badge tone={c.whatsapp_consent ? 'verified' : 'inactive'} icon={MessageCircle}>{c.whatsapp_consent ? 'WhatsApp opted in' : 'No WhatsApp consent'}</Badge></small></td>
-                <td className="ea-number"><b>{c.applications_count || 0} applications</b><small>{c.whatsapp_count || 0} WhatsApp messages</small></td><td className="ea-date">{dateLabel(c.created_at)}<small>Updated {dateLabel(c.updated_at)}</small></td>
+                <td className="ea-number"><b>{c.applications_count || 0} applications</b><small>{c.whatsapp_count || 0} WhatsApp messages</small></td><td className="ea-date">{dateLabel(c.created_at)}<small>Updated {dateLabel(c.updated_at)}</small><small>Added by user: {c.created_by_user_id ?? 'Self / not recorded'}</small></td>
                 <td><div className="ea-row-actions ca-row-actions"><ImpersonateButton type="candidate" id={c.id} name={`${c.first_name} ${c.last_name}`} disabled={c.profile_status!=='active'}/><Link className="table-row-action" to={`/admin/candidates/${c.candidate_code}`} aria-label={`View ${c.first_name} ${c.last_name}`} title="View candidate profile"><Eye /></Link>{canManage && <><button className="table-row-action" onClick={() => edit(c)} aria-label={`Edit work preferences for ${c.first_name}`} title="Edit work preferences"><Pencil /></button><button className="table-row-action" onClick={() => beginAction(c.profile_status === 'active' ? 'disable' : 'activate', [c.id])} aria-label={`${c.profile_status === 'active' ? 'Deactivate' : 'Activate'} ${c.first_name}`} title={c.profile_status === 'active' ? 'Deactivate profile' : 'Activate profile'}><Power /></button></>}</div>{canManage && <WhatsAppMessage code={c.candidate_code} disabled={c.profile_status !== 'active'} />}</td>
             </tr>)}</tbody></table></div>}
             <footer className="ea-pagination"><span>{total ? `${data?.from || 0}–${data?.to || 0} of ${total.toLocaleString('en-IN')}` : '0 candidates'}</span><div><button className="btn ghost" disabled={loading || current <= 1} onClick={() => setPage(current - 1)} aria-label="Previous page"><ChevronLeft /></button><span>Page {current} of {pages}</span><button className="btn ghost" disabled={loading || current >= pages} onClick={() => setPage(current + 1)} aria-label="Next page"><ChevronRight /></button></div></footer>

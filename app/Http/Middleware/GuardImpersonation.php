@@ -34,13 +34,18 @@ class GuardImpersonation
             return $request->expectsJson() ? response()->json(['message' => 'Support session expired. Returning to admin.', 'support_destination' => $result['destination']], 409) : redirect($result['destination']);
         }
         $prefix = $state['type'] === 'candidate' ? 'candidate' : ($state['type'] === 'center' ? 'center' : 'employer');
-        $allowed = $request->is($prefix, $prefix.'/*', $prefix.'-api/*', 'public-api/hero-slides*', 'api/master-data*', 'api/health');
-        if (!$allowed || !in_array($request->method(), ['GET', 'HEAD'], true)) {
-            $support->audit($request, $state, 'impersonation.blocked', ['method' => $request->method(), 'path' => $request->path()]);
-            abort(403, 'View-only support session. Return to the admin panel to make changes.');
+        $isRead = in_array($request->method(), ['GET', 'HEAD'], true);
+        $allowed = $request->is($prefix.'-api/*')
+            || ($isRead && $request->is($prefix, $prefix.'/*', 'public-api/hero-slides*', 'api/master-data*', 'api/health'));
+        $details = ['method' => $request->method(), 'path' => $request->path()];
+        if (!$allowed) {
+            $support->audit($request, $state, 'impersonation.blocked', $details);
+            abort(403, 'This action is outside the selected account workspace.');
         }
         $response = $next($request);
-        if ($response->getStatusCode() < 400) $support->audit($request, $state, 'impersonation.viewed', ['method' => $request->method(), 'path' => $request->path()]);
+        if ($response->getStatusCode() < 400) {
+            $support->audit($request, $state, $isRead ? 'impersonation.viewed' : 'impersonation.acted', $details);
+        }
         $response->headers->set('Cache-Control', 'no-store, private');
         return $response;
     }

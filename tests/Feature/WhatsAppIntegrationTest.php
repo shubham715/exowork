@@ -48,8 +48,10 @@ class WhatsAppIntegrationTest extends TestCase
     {
         Http::swap(new Factory);
         Http::preventStrayRequests();
+        $jobTemplate = \App\Services\WhatsAppTemplateCatalog::get('job_opportunity');
         Http::fake([
             'graph.facebook.com/v26.0/456/message_templates*' => Http::response(['data' => [
+                ['name' => $jobTemplate['name'], 'language' => $jobTemplate['language'], 'category' => $jobTemplate['category'], 'status' => 'APPROVED', 'components' => [['type' => 'BODY', 'text' => $jobTemplate['body']]]],
                 ['name' => 'interview_update', 'language' => 'en', 'category' => 'UTILITY', 'status' => 'APPROVED', 'components' => [['type' => 'BODY', 'text' => 'Hello {{1}}, your interview is scheduled.']]],
                 ['name' => 'pending_update', 'language' => 'en', 'category' => 'UTILITY', 'status' => 'PENDING', 'components' => [['type' => 'BODY', 'text' => 'Hello']]],
                 ['name' => 'media_update', 'language' => 'en', 'category' => 'UTILITY', 'status' => 'APPROVED', 'components' => [['type' => 'HEADER', 'format' => 'IMAGE'], ['type' => 'BODY', 'text' => 'Hello']]],
@@ -196,14 +198,24 @@ class WhatsAppIntegrationTest extends TestCase
         DB::table('organization_memberships')->insert(['user_id'=>$employer->id,'employer_id'=>$id,'status'=>'active']);
         $job = DB::table('job_posts')->insertGetId(['employer_id'=>$id,'title'=>'Operator','openings'=>1,'status'=>'active','education'=>'ITI','experience'=>'Fresher','skills'=>'Machines','district'=>'Jaipur','workplace_type'=>'On-site','salary_max'=>20000]);
         $this->candidate->forceFill(['terms_accepted_at'=>now(),'privacy_accepted_at'=>now()])->save();
-        $url = $this->url('employer')."?job=$job";
-        $this->actingAs($employer)->getJson($url)->assertOk();
-        $this->postJson($url,$this->payload())->assertOk();
-        $this->assertDatabaseHas('whatsapp_messages',['employer_id'=>$id,'candidate_id'=>$this->candidate->id,'status'=>'accepted']);
-        DB::table('job_candidate_skips')->insert(['job_post_id'=>$job,'candidate_id'=>$this->candidate->id,'created_at'=>now()]);
-        $this->getJson($url)->assertNotFound();
-        DB::table('job_posts')->where('id',$job)->update(['status'=>'paused']);
-        $this->postJson($url,$this->payload())->assertNotFound();
+        $spec = \App\Services\WhatsAppTemplateCatalog::get('job_opportunity');
+        DB::table('whatsapp_templates')->where('system_key', 'job_opportunity')->update([
+            'name' => $spec['name'], 'body' => $spec['body'], 'language' => $spec['language'],
+            'review_status' => 'approved', 'meta_status' => 'APPROVED', 'account_id' => '456',
+        ]);
+        $base = "/employer-api/jobs/$job/candidates";
+        $candidate = $this->candidate->id;
+        $this->actingAs($employer)->postJson("$base/$candidate/invite")->assertNotFound();
+        $this->postJson("$base/unlock", ['candidate_ids' => [$candidate]])->assertOk();
+        $this->postJson("$base/$candidate/invite")->assertAccepted()->assertJsonPath('status', 'accepted');
+        $this->postJson("$base/$candidate/invite")->assertAccepted();
+        $this->assertDatabaseCount('whatsapp_messages', 1);
+        $this->assertDatabaseHas('whatsapp_messages', ['employer_id' => $id, 'candidate_id' => $candidate, 'status' => 'accepted']);
+        $this->postJson($this->url('employer')."?job=$job", $this->payload())->assertNotFound();
+        DB::table('job_posts')->where('id', $job)->update(['status' => 'paused']);
+        $this->postJson("$base/$candidate/invite")->assertUnprocessable();
+        $this->postJson("$base/$candidate/skip")->assertOk();
+        $this->postJson("$base/$candidate/invite")->assertNotFound();
     }
 
     private function webhook(array $value, string $waba = '456')
