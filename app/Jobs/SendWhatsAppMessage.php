@@ -86,6 +86,17 @@ class SendWhatsAppMessage implements ShouldQueue
             $template = collect($cloud->templates())->first(fn ($t) => $t['name'] === $record->template_name && $t['language'] === $record->language);
             $savedPayload = json_decode(Crypt::decryptString($record->payload), true, 512, JSON_THROW_ON_ERROR);
             $parameters = $savedPayload['parameters'];
+            if (isset($savedPayload['template_context'])) {
+                $context = $savedPayload['template_context'];
+                try {
+                    $model = \App\Models\Candidate::find($record->candidate_id);
+                    $valid = $model && app(\App\Services\CandidateTemplateResolver::class)->resolve($context['key'], $model, $context['job_id'], $context['inputs']) === $context['resolved'];
+                } catch (\Illuminate\Validation\ValidationException $e) { $valid = false; }
+                if (!$valid) { $this->finish(['status' => 'skipped', 'error_code' => 'CONTEXT_CHANGED', 'error_message' => 'Candidate or related job/interview/placement record changed since preview.']); return; }
+            }
+            if (isset($savedPayload['job_snapshot']) && app(\App\Services\CandidateJobOpportunity::class)->find((int)$savedPayload['job_snapshot']['id']) !== $savedPayload['job_snapshot']) {
+                $this->finish(['status' => 'skipped', 'error_code' => 'JOB_CHANGED', 'error_message' => 'Selected job is unavailable or changed since preview.']); return;
+            }
             if (! $template || count($parameters) !== $template['parameter_count'] || ($local && $template['body'] !== $local->body) || (isset($savedPayload['preview_body']) && $template['body'] !== $savedPayload['preview_body'])) {
                 $this->finish(['status' => 'failed', 'error_code' => 'TEMPLATE_NOT_APPROVED', 'error_message' => 'Template is not approved, its content changed, or variables do not match.']); return;
             }
