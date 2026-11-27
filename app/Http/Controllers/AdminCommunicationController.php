@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\CampaignEmailSender;
 use App\Services\CommunicationSettings;
+use App\Services\GupshupWhatsApp;
 use App\Services\WhatsAppCloud;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,11 +14,12 @@ use Illuminate\Validation\ValidationException;
 
 class AdminCommunicationController extends Controller
 {
-    public function testGupshup(Request $request, CommunicationSettings $settings, \App\Services\GupshupWhatsApp $gupshup)
+    public function testGupshup(Request $request, CommunicationSettings $settings, GupshupWhatsApp $gupshup)
     {
         $this->authorizeAdmin($request);
         $settings->apply();
         abort_unless(config('whatsapp.provider') === 'gupshup', 422, 'Save Gupshup as the messaging provider first.');
+
         return response()->json($gupshup->testConnection())->header('Cache-Control', 'no-store');
     }
 
@@ -81,12 +84,20 @@ class AdminCommunicationController extends Controller
             }
         }
         if ($channel === 'whatsapp') {
-            foreach (['provider', 'gupshup_app_id', 'gupshup_app_name', 'gupshup_source', 'gupshup_automation_enabled', 'gupshup_auth_mode'] as $key) $data[$key] = $data[$key] ?? $old[$key] ?? match ($key) { 'provider' => 'meta', 'gupshup_auth_mode' => 'auto', default => null };
+            foreach (['provider', 'gupshup_app_id', 'gupshup_app_name', 'gupshup_source', 'gupshup_automation_enabled', 'gupshup_auth_mode'] as $key) {
+                $data[$key] = $data[$key] ?? $old[$key] ?? match ($key) {
+                    'provider' => 'meta', 'gupshup_auth_mode' => 'auto', default => null
+                };
+            }
         }
         if ($channel === 'whatsapp' && $data['enabled']) {
             $required = $data['provider'] === 'gupshup' ? ['gupshup_app_id', 'gupshup_app_name', 'gupshup_source', 'gupshup_webhook_secret'] : ['access_token', 'phone_number_id', 'business_account_id', 'app_secret', 'verify_token'];
-            if ($data['provider'] === 'gupshup' && empty($data['gupshup_api_key']) && empty($data['gupshup_customer_secret'])) $required[] = 'gupshup_customer_secret';
-            if ($data['provider'] === 'gupshup' && ($data['gupshup_auth_mode'] ?? 'auto') !== 'auto') $required[] = $data['gupshup_auth_mode'] === 'api_key' ? 'gupshup_api_key' : 'gupshup_customer_secret';
+            if ($data['provider'] === 'gupshup' && empty($data['gupshup_api_key']) && empty($data['gupshup_customer_secret'])) {
+                $required[] = 'gupshup_customer_secret';
+            }
+            if ($data['provider'] === 'gupshup' && ($data['gupshup_auth_mode'] ?? 'auto') !== 'auto') {
+                $required[] = $data['gupshup_auth_mode'] === 'api_key' ? 'gupshup_api_key' : 'gupshup_customer_secret';
+            }
             foreach ($required as $key) {
                 if (empty($data[$key])) {
                     throw ValidationException::withMessages([$key => 'Required before enabling WhatsApp.']);
@@ -241,36 +252,9 @@ class AdminCommunicationController extends Controller
         $this->requireSmtp();
         $campaign = DB::table('email_campaigns')->where('id', $id)->first();
         abort_unless($campaign, 404);
-        $delivery = DB::transaction(function () use ($id) {
-            $row = DB::table('email_deliveries')->where('campaign_id', $id)->where('status', 'pending')->lockForUpdate()->first();
-            if ($row) {
-                DB::table('email_deliveries')->where('id', $row->id)->update(['status' => 'sending', 'updated_at' => now()]);
-            }
+        app(CampaignEmailSender::class)->process($id);
 
-            return $row;
-        });
-        if ($delivery) {
-            $eligible = $this->recipientsQuery($delivery->recipient_type)->where('id', $delivery->recipient_id)->where('email', $delivery->email)->exists();
-            $tokens = ['{{name}}' => $delivery->name, '{{email}}' => $delivery->email, '{{app_name}}' => config('app.name')];
-            try {
-                if ($eligible) {
-                    $subject = str_replace(["\r", "\n"], ' ', strtr($campaign->subject, $tokens));
-                    Mail::raw(strtr($campaign->body, $tokens), fn ($mail) => $mail->to($delivery->email)->subject($subject));
-                    $status = 'accepted';
-                    $error = null;
-                } else {
-                    $status = 'skipped';
-                    $error = 'Recipient no longer eligible, email changed or consent withdrawn.';
-                }
-            } catch (\Throwable $e) {
-                // SMTP may accept DATA before a connection is lost. Never automatically resend.
-                $status = 'unknown';
-                $error = 'SMTP did not confirm acceptance. Check provider logs before sending again.';
-            }
-            DB::table('email_deliveries')->where('id', $delivery->id)->update(['status' => $status, 'error' => $error, 'updated_at' => now()]);
-        }
-
-        return response()->json(['remaining' => DB::table('email_deliveries')->where('campaign_id', $id)->where('status', 'pending')->count(), 'deliveries' => DB::table('email_deliveries')->where('campaign_id', $id)->get()]);
+        return response()->json(['remaining' => DB::table('email_deliveries')->where('campaign_id', $id)->where('status', 'pending')->count(), 'deliveries' => DB::table('email_deliveries')->where('campaign_id', $id)->get(['id', 'email', 'name', 'status', 'recipient_type', 'recipient_id', 'error', 'created_at', 'updated_at'])]);
     }
 
     public function history(Request $request)
@@ -278,7 +262,7 @@ class AdminCommunicationController extends Controller
         $this->authorizeAdmin($request);
 
         return response()->json(DB::table('email_campaigns')->orderByDesc('id')->paginate(20)->through(function ($row) {
-            $row->deliveries = DB::table('email_deliveries')->where('campaign_id', $row->id)->get();
+            $row->deliveries = DB::table('email_deliveries')->where('campaign_id', $row->id)->get(['id', 'email', 'name', 'status', 'recipient_type', 'recipient_id', 'error', 'created_at', 'updated_at']);
 
             return $row;
         }));

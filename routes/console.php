@@ -17,3 +17,10 @@ Artisan::command('whatsapp:process', function () {
 })->purpose('Queue WhatsApp workflow notifications and recover the outbox');
 
 \Illuminate\Support\Facades\Schedule::command('whatsapp:process')->everyMinute()->withoutOverlapping();
+
+Artisan::command('candidate-emails:process', function () {
+    \Illuminate\Support\Facades\DB::table('email_deliveries')->whereNotNull('rendered_payload')->where('status', 'sending')->where('updated_at', '<', now()->subMinutes(10))->update(['status' => 'unknown', 'error' => 'Submission interrupted. Check SMTP provider before sending again.', 'updated_at' => now()]);
+    $ids = \Illuminate\Support\Facades\DB::table('email_deliveries')->whereNotNull('rendered_payload')->where('status', 'pending')->distinct()->pluck('campaign_id');
+    foreach ($ids as $id) \App\Jobs\SendCandidateEmailCampaign::dispatch($id);
+})->purpose('Recover pending candidate email campaigns without resending uncertain submissions');
+\Illuminate\Support\Facades\Schedule::command('candidate-emails:process')->everyMinute()->withoutOverlapping();

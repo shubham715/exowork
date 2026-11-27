@@ -79,6 +79,12 @@ Route::middleware('auth:web')->group(function () {
     Route::get('/admin-api/communication/whatsapp-templates', [\App\Http\Controllers\AdminCommunicationController::class, 'whatsappTemplates']);
     Route::post('/admin-api/communication/whatsapp-templates', [\App\Http\Controllers\AdminCommunicationController::class, 'submitWhatsappTemplate'])->middleware('throttle:10,1');
     Route::delete('/admin-api/communication/whatsapp-templates', [\App\Http\Controllers\AdminCommunicationController::class, 'deleteWhatsappTemplate'])->middleware('throttle:10,1');
+    Route::get('/admin-api/candidate-notifications', [\App\Http\Controllers\AdminCandidateMessagingController::class, 'index']);
+    Route::get('/admin-api/candidate-notifications/context', [\App\Http\Controllers\AdminCandidateMessagingController::class, 'context'])->middleware('throttle:30,1');
+    Route::post('/admin-api/candidate-notifications/preview', [\App\Http\Controllers\AdminCandidateMessagingController::class, 'preview'])->middleware('throttle:20,1');
+    Route::post('/admin-api/candidate-notifications/{id}/send', [\App\Http\Controllers\AdminCandidateMessagingController::class, 'send'])->whereUuid('id')->middleware('throttle:10,1');
+    Route::post('/admin-api/candidate-notifications/{id}/process', [\App\Http\Controllers\AdminCandidateMessagingController::class, 'process'])->whereUuid('id')->middleware('throttle:120,1');
+    Route::get('/admin-api/candidate-notifications/{id}', [\App\Http\Controllers\AdminCandidateMessagingController::class, 'status'])->whereUuid('id');
     Route::get('/admin-api/candidates', [\App\Http\Controllers\AdminCandidateController::class, 'index']);
     Route::get('/admin-api/candidates/export', [\App\Http\Controllers\AdminCandidateController::class, 'export']);
     Route::get('/admin-api/candidates/sample', [\App\Http\Controllers\AdminCandidateImportController::class, 'sample']);

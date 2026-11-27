@@ -84,8 +84,9 @@ class SendWhatsAppMessage implements ShouldQueue
                 $this->finish(['status' => 'failed', 'error_code' => 'TEMPLATE_DISABLED', 'error_message' => 'Administrator approval or account binding is missing.']); return;
             }
             $template = collect($cloud->templates())->first(fn ($t) => $t['name'] === $record->template_name && $t['language'] === $record->language);
-            $parameters = json_decode(Crypt::decryptString($record->payload), true, 512, JSON_THROW_ON_ERROR)['parameters'];
-            if (! $template || count($parameters) !== $template['parameter_count'] || ($local && $template['body'] !== $local->body)) {
+            $savedPayload = json_decode(Crypt::decryptString($record->payload), true, 512, JSON_THROW_ON_ERROR);
+            $parameters = $savedPayload['parameters'];
+            if (! $template || count($parameters) !== $template['parameter_count'] || ($local && $template['body'] !== $local->body) || (isset($savedPayload['preview_body']) && $template['body'] !== $savedPayload['preview_body'])) {
                 $this->finish(['status' => 'failed', 'error_code' => 'TEMPLATE_NOT_APPROVED', 'error_message' => 'Template is not approved, its content changed, or variables do not match.']); return;
             }
             $postStarted = true;

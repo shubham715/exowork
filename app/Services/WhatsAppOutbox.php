@@ -22,7 +22,7 @@ class WhatsAppOutbox
                 'actor_user_id' => $context['actor_user_id'] ?? null, 'employer_id' => $context['employer_id'] ?? null,
                 'training_center_id' => $context['training_center_id'] ?? null, 'recipient' => $recipient,
                 'template_name' => $template['name'], 'language' => $template['language'], 'category' => $template['category'],
-                'payload' => Crypt::encryptString(json_encode(['parameters' => $parameters], JSON_THROW_ON_ERROR)),
+                'payload' => Crypt::encryptString(json_encode(['parameters' => $parameters, ...(isset($context['preview_body']) ? ['preview_body' => $context['preview_body']] : [])], JSON_THROW_ON_ERROR)),
                 'source' => $context['source'] ?? 'manual', 'event_key' => $context['event_key'] ?? null,
                 'retry_of' => $context['retry_of'] ?? null, 'status' => 'queued',
                 'available_at' => $available, 'created_at' => now(), 'updated_at' => now(),

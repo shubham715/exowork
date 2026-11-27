@@ -7,7 +7,7 @@ import './admin-review.css';
 const groups = [
   ['Overview', [[LayoutDashboard,'Dashboard','dashboard']]],
   ['Training partners', [[Building2,'Partners & training centers','centers'],[Layers3,'Training batches','batches'],[BarChart3,'Batch statistics','batch-stats']]],
-  ['Candidates / students', [[Users,'All candidates / students','candidates'],[UserCheck,'Register candidate','candidates/new']]],
+  ['Candidates / students', [[Users,'All candidates / students','candidates'],[UserCheck,'Register candidate','candidates/new'],[MessageCircle,'Candidate notifications','candidates/notifications']]],
   ['Employers', [[Building2,'Employer directory','employers'],[BarChart3,'Employer statistics','employers/stats'],[BriefcaseBusiness,'Jobs & requirements','jobs']]],
   ['Placement operations', [[Waypoints,'Candidate matching','matching'],[CalendarDays,'Interviews','interviews'],[UserCheck,'Selection & joining','joining'],[HeartHandshake,'Retention & follow-up','retention']]],
   ['Communication', [[MessageCircle,'Calls & follow-ups','crm'],[MessageCircle,'WhatsApp templates','whatsapp/templates'],[MessageCircle,'WhatsApp message logs','whatsapp/logs']]],
